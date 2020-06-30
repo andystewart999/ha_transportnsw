@@ -2,6 +2,6 @@
   "domain": "transport_nsw",
   "name": "Transport NSW",
   "documentation": "https://www.home-assistant.io/integrations/transport_nsw",
-  "requirements": ["PyTransportNSWv2==0.2.2"],
+  "requirements": ["PyTransportNSWv2==0.2.4"],
   "codeowners": []
 }
