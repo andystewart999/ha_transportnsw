@@ -1,12 +1,12 @@
 # ha-transportnsw
-A Home Assistant component to provide real-time Transport NSW journey information
+A Home Assistant custom component to provide real-time Transport NSW journey information
 
 ##
-This is a custom fork of Home Assistant's built-in Transport NSW integration.  It uses a modified version of the TransportNSW library that can be found on PyPi here: https://pypi.org/project/PyTransportNSWv2/
+This is a fork of Home Assistant's built-in Transport NSW integration.  It uses a modified version of the TransportNSW library that can be found on PyPi here: https://pypi.org/project/PyTransportNSWv2/
 
-Unlike the built-in integration, the specific origin and destination are specified rather than the origin and a general route.  Both general stop IDs (such as stations or bus stops) can be specified, as well as more stop IDs such as specific platforms.  As this isn't specifically a route-showing service, for longer journeys that involve a number of changes or multiple journey types only the origin, final destination and the number of changes are shown.
-
-One of the key requests features for the built-in version was the option to specificy a minimum 'wait time' to give people the time to get to the origin.  This is now an option, although the side-effect is that as soon as a train, for example, gets _too_ close to the station it will disappear and the sensor will jump to the next further away train. 
+Unlike the built-in integration, the specific origin and destination are specified rather than the origin and a general route.  Both general stop IDs (such as stations or bus stops) can be specified, as well as more detailed stop IDs such as specific platforms.  As this isn't specifically a detailed route display service, for longer journeys that involve a number of changes or multiple journey types only the origin, final destination and the number of changes are shown.
+ 
+One of the most option requested feature addition for the built-in version was the option to specificy a minimum 'wait time' to give people the time to get to the origin.  This is now an option, although the side-effect is that as soon as a train, for example, gets _too_ close to the station it will disappear and the sensor will jump to the next further away train. 
 
 The detail of the returned information can be selected, from brief through to verbose (see the later examples).  All detail iterations include the latitude and longitude (if the TransportNSW API returns it) so the current location of the vehicle can be shown on a map.
 
@@ -49,3 +49,6 @@ return_info: verbose
 ```
 <img src="https://github.com/andystewart999/ha-transportnsw/blob/master/images/verbose_sensor.JPG" width=250>
 <br> 
+
+### Future enhancements
+To manage the disappearance of journeys that are too close in time (if `trip_wait_time` is set), I'd like to enable the creation of 'child' sensors for all journeys that have been previously returned, have not yet left the origin but are closer in time than the minimum.  These child sensors would probably only show the arrival time and the latitude and longitude so they can be shown on the map.
