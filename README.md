@@ -36,14 +36,16 @@ sensor:
 return_info: basic
 ```
 <img src="https://github.com/andystewart999/ha-transportnsw/blob/master/images/basic_sensor.JPG" width=250>
-<br>
+<br> 
+
 ```yaml
 return_info: medium
 ```
 <img src="https://github.com/andystewart999/ha-transportnsw/blob/master/images/medium_sensor.JPG" width=250>
-<br>
+<br> 
+
 ```yaml
 return_info: verbose
 ```
 <img src="https://github.com/andystewart999/ha-transportnsw/blob/master/images/verbose_sensor.JPG" width=250>
-<br>
+<br> 
