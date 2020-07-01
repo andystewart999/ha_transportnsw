@@ -6,7 +6,7 @@ This is a fork of Home Assistant's built-in Transport NSW integration.  It uses 
 
 Unlike the built-in integration, the specific origin and destination are specified rather than the origin and a general route.  Both general stop IDs (such as stations or bus stops) can be specified, as well as more detailed stop IDs such as specific platforms.  As this isn't specifically a detailed route display service, for longer journeys that involve a number of changes or multiple journey types only the origin, final destination and the number of changes are shown.
  
-One of the most option requested feature addition for the built-in version was the option to specificy a minimum 'wait time' to give people the time to get to the origin.  This is now an option, although the side-effect is that as soon as a train, for example, gets _too_ close to the station it will disappear and the sensor will jump to the next further away train. 
+One of the most often requested feature additions for the built-in version was the option to specificy a minimum 'wait time' to give people the time to get to the origin.  This is now an option, although the side-effect is that as soon as a train, for example, gets _too_ close to the station it will disappear and the sensor will jump to the next further away train. 
 
 The detail of the returned information can be selected, from brief through to verbose (see the later examples).  All detail iterations include the latitude and longitude (if the TransportNSW API returns it) so the current location of the vehicle can be shown on a map.
 
