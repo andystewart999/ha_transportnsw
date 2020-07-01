@@ -51,4 +51,4 @@ return_info: verbose
 <br> 
 
 ### Future enhancements
-To manage the disappearance of journeys that are too close in time (if `trip_wait_time` is set), I'd like to enable the creation of 'child' sensors for all journeys that have been previously returned, have not yet left the origin but are closer in time than the minimum.  These child sensors would probably only show the arrival time and the latitude and longitude so they can be shown on the map.
+To manage the disappearance of journeys that are too close in time (if `trip_wait_time` is set), I'd like to enable the creation of 'child' sensors for all journeys that have been previously returned, have not yet left the origin but are closer in time than the minimum.  These child sensors would probably only show the arrival time and the latitude and longitude so they can be shown on a map as that's probably the only real value.
