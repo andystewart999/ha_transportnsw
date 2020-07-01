@@ -38,10 +38,14 @@ return_info: basic
 <img src="https://github.com/andystewart999/ha-transportnsw/blob/master/images/basic_sensor.JPG" width=250>
 
 
+
+
 ```yaml
 return_info: medium
 ```
 <img src="https://github.com/andystewart999/ha-transportnsw/blob/master/images/medium_sensor.JPG" width=250>
+
+
 
 
 ```yaml
