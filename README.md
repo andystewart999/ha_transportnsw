@@ -32,6 +32,8 @@ sensor:
 
 ### Example sensors
 
+Walking segments that top or tail the returned journey are ignored.  For example, if you specifiy an origin that requires you to walk to the nearest bus stop, that bus stop is considered to be the origin rather than wherever your defined `origin_id` is.
+
 ```yaml
 return_info: basic
 ```
