@@ -4,7 +4,7 @@ A Home Assistant custom component to provide real-time Transport NSW journey inf
 ##
 This is a fork of Home Assistant's built-in Transport NSW integration.  It uses my modified version of the TransportNSW library that can be found on PyPi here: https://pypi.org/project/PyTransportNSWv2/
 
-Unlike the built-in integration, the specific origin and destination are specified rather than the origin and a general route.  Both general stop IDs (such as stations or bus stops) can be specified, as well as more detailed stop IDs such as specific platforms.  As this isn't specifically a detailed route display service, for longer journeys that involve a number of changes or multiple journey types only the origin, final destination and the number of changes are shown.
+Unlike the built-in integration, the specific origin and destination are specified rather than the origin and a general route.  Both general stop IDs (such as stations or bus stops) can be specified, as well as more detailed stop IDs such as specific platforms.  As this isn't specifically a detailed route display service, for longer journeys that involve a number of changes or multiple journey types only the origin, final destination and the number of changes are shown for clarity.
  
 One of the most often requested feature additions for the built-in version was the option to specificy a minimum 'wait time' to give people the time to get to the origin.  This is now an option, although the side-effect is that as soon as a train, for example, gets _too_ close to the station it will disappear and the sensor will jump to the next further away train. 
 
