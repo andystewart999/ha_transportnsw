@@ -1,1 +1,1 @@
-"""The transport_nsw component."""
+"""The ha_transportnsw component."""
