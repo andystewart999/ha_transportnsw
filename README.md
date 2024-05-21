@@ -34,6 +34,18 @@ sensor:
 * return_info: defines the level of detail that the sensor should include.  Valid options are basic, medium and verbose - the default is medium.
 * api_key: your Transport NSW API key
 
+### transport_type filters
+```
+1: Train
+4: Light rail
+5: Bus
+7: Coach
+9: Ferry
+11: School bus
+99: Walk
+100: Walk
+107: Cycle
+```
 ### Example sensors
 
 Walking segments that top or tail the returned journey are ignored.  For example, if you specifiy an origin that requires you to walk to the nearest bus stop, that bus stop is considered to be the origin rather than wherever your defined `origin_id` is.
