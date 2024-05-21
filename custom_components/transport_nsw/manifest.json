@@ -1,7 +1,9 @@
 {
-  "domain": "transport_nsw",
-  "name": "Transport NSW",
-  "documentation": "https://www.home-assistant.io/integrations/transport_nsw",
-  "requirements": ["PyTransportNSWv2==0.2.4"],
-  "codeowners": []
+  "domain": "ha_transportnsw",
+  "name": "Trips NSW",
+  "documentation": "https://github.com/andystewart999/ha_transportnsw",
+  "requirements": ["PyTransportNSWv2==0.3.2"],
+  "codeowners": [],
+  "iot_class": "cloud_polling",
+  "version": "0.9.0"
 }
