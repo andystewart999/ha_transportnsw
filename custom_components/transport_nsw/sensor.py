@@ -11,7 +11,7 @@ from homeassistant.const import (
     ATTR_ATTRIBUTION,
     CONF_API_KEY,
     CONF_NAME,
-    TIME_MINUTES,
+    UnitOfTime,
     ATTR_LATITUDE,
     ATTR_LONGITUDE
 )
@@ -23,15 +23,18 @@ _LOGGER = logging.getLogger(__name__)
 CONF_ORIGIN_ID = 'origin_id'
 CONF_DESTINATION_ID = 'destination_id'
 CONF_TRIP_WAIT_TIME = 'trip_wait_time'
+CONF_TRANSPORT_TYPE = 'transport_type'
 CONF_RETURN_INFO = 'return_info'
 
 ATTR_DUE_IN = 'due in'
 ATTR_ORIGIN_STOP_ID = 'origin_stop_id'
 ATTR_ORIGIN_NAME = 'origin_name'
+ATTR_ORIGIN_PLATFORM_NAME = 'origin_platform_name'
 ATTR_DEPARTURE_TIME = 'departure_time'
 
 ATTR_DESTINATION_STOP_ID = 'destination_stop_id'
 ATTR_DESTINATION_NAME = 'destination_name'
+ATTR_DESTINATION_PLATFORM_NAME = 'destination_platform_name'
 ATTR_ARRIVAL_TIME = 'arrival_time'
 
 ATTR_ORIGIN_TRANSPORT_TYPE = 'origin_transport_type'
@@ -70,6 +73,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
         vol.Required(CONF_API_KEY): cv.string,
         vol.Optional(CONF_NAME, default=DEFAULT_NAME): cv.string,
         vol.Optional(CONF_TRIP_WAIT_TIME, default=0): cv.positive_int,
+        vol.Optional(CONF_TRANSPORT_TYPE, default=0): cv.positive_int,
         vol.Optional(CONF_RETURN_INFO, default='medium'): vol.In(['brief', 'medium', 'verbose'])
     }
 )
@@ -89,9 +93,11 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
     api_key = config[CONF_API_KEY]
     name = config[CONF_NAME]
     trip_wait_time = config[CONF_TRIP_WAIT_TIME]
+    transport_type = config[CONF_TRANSPORT_TYPE]
+
     return_info = config[CONF_RETURN_INFO]
 
-    data = PublicTransportData(origin_id, destination_id, api_key, trip_wait_time, return_info)
+    data = PublicTransportData(origin_id, destination_id, api_key, trip_wait_time, return_info, transport_type)
     add_entities([TransportNSWSensor(data, name, return_info)], True)
 
 
@@ -118,15 +124,17 @@ class TransportNSWSensor(Entity):
         return self._state
 
     @property
-    def device_state_attributes(self):
+    def extra_state_attributes(self):
         """Return the state attributes."""
         if self._times is not None:
             if self._return_info == 'brief':
                 return {
                     ATTR_DUE_IN: self._times[ATTR_DUE_IN],
                     ATTR_ORIGIN_NAME: self._times[ATTR_ORIGIN_NAME],
+                    ATTR_ORIGIN_PLATFORM_NAME: self._times[ATTR_ORIGIN_PLATFORM_NAME],
                     ATTR_DEPARTURE_TIME: self._times[ATTR_DEPARTURE_TIME],
                     ATTR_DESTINATION_NAME: self._times[ATTR_DESTINATION_NAME],
+                    ATTR_DESTINATION_PLATFORM_NAME: self._times[ATTR_DESTINATION_PLATFORM_NAME],
                     ATTR_ARRIVAL_TIME: self._times[ATTR_ARRIVAL_TIME],
                     ATTR_LATITUDE: self._times[ATTR_LATITUDE],
                     ATTR_LONGITUDE: self._times[ATTR_LONGITUDE]
@@ -136,8 +144,10 @@ class TransportNSWSensor(Entity):
                 return {
                     ATTR_DUE_IN: self._times[ATTR_DUE_IN],
                     ATTR_ORIGIN_NAME: self._times[ATTR_ORIGIN_NAME],
+                    ATTR_ORIGIN_PLATFORM_NAME: self._times[ATTR_ORIGIN_PLATFORM_NAME],
                     ATTR_DEPARTURE_TIME: self._times[ATTR_DEPARTURE_TIME],
                     ATTR_DESTINATION_NAME: self._times[ATTR_DESTINATION_NAME],
+                    ATTR_DESTINATION_PLATFORM_NAME: self._times[ATTR_DESTINATION_PLATFORM_NAME],
                     ATTR_ARRIVAL_TIME: self._times[ATTR_ARRIVAL_TIME],
                     ATTR_CHANGES: self._times[ATTR_CHANGES],
                     ATTR_OCCUPANCY: self._times[ATTR_OCCUPANCY],
@@ -150,9 +160,11 @@ class TransportNSWSensor(Entity):
                 return {
                     ATTR_DUE_IN: self._times[ATTR_DUE_IN],
                     ATTR_ORIGIN_NAME: self._times[ATTR_ORIGIN_NAME],
+                    ATTR_ORIGIN_PLATFORM_NAME: self._times[ATTR_ORIGIN_PLATFORM_NAME],
                     ATTR_DEPARTURE_TIME: self._times[ATTR_DEPARTURE_TIME],
                     ATTR_ORIGIN_STOP_ID: self._times[ATTR_ORIGIN_STOP_ID],
                     ATTR_DESTINATION_NAME: self._times[ATTR_DESTINATION_NAME],
+                    ATTR_DESTINATION_PLATFORM_NAME: self._times[ATTR_DESTINATION_PLATFORM_NAME],
                     ATTR_ARRIVAL_TIME: self._times[ATTR_ARRIVAL_TIME],
                     ATTR_DESTINATION_STOP_ID: self._times[ATTR_DESTINATION_STOP_ID],
                     ATTR_CHANGES: self._times[ATTR_CHANGES],
@@ -169,7 +181,7 @@ class TransportNSWSensor(Entity):
     @property
     def unit_of_measurement(self):
         """Return the unit this state is expressed in."""
-        return TIME_MINUTES
+        return UnitOfTime.MINUTES
 
     @property
     def icon(self):
@@ -186,20 +198,24 @@ class TransportNSWSensor(Entity):
 class PublicTransportData:
     """The Class for handling the data retrieval."""
 
-    def __init__(self, origin_id, destination_id, api_key, trip_wait_time, return_info):
+    def __init__(self, origin_id, destination_id, api_key, trip_wait_time, return_info, transport_type):
         """Initialize the data object."""
         self._origin_id = origin_id
         self._destination_id = destination_id
         self._api_key = api_key
         self._trip_wait_time = trip_wait_time
+        self._transport_type = transport_type
         self._return_info = return_info
+        self._attr = {}
         self.info = {
             ATTR_DUE_IN: "n/a",
             ATTR_ORIGIN_STOP_ID: "n/a",
             ATTR_ORIGIN_NAME: "n/a",
+            ATTR_ORIGIN_PLATFORM_NAME: "n/a",
             ATTR_DEPARTURE_TIME: "n/a",
             ATTR_DESTINATION_STOP_ID: "n/a",
             ATTR_DESTINATION_NAME: "n/a",
+            ATTR_DESTINATION_PLATFORM_NAME: "n/a",
             ATTR_ARRIVAL_TIME: "n/a",
             ATTR_ORIGIN_TRANSPORT_TYPE: "n/a",
             ATTR_ORIGIN_TRANSPORT_NAME: "n/a",
@@ -216,15 +232,18 @@ class PublicTransportData:
     def update(self):
         """Get the next leave time."""
         _data = self.tnsw.get_trip(
-            self._origin_id, self._destination_id, self._api_key, self._trip_wait_time
+            self._origin_id, self._destination_id, self._api_key, self._trip_wait_time, self._transport_type
         )
+
         self.info = {
             ATTR_DUE_IN: _data["due"],
             ATTR_ORIGIN_STOP_ID: _data["origin_stop_id"],
             ATTR_ORIGIN_NAME: _data["origin_name"],
+            ATTR_ORIGIN_PLATFORM_NAME: _data["origin_name"].split(", ")[1],
             ATTR_DEPARTURE_TIME: convert_date(_data["departure_time"]),
             ATTR_DESTINATION_STOP_ID: _data["destination_stop_id"],
             ATTR_DESTINATION_NAME: _data["destination_name"],
+            ATTR_DESTINATION_PLATFORM_NAME: _data["destination_name"].split(", ")[1],
             ATTR_ARRIVAL_TIME: convert_date(_data["arrival_time"]),
             ATTR_ORIGIN_TRANSPORT_TYPE: _data["origin_transport_type"],
             ATTR_ORIGIN_TRANSPORT_NAME: _data["origin_transport_name"],
