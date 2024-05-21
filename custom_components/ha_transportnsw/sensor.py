@@ -119,6 +119,11 @@ class TransportNSWSensor(Entity):
         return self._name
 
     @property
+    def unique_id(self):
+        """Return the unique ID for this sensor."""
+        return self._name
+    
+    @property
     def state(self):
         """Return the state of the sensor."""
         return self._state
