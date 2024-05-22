@@ -30,12 +30,12 @@ CONF_RETURN_INFO = 'return_info'
 ATTR_DUE_IN = 'due in'
 ATTR_ORIGIN_STOP_ID = 'origin_stop_id'
 ATTR_ORIGIN_NAME = 'origin_name'
-ATTR_ORIGIN_PLATFORM_NAME = 'origin_platform_name'
+ATTR_ORIGIN_DETAIL = 'origin_detail'
 ATTR_DEPARTURE_TIME = 'departure_time'
 
 ATTR_DESTINATION_STOP_ID = 'destination_stop_id'
 ATTR_DESTINATION_NAME = 'destination_name'
-ATTR_DESTINATION_PLATFORM_NAME = 'destination_platform_name'
+ATTR_DESTINATION_DETAIL = 'destination_detail'
 ATTR_ARRIVAL_TIME = 'arrival_time'
 
 ATTR_ORIGIN_TRANSPORT_TYPE = 'origin_transport_type'
@@ -87,6 +87,32 @@ def convert_date(utc_string):
     return temp_date.strftime('%Y-%m-%dT%H:%M:%S')
 
 
+def get_specific_platform(location_info, transport_type):
+    if transport_type == "Train":
+        return location_info.split(", ")[1]
+    elif transport_type == "Ferry":
+        tmpLen = len(location_info.split(", "))
+        if tmpLen == 4:
+            return location_info.split(", ")[1] + ", " + location_info.split(", ")[2]
+        elif tmpLen == 3:
+            #return location_info.split(", ")[0] + ", " + location_info.split(", ")[1]
+            return location_info.split(", ")[1]
+        elif tmpLen == 2:
+            return location_info.split(", ")[1]
+        else:
+            return location_info.split(", ")[0]
+    elif transport_type == "Bus":
+        return location_info.split(", ")[0]
+    elif transport_type == "Light rail":
+        tmpFind = location_info.find(" Light Rail")
+        if tmpFind == -1:
+            return location_info
+        else:
+            return location_info[: tmpFind]
+    else:
+        return location_info
+
+
 def setup_platform(hass, config, add_entities, discovery_info=None):
     """Set up the Transport NSW sensor."""
     origin_id = config[CONF_ORIGIN_ID]
@@ -132,56 +158,36 @@ class TransportNSWSensor(Entity):
     def extra_state_attributes(self):
         """Return the state attributes."""
         if self._times is not None:
-            if self._return_info == 'brief':
-                return {
+            attrTemp = {
                     ATTR_DUE_IN: self._times[ATTR_DUE_IN],
-                    ATTR_ORIGIN_NAME: self._times[ATTR_ORIGIN_NAME],
-                    ATTR_ORIGIN_PLATFORM_NAME: self._times[ATTR_ORIGIN_PLATFORM_NAME],
-                    ATTR_DEPARTURE_TIME: self._times[ATTR_DEPARTURE_TIME],
-                    ATTR_DESTINATION_NAME: self._times[ATTR_DESTINATION_NAME],
-                    ATTR_DESTINATION_PLATFORM_NAME: self._times[ATTR_DESTINATION_PLATFORM_NAME],
                     ATTR_ARRIVAL_TIME: self._times[ATTR_ARRIVAL_TIME],
+                    ATTR_CHANGES: self._times[ATTR_CHANGES],
                     ATTR_LATITUDE: self._times[ATTR_LATITUDE],
                     ATTR_LONGITUDE: self._times[ATTR_LONGITUDE]
                 }
+                
+            if self._return_info == 'medium' or self._return_info == 'verbose':
+                attrTemp.update({
+                    ATTR_ORIGIN_NAME: self._times[ATTR_ORIGIN_NAME],
+                    ATTR_ORIGIN_DETAIL: self._times[ATTR_ORIGIN_DETAIL],
+                    ATTR_DEPARTURE_TIME: self._times[ATTR_DEPARTURE_TIME],
+                    ATTR_DESTINATION_NAME: self._times[ATTR_DESTINATION_NAME],
+                    ATTR_DESTINATION_DETAIL: self._times[ATTR_DESTINATION_DETAIL],
+                    ATTR_OCCUPANCY: self._times[ATTR_OCCUPANCY]
+                })
 
-            elif self._return_info == 'medium':
-                return {
-                    ATTR_DUE_IN: self._times[ATTR_DUE_IN],
-                    ATTR_ORIGIN_NAME: self._times[ATTR_ORIGIN_NAME],
-                    ATTR_ORIGIN_PLATFORM_NAME: self._times[ATTR_ORIGIN_PLATFORM_NAME],
-                    ATTR_DEPARTURE_TIME: self._times[ATTR_DEPARTURE_TIME],
-                    ATTR_DESTINATION_NAME: self._times[ATTR_DESTINATION_NAME],
-                    ATTR_DESTINATION_PLATFORM_NAME: self._times[ATTR_DESTINATION_PLATFORM_NAME],
-                    ATTR_ARRIVAL_TIME: self._times[ATTR_ARRIVAL_TIME],
-                    ATTR_CHANGES: self._times[ATTR_CHANGES],
-                    ATTR_OCCUPANCY: self._times[ATTR_OCCUPANCY],
-                    ATTR_ORIGIN_LINE_NAME: self._times[ATTR_ORIGIN_LINE_NAME],
-                    ATTR_ORIGIN_LINE_NAME_SHORT: self._times[ATTR_ORIGIN_LINE_NAME_SHORT],
-                    ATTR_LATITUDE: self._times[ATTR_LATITUDE],
-                    ATTR_LONGITUDE: self._times[ATTR_LONGITUDE]
-                }
-            else:
-                return {
-                    ATTR_DUE_IN: self._times[ATTR_DUE_IN],
-                    ATTR_ORIGIN_NAME: self._times[ATTR_ORIGIN_NAME],
-                    ATTR_ORIGIN_PLATFORM_NAME: self._times[ATTR_ORIGIN_PLATFORM_NAME],
-                    ATTR_DEPARTURE_TIME: self._times[ATTR_DEPARTURE_TIME],
-                    ATTR_ORIGIN_STOP_ID: self._times[ATTR_ORIGIN_STOP_ID],
-                    ATTR_DESTINATION_NAME: self._times[ATTR_DESTINATION_NAME],
-                    ATTR_DESTINATION_PLATFORM_NAME: self._times[ATTR_DESTINATION_PLATFORM_NAME],
-                    ATTR_ARRIVAL_TIME: self._times[ATTR_ARRIVAL_TIME],
-                    ATTR_DESTINATION_STOP_ID: self._times[ATTR_DESTINATION_STOP_ID],
-                    ATTR_CHANGES: self._times[ATTR_CHANGES],
-                    ATTR_OCCUPANCY: self._times[ATTR_OCCUPANCY],
+            if self._return_info == 'verbose':
+                attrTemp.update({
                     ATTR_ORIGIN_LINE_NAME: self._times[ATTR_ORIGIN_LINE_NAME],
                     ATTR_ORIGIN_LINE_NAME_SHORT: self._times[ATTR_ORIGIN_LINE_NAME_SHORT],
                     ATTR_ORIGIN_TRANSPORT_TYPE: self._times[ATTR_ORIGIN_TRANSPORT_TYPE],
                     ATTR_ORIGIN_TRANSPORT_NAME: self._times[ATTR_ORIGIN_TRANSPORT_NAME],
-                    ATTR_REAL_TIME_TRIP_ID: self._times[ATTR_REAL_TIME_TRIP_ID],
-                    ATTR_LATITUDE: self._times[ATTR_LATITUDE],
-                    ATTR_LONGITUDE: self._times[ATTR_LONGITUDE]
-                }
+                    ATTR_REAL_TIME_TRIP_ID: self._times[ATTR_REAL_TIME_TRIP_ID]
+                })
+
+            return attrTemp;
+        else:
+            return {};
 
     @property
     def unit_of_measurement(self):
@@ -216,11 +222,11 @@ class PublicTransportData:
             ATTR_DUE_IN: "n/a",
             ATTR_ORIGIN_STOP_ID: "n/a",
             ATTR_ORIGIN_NAME: "n/a",
-            ATTR_ORIGIN_PLATFORM_NAME: "n/a",
+            ATTR_ORIGIN_DETAIL: "n/a",
             ATTR_DEPARTURE_TIME: "n/a",
             ATTR_DESTINATION_STOP_ID: "n/a",
             ATTR_DESTINATION_NAME: "n/a",
-            ATTR_DESTINATION_PLATFORM_NAME: "n/a",
+            ATTR_DESTINATION_DETAIL: "n/a",
             ATTR_ARRIVAL_TIME: "n/a",
             ATTR_ORIGIN_TRANSPORT_TYPE: "n/a",
             ATTR_ORIGIN_TRANSPORT_NAME: "n/a",
@@ -245,11 +251,11 @@ class PublicTransportData:
                 ATTR_DUE_IN: _data["due"],
                 ATTR_ORIGIN_STOP_ID: _data["origin_stop_id"],
                 ATTR_ORIGIN_NAME: _data["origin_name"],
-                ATTR_ORIGIN_PLATFORM_NAME: _data["origin_name"].split(", ")[1],
+                ATTR_ORIGIN_DETAIL: get_specific_platform(_data["origin_name"], _data["origin_transport_type"]),
                 ATTR_DEPARTURE_TIME: convert_date(_data["departure_time"]),
                 ATTR_DESTINATION_STOP_ID: _data["destination_stop_id"],
                 ATTR_DESTINATION_NAME: _data["destination_name"],
-                ATTR_DESTINATION_PLATFORM_NAME: _data["destination_name"].split(", ")[1],
+                ATTR_DESTINATION_DETAIL: get_specific_platform(_data["destination_name"], _data["origin_transport_type"]),
                 ATTR_ARRIVAL_TIME: convert_date(_data["arrival_time"]),
                 ATTR_ORIGIN_TRANSPORT_TYPE: _data["origin_transport_type"],
                 ATTR_ORIGIN_TRANSPORT_NAME: _data["origin_transport_name"],
