@@ -62,6 +62,7 @@ ICONS = {
     "Schoolbus": "mdi:bus",
     "School bus": "mdi:bus",
     "n/a": "mdi:clock",
+    "Walk": "mdi:walk",
     None: "mdi:clock"
 }
 
