@@ -2,6 +2,7 @@
 from datetime import datetime, timezone, timedelta
 import time
 import logging
+import json
 
 from TransportNSW import TransportNSW
 import voluptuous as vol
@@ -94,7 +95,6 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
     name = config[CONF_NAME]
     trip_wait_time = config[CONF_TRIP_WAIT_TIME]
     transport_type = config[CONF_TRANSPORT_TYPE]
-
     return_info = config[CONF_RETURN_INFO]
 
     data = PublicTransportData(origin_id, destination_id, api_key, trip_wait_time, return_info, transport_type)
@@ -235,31 +235,35 @@ class PublicTransportData:
         self.tnsw = TransportNSW()
 
     def update(self):
-        """Get the next leave time."""
-        _data = self.tnsw.get_trip(
-            self._origin_id, self._destination_id, self._api_key, self._trip_wait_time, self._transport_type
-        )
+        try:
+            """Get the next leave time."""
+            _data = json.loads(self.tnsw.get_trip(
+                self._origin_id, self._destination_id, self._api_key, self._trip_wait_time, self._transport_type
+                ))
 
-        self.info = {
-            ATTR_DUE_IN: _data["due"],
-            ATTR_ORIGIN_STOP_ID: _data["origin_stop_id"],
-            ATTR_ORIGIN_NAME: _data["origin_name"],
-            ATTR_ORIGIN_PLATFORM_NAME: _data["origin_name"].split(", ")[1],
-            ATTR_DEPARTURE_TIME: convert_date(_data["departure_time"]),
-            ATTR_DESTINATION_STOP_ID: _data["destination_stop_id"],
-            ATTR_DESTINATION_NAME: _data["destination_name"],
-            ATTR_DESTINATION_PLATFORM_NAME: _data["destination_name"].split(", ")[1],
-            ATTR_ARRIVAL_TIME: convert_date(_data["arrival_time"]),
-            ATTR_ORIGIN_TRANSPORT_TYPE: _data["origin_transport_type"],
-            ATTR_ORIGIN_TRANSPORT_NAME: _data["origin_transport_name"],
-            ATTR_ORIGIN_LINE_NAME: _data["origin_line_name"],
-            ATTR_ORIGIN_LINE_NAME_SHORT: _data["origin_line_name_short"],
-            ATTR_OCCUPANCY: _data["occupancy"].lower(),
-            ATTR_CHANGES: _data["changes"],
-            ATTR_REAL_TIME_TRIP_ID: _data["real_time_trip_id"],
-            ATTR_LATITUDE: _data["latitude"],
-            ATTR_LONGITUDE: _data["longitude"]
-        }
+            self.info = {
+                ATTR_DUE_IN: _data["due"],
+                ATTR_ORIGIN_STOP_ID: _data["origin_stop_id"],
+                ATTR_ORIGIN_NAME: _data["origin_name"],
+                ATTR_ORIGIN_PLATFORM_NAME: _data["origin_name"].split(", ")[1],
+                ATTR_DEPARTURE_TIME: convert_date(_data["departure_time"]),
+                ATTR_DESTINATION_STOP_ID: _data["destination_stop_id"],
+                ATTR_DESTINATION_NAME: _data["destination_name"],
+                ATTR_DESTINATION_PLATFORM_NAME: _data["destination_name"].split(", ")[1],
+                ATTR_ARRIVAL_TIME: convert_date(_data["arrival_time"]),
+                ATTR_ORIGIN_TRANSPORT_TYPE: _data["origin_transport_type"],
+                ATTR_ORIGIN_TRANSPORT_NAME: _data["origin_transport_name"],
+                ATTR_ORIGIN_LINE_NAME: _data["origin_line_name"],
+                ATTR_ORIGIN_LINE_NAME_SHORT: _data["origin_line_name_short"],
+                ATTR_OCCUPANCY: _data["occupancy"].lower(),
+                ATTR_CHANGES: _data["changes"],
+                ATTR_REAL_TIME_TRIP_ID: _data["real_time_trip_id"],
+                ATTR_LATITUDE: _data["latitude"],
+                ATTR_LONGITUDE: _data["longitude"]
+            }
+
+        except:
+            _LOGGER.error("Error returning trip data")
 
     def convert_date(self, utc_string):
         fmt = '%Y-%m-%dT%H:%M:%SZ'
