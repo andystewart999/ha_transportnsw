@@ -46,27 +46,23 @@ sensor:
 100: Walk
 107: Cycle
 ```
-### Example sensors
-
 Walking segments that top or tail the returned journey are ignored.  For example, if you specifiy an origin that requires you to walk to the nearest bus stop, that bus stop is considered to be the origin rather than wherever your defined `origin_id` is.
 
+### return_info examples
 ```yaml
 return_info: basic
 ```
-<img src="https://github.com/andystewart999/ha-transportnsw/blob/master/images/basic_sensor.JPG" width=250>
-<br> 
+<img width="500" alt="basic" src="https://github.com/andystewart999/ha_transportnsw/assets/18434441/3cb11d26-d029-4250-bac6-19df8480e9ef">
 
 ```yaml
 return_info: medium
 ```
-<img src="https://github.com/andystewart999/ha-transportnsw/blob/master/images/medium_sensor.JPG" width=250>
-<br> 
+<img width="500" alt="medium" src="https://github.com/andystewart999/ha_transportnsw/assets/18434441/eab2f2c3-1c4d-416a-80c5-15410c3d8fc4">
 
 ```yaml
 return_info: verbose
 ```
-<img src="https://github.com/andystewart999/ha-transportnsw/blob/master/images/verbose_sensor.JPG" width=250>
-<br> 
+<img width="500" alt="verbose" src="https://github.com/andystewart999/ha_transportnsw/assets/18434441/f2a95957-bbeb-41f8-aa9b-7efee8e62452">
 
 ### Future enhancements
 To manage the disappearance of journeys that are too close in time (if `trip_wait_time` is set), I'd like to enable the creation of 'child' sensors for all journeys that have been previously returned, have not yet left the origin but are closer in time than the minimum.  These child sensors would probably only show the arrival time and the latitude and longitude so they can be shown on a map as that's probably the only real value.
