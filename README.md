@@ -6,11 +6,13 @@ This is a fork of Home Assistant's built-in Transport NSW integration.  It uses 
 
 Unlike the built-in integration, the specific origin and destination are specified rather than the origin and a general route.  Both general stop IDs (such as stations or bus stops) can be specified, as well as more detailed stop IDs such as specific platforms.  As this isn't specifically a detailed route display service, for longer journeys that involve a number of changes or multiple journey types only the origin, final destination and the number of changes are shown for clarity.
  
-One of the most often requested feature additions for the built-in version was the option to specificy a minimum 'wait time' to give people the time to get to the origin.  This is now an option, although the side-effect is that as soon as a train, for example, gets _too_ close to the station it will disappear and the sensor will jump to the next further away train.
+One of the most often requested feature additions for the built-in version was the option to specify a minimum 'wait time' to give people the time to get to the origin.  This is now an option, although the side-effect is that as soon as a train, for example, gets _too_ close to the station it will disappear and the sensor will jump to the next further away train.
 
-Another feature is the abilit to filter by transport type, for example Train.  Note that the filter logic only checks to make sure that at least one of the legs in the journey meets that filter type.
+Another feature is the ability to filter by transport type, for example Train.  You can specify if the filter should be strict, in which case the first leg of the journey has to be of the specified type, or not strict in which case a journey will be returned if _any_ of the legs are of the specified type.
 
-The detail of the returned information can be selected, from brief through to verbose (see the later examples).  All detail iterations include the latitude and longitude (if the TransportNSW API returns it) so the current location of the vehicle can be shown on a map.
+Finally, you can specify how many trips should be returned and therefore how many sensors for that particular journey should be created.  Note that the TransportNSW API only ever returns 5 or 6 trips, so specifying a strict filter might result in less sensors being generated than requested.  Trips are returned by the departure time from the specified origin and could of course be via different routes or transport types, depending on your origin, destination and filter settings.
+
+The detail of the returned information can be selected, from brief through to verbose (see the examples below).  All detail iterations include the latitude and longitude (if the TransportNSW API returns it) so the current location of the vehicle can be shown on a map.
 
 ### Example settings
 ```yaml
@@ -22,6 +24,8 @@ sensor:
     trip_wait_time: 5
     transport_type: 1 # Only trains
     return_info: medium
+    strict_transport_type: true
+    trips_to_create: 3
     name: "Chatswood to Gordon"
 ```
 
@@ -64,5 +68,3 @@ return_info: verbose
 ```
 <img width="500" alt="verbose" src="https://github.com/andystewart999/ha_transportnsw/assets/18434441/f2a95957-bbeb-41f8-aa9b-7efee8e62452">
 
-### Future enhancements
-To manage the disappearance of journeys that are too close in time (if `trip_wait_time` is set), I'd like to enable the creation of 'child' sensors for all journeys that have been previously returned, have not yet left the origin but are closer in time than the minimum.  These child sensors would probably only show the arrival time and the latitude and longitude so they can be shown on a map as that's probably the only real value.
