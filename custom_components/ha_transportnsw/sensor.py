@@ -4,7 +4,7 @@ import time
 import logging
 import json
 
-from TransportNSW import TransportNSW
+from TransportNSWv2 import TransportNSWv2
 import voluptuous as vol
 
 from homeassistant.components.sensor import PLATFORM_SCHEMA
@@ -142,17 +142,17 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
             name_suffix = "_trip_" + str(trip + 1)
         
         data = PublicTransportData(origin_id, destination_id, api_key, trip_wait_time, return_info, transport_type, strict_transport_type, trip)
-        sensor_list.append (TransportNSWSensor(data, name + name_suffix, trip, return_info))
+        sensor_list.append (TransportNSWv2Sensor(data, name + name_suffix, trip, return_info))
 
-#    sensor_list = [TransportNSWSensor(data, name, 0, return_info)]
+#    sensor_list = [TransportNSWv2Sensor(data, name, 0, return_info)]
 #    if return_journeys == 'now_and_next':
 #        data2 = PublicTransportData(origin_id, destination_id, api_key, trip_wait_time, return_info, transport_type, strict_transport_type, 1)
-#        sensor_list.append (TransportNSWSensor(data2, name + ' (next)', 1, return_info))
+#        sensor_list.append (TransportNSWv2Sensor(data2, name + ' (next)', 1, return_info))
 
     add_entities(sensor_list, True)
 
 
-class TransportNSWSensor(Entity):
+class TransportNSWv2Sensor(Entity):
     """Implementation of an Transport NSW sensor."""
 
     def __init__(self, data, name, index, return_info):
@@ -266,7 +266,7 @@ class PublicTransportData:
             ATTR_LATITUDE: "n/a",
             ATTR_LONGITUDE: "n/a"
         }
-        self.tnsw = TransportNSW()
+        self.tnsw = TransportNSWv2()
 
 
     def update(self):
