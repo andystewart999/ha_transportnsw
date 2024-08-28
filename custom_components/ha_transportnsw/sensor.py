@@ -133,16 +133,31 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
     return_info = config[CONF_RETURN_INFO]
     trips_to_create = config[CONF_TRIPS_TO_CREATE]
 
-    #data = PublicTransportData(origin_id, destination_id, api_key, trip_wait_time, return_info, transport_type, strict_transport_type, 0)
+    data = PublicTransportData(origin_id, destination_id, api_key, trip_wait_time, return_info, transport_type, strict_transport_type,)
     sensor_list = []
-    for trip in range (0, trips_to_create, 1):
+
+    # Create as many trips requested, or as possible, whichever comes first
+    trip_number = 0 
+    for trip in data["journeys"]:
         if trips_to_create == 1:
             name_suffix = ""
         else:
             name_suffix = "_trip_" + str(trip + 1)
+
+        sensor_list.append (TransportNSWv2Sensor(trip, name + name_suffix, trip_number, return_info))
+
+        trip_number += 1
+        if trip_number = trips_to_create:
+            break
         
-        data = PublicTransportData(origin_id, destination_id, api_key, trip_wait_time, return_info, transport_type, strict_transport_type, trip)
-        sensor_list.append (TransportNSWv2Sensor(data, name + name_suffix, trip, return_info))
+#    for trip in range (0, trips_to_create, 1):
+#        if trips_to_create == 1:
+#            name_suffix = ""
+#        else:
+#            name_suffix = "_trip_" + str(trip + 1)
+#        
+#        data = PublicTransportData(origin_id, destination_id, api_key, trip_wait_time, return_info, transport_type, strict_transport_type, trip)
+#        sensor_list.append (TransportNSWv2Sensor(data, name + name_suffix, trip, return_info))
 
 #    sensor_list = [TransportNSWv2Sensor(data, name, 0, return_info)]
 #    if return_journeys == 'now_and_next':
@@ -153,7 +168,7 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
 
 
 class TransportNSWv2Sensor(Entity):
-    """Implementation of an Transport NSW sensor."""
+    """Implementation of a Transport NSW sensor."""
 
     def __init__(self, data, name, index, return_info):
         """Initialize the sensor."""
