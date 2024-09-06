@@ -10,7 +10,8 @@ One of the most often requested feature additions for the built-in version was t
 
 Another feature is the ability to filter by transport type, for example Train.  You can specify if the filter should be strict, in which case the first leg of the journey has to be of the specified type, or not strict in which case a journey will be returned if _any_ of the legs are of the specified type.
 
-Finally, you can specify how many trips should be returned and therefore how many sensors for that particular journey should be created.  Note that the TransportNSW API only ever returns 5 or 6 trips, so specifying a strict filter might result in less sensors being generated than requested, or existing sensors show 'n/a'.  Trips are sorted by the departure time from the specified origin and could of course be via different routes or transport types, depending on your origin, destination and filter settings.
+Finally, you can specify how many trips should be returned and therefore how many sensors for that particular journey should be created.  Note that the TransportNSW API only ever returns 5 or 6 trips, so specifying a strict filter might result in less sensors being generated than requested, or existing sensors showing 'n/a'.
+Trips are sorted by the departure time from the specified origin and could of course be via different routes or transport types, depending on your origin, destination and filter settings.
 
 The detail of the returned information can be selected, from brief through to verbose (see the examples below).  All detail iterations include the latitude and longitude (if the TransportNSW API returns it) so the current location of the vehicle can be shown on a map.
 
@@ -35,6 +36,8 @@ sensor:
 * destination_id: the Transport NSW platform or Stop ID of the destination.
 * trip_wait_time: the minimum time from now until the journey should start, in minutes.  The default is 0.
 * transport_type: a transport type, as defined by the TransportNSW API, that must be present in a journey for it to be returned by the API.  The default is no filter.
+* strict_transport_type: only accepts filtered journeys as valid if the first leg is of the correct type.
+* trips_to_create: how many trip sensors to create for each journey.
 * return_info: defines the level of detail that the sensor should include.  Valid options are basic, medium and verbose - the default is medium.
 * api_key: your Transport NSW API key
 
