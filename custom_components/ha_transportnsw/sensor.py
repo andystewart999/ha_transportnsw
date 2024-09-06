@@ -79,7 +79,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
         vol.Optional(CONF_TRANSPORT_TYPE, default=0): cv.positive_int,
         vol.Optional(CONF_STRICT_TRANSPORT_TYPE, default=False): cv.boolean,
         vol.Optional(CONF_RETURN_INFO, default='medium'): vol.In(['brief', 'medium', 'verbose']),
-        vol.Optional(CONF_TRIPS_TO_CREATE, default=1): cv.positive_int
+        vol.Optional(CONF_TRIPS_TO_CREATE, default=1): vol.Range(min=1, max=6)
     }
 )
 
@@ -133,23 +133,8 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
     return_info = config[CONF_RETURN_INFO]
     trips_to_create = config[CONF_TRIPS_TO_CREATE]
 
-#    data = PublicTransportData(origin_id, destination_id, api_key, trip_wait_time, return_info, transport_type, strict_transport_type,)
     sensor_list = []
 
-    # Create as many trips requested, or as possible, whichever comes first
-#    trip_number = 0 
-#    for trip in data["journeys"]:
-#        if trips_to_create == 1:
-#            name_suffix = ""
-#        else:
-#            name_suffix = "_trip_" + str(trip + 1)
-#
-#        sensor_list.append (TransportNSWv2Sensor(trip, name + name_suffix, trip_number, return_info))
-#
-#        trip_number += 1
-#        if trip_number == trips_to_create:
-#            break
-#        
     for trip in range (0, trips_to_create, 1):
         if trips_to_create == 1:
             name_suffix = ""
@@ -158,11 +143,6 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
         
         data = PublicTransportData(origin_id, destination_id, api_key, trip_wait_time, return_info, transport_type, strict_transport_type, trip)
         sensor_list.append (TransportNSWv2Sensor(data, name + name_suffix, trip, return_info))
-
-#    sensor_list = [TransportNSWv2Sensor(data, name, 0, return_info)]
-#    if return_journeys == 'now_and_next':
-#        data2 = PublicTransportData(origin_id, destination_id, api_key, trip_wait_time, return_info, transport_type, strict_transport_type, 1)
-#        sensor_list.append (TransportNSWv2Sensor(data2, name + ' (next)', 1, return_info))
 
     add_entities(sensor_list, True)
 
@@ -290,38 +270,52 @@ class PublicTransportData:
             _data = json.loads(self.tnsw.get_trip(
                 name_origin = self._origin_id, name_destination = self._destination_id, api_key = self._api_key, \
                 journey_wait_time = self._trip_wait_time, transport_type = self._transport_type, strict_transport_type = self._strict_transport_type, \
-                raw_output = False, journeys_to_return = 3
+                raw_output = False, journeys_to_return = 6
                 ))  
 
-            """ Fix this - return the right amount of trips based on the index? """
-#            _LOGGER.error ("self._index = " + self._index + ", len(_data['journeys'] = " + len(_data["journeys"]) )
-            if (len(_data["journeys"]) > self._index ):
-                self.info = {
-                    ATTR_DUE_IN: _data["journeys"][self._index]["due"],
-                    ATTR_ORIGIN_STOP_ID: _data["journeys"][self._index]["origin_stop_id"],
-                    ATTR_ORIGIN_NAME: _data["journeys"][self._index]["origin_name"],
-                    ATTR_ORIGIN_DETAIL: get_specific_platform(_data["journeys"][self._index]["origin_name"], _data["journeys"][self._index]["origin_transport_type"]),
-                    ATTR_DEPARTURE_TIME: convert_date(_data["journeys"][self._index]["departure_time"]),
-                    ATTR_DESTINATION_STOP_ID: _data["journeys"][self._index]["destination_stop_id"],
-                    ATTR_DESTINATION_NAME: _data["journeys"][self._index]["destination_name"],
-                    ATTR_DESTINATION_DETAIL: get_specific_platform(_data["journeys"][self._index]["destination_name"], _data["journeys"][self._index]["origin_transport_type"]),
-                    ATTR_ARRIVAL_TIME: convert_date(_data["journeys"][self._index]["arrival_time"]),
-                    ATTR_ORIGIN_TRANSPORT_TYPE: _data["journeys"][self._index]["origin_transport_type"],
-                    ATTR_ORIGIN_TRANSPORT_NAME: _data["journeys"][self._index]["origin_transport_name"],
-                    ATTR_ORIGIN_LINE_NAME: _data["journeys"][self._index]["origin_line_name"],
-                    ATTR_ORIGIN_LINE_NAME_SHORT: _data["journeys"][self._index]["origin_line_name_short"],
-                    ATTR_OCCUPANCY: _data["journeys"][self._index]["occupancy"].lower(),
-                    ATTR_CHANGES: _data["journeys"][self._index]["changes"],
-                    ATTR_REAL_TIME_TRIP_ID: _data["journeys"][self._index]["real_time_trip_id"],
-                    ATTR_LATITUDE: _data["journeys"][self._index]["latitude"],
-                    ATTR_LONGITUDE: _data["journeys"][self._index]["longitude"]
-                }
+            """ We can't be entirely sure of how many trips were returned, so just try and update this index and gracefully fail if it doesn't work """
+            self.info = {
+                ATTR_DUE_IN: _data["journeys"][self._index]["due"],
+                ATTR_ORIGIN_STOP_ID: _data["journeys"][self._index]["origin_stop_id"],
+                ATTR_ORIGIN_NAME: _data["journeys"][self._index]["origin_name"],
+                ATTR_ORIGIN_DETAIL: get_specific_platform(_data["journeys"][self._index]["origin_name"], _data["journeys"][self._index]["origin_transport_type"]),
+                ATTR_DEPARTURE_TIME: convert_date(_data["journeys"][self._index]["departure_time"]),
+                ATTR_DESTINATION_STOP_ID: _data["journeys"][self._index]["destination_stop_id"],
+                ATTR_DESTINATION_NAME: _data["journeys"][self._index]["destination_name"],
+                ATTR_DESTINATION_DETAIL: get_specific_platform(_data["journeys"][self._index]["destination_name"], _data["journeys"][self._index]["origin_transport_type"]),
+                ATTR_ARRIVAL_TIME: convert_date(_data["journeys"][self._index]["arrival_time"]),
+                ATTR_ORIGIN_TRANSPORT_TYPE: _data["journeys"][self._index]["origin_transport_type"],
+                ATTR_ORIGIN_TRANSPORT_NAME: _data["journeys"][self._index]["origin_transport_name"],
+                ATTR_ORIGIN_LINE_NAME: _data["journeys"][self._index]["origin_line_name"],
+                ATTR_ORIGIN_LINE_NAME_SHORT: _data["journeys"][self._index]["origin_line_name_short"],
+                ATTR_OCCUPANCY: _data["journeys"][self._index]["occupancy"].lower(),
+                ATTR_CHANGES: _data["journeys"][self._index]["changes"],
+                ATTR_REAL_TIME_TRIP_ID: _data["journeys"][self._index]["real_time_trip_id"],
+                ATTR_LATITUDE: _data["journeys"][self._index]["latitude"],
+                ATTR_LONGITUDE: _data["journeys"][self._index]["longitude"]
+            }
 
         except Exception as ex:
-            template = "An exception of type {0} occurred. Arguments:\n{1!r}"
-            message = template.format(type(ex).__name__, ex.args)
-#            _LOGGER.error(message + " --- " + _data)
-            _LOGGER.error(message)
+            self.info = {
+                ATTR_DUE_IN: "n/a",
+                ATTR_ORIGIN_STOP_ID: self._origin_id,
+                ATTR_ORIGIN_NAME: "n/a",
+                ATTR_ORIGIN_DETAIL: "n/a",
+                ATTR_DEPARTURE_TIME: "n/a",
+                ATTR_DESTINATION_STOP_ID: self._destination_id,
+                ATTR_DESTINATION_NAME: "n/a",
+                ATTR_DESTINATION_DETAIL: "n/a",
+                ATTR_ARRIVAL_TIME: "n/a",
+                ATTR_ORIGIN_TRANSPORT_TYPE: "n/a",
+                ATTR_ORIGIN_TRANSPORT_NAME: "n/a",
+                ATTR_ORIGIN_LINE_NAME: "n/a",
+                ATTR_ORIGIN_LINE_NAME_SHORT: "n/a",
+                ATTR_OCCUPANCY: "n/a",
+                ATTR_CHANGES: "n/a",
+                ATTR_REAL_TIME_TRIP_ID: "n/a",
+                ATTR_LATITUDE: "n/a",
+                ATTR_LONGITUDE: "n/a"
+            }
 
     def convert_date(self, utc_string):
         fmt = '%Y-%m-%dT%H:%M:%SZ'
