@@ -10,7 +10,7 @@ One of the most often requested feature additions for the built-in version was t
 
 Another feature is the ability to filter by transport type, for example Train.  You can specify if the filter should be strict, in which case the first leg of the journey has to be of the specified type, or not strict in which case a journey will be returned if _any_ of the legs are of the specified type.
 
-Finally, you can specify how many trips should be returned and therefore how many sensors for that particular journey should be created.  Note that the TransportNSW API only ever returns 5 or 6 trips, so specifying a strict filter might result in less sensors being generated than requested.  Trips are returned by the departure time from the specified origin and could of course be via different routes or transport types, depending on your origin, destination and filter settings.
+Finally, you can specify how many trips should be returned and therefore how many sensors for that particular journey should be created.  Note that the TransportNSW API only ever returns 5 or 6 trips, so specifying a strict filter might result in less sensors being generated than requested, or existing sensors show 'n/a'.  Trips are sorted by the departure time from the specified origin and could of course be via different routes or transport types, depending on your origin, destination and filter settings.
 
 The detail of the returned information can be selected, from brief through to verbose (see the examples below).  All detail iterations include the latitude and longitude (if the TransportNSW API returns it) so the current location of the vehicle can be shown on a map.
 
@@ -41,6 +41,7 @@ sensor:
 ### transport_type filters
 ```
 1: Train
+2: Metro
 4: Light rail
 5: Bus
 7: Coach
