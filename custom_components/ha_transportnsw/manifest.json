@@ -2,8 +2,8 @@
   "domain": "ha_transportnsw",
   "name": "Trips NSW",
   "documentation": "https://github.com/andystewart999/ha_transportnsw",
-  "requirements": ["PyTransportNSWv2==0.6.0"],
+  "requirements": ["PyTransportNSWv2==0.6.6"],
   "codeowners": [],
   "iot_class": "cloud_polling",
-  "version": "1.1.2"
+  "version": "1.1.9"
 }
