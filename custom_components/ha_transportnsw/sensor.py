@@ -28,6 +28,7 @@ CONF_TRANSPORT_TYPE = 'transport_type'
 CONF_STRICT_TRANSPORT_TYPE = 'strict_transport_type'
 CONF_RETURN_INFO = 'return_info'
 CONF_TRIPS_TO_CREATE = 'trips_to_create'
+CONF_ROUTE_FILTER = 'route_filter'
 
 ATTR_DUE_IN = 'due in'
 ATTR_ORIGIN_STOP_ID = 'origin_stop_id'
@@ -56,6 +57,7 @@ DEFAULT_NAME = "TBD" #Will be based on the origina and destination IDs by defaul
 
 ICONS = {
     "Train": "mdi:train",
+    "Metro": "mdi:train-variant",
     "Lightrail": "mdi:tram",
     "Light rail": "mdi:tram",
     "Bus": "mdi:bus",
@@ -79,7 +81,8 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
         vol.Optional(CONF_TRANSPORT_TYPE, default=0): cv.positive_int,
         vol.Optional(CONF_STRICT_TRANSPORT_TYPE, default=False): cv.boolean,
         vol.Optional(CONF_RETURN_INFO, default='medium'): vol.In(['brief', 'medium', 'verbose']),
-        vol.Optional(CONF_TRIPS_TO_CREATE, default=1): vol.Range(min=1, max=6)
+        vol.Optional(CONF_TRIPS_TO_CREATE, default=1): vol.Range(min=1, max=6),
+        vol.Optional(CONF_ROUTE_FILTER, default=''): cv.string
     }
 )
 
@@ -92,7 +95,7 @@ def convert_date(utc_string):
 
 
 def get_specific_platform(location_info, transport_type):
-    if transport_type == "Train":
+    if (transport_type == "Train" or transport_type == "Metro"):
         return location_info.split(", ")[1]
     elif transport_type == "Ferry":
         tmpLen = len(location_info.split(", "))
@@ -132,6 +135,7 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
     strict_transport_type = config[CONF_STRICT_TRANSPORT_TYPE]
     return_info = config[CONF_RETURN_INFO]
     trips_to_create = config[CONF_TRIPS_TO_CREATE]
+    route_filter = config[CONF_ROUTE_FILTER]
 
     sensor_list = []
 
@@ -141,7 +145,7 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
         else:
             name_suffix = "_trip_" + str(trip + 1)
         
-        data = PublicTransportData(origin_id, destination_id, api_key, trip_wait_time, return_info, transport_type, strict_transport_type, trip)
+        data = PublicTransportData(origin_id, destination_id, api_key, trip_wait_time, return_info, transport_type, strict_transport_type, route_filter, trip)
         sensor_list.append (TransportNSWv2Sensor(data, name + name_suffix, trip, return_info))
 
     add_entities(sensor_list, True)
@@ -230,7 +234,7 @@ class TransportNSWv2Sensor(Entity):
 class PublicTransportData:
     """The Class for handling the data retrieval."""
 
-    def __init__(self, origin_id, destination_id, api_key, trip_wait_time, return_info, transport_type, strict_transport_type, index):
+    def __init__(self, origin_id, destination_id, api_key, trip_wait_time, return_info, transport_type, strict_transport_type, route_filter, index):
         """Initialize the data object."""
         self._origin_id = origin_id
         self._destination_id = destination_id
@@ -239,6 +243,7 @@ class PublicTransportData:
         self._transport_type = transport_type
         self._return_info = return_info
         self._strict_transport_type = strict_transport_type
+        self._route_filter = route_filter
         self._index = index
         self._attr = {}
         self.info = {
@@ -270,7 +275,7 @@ class PublicTransportData:
             _data = json.loads(self.tnsw.get_trip(
                 name_origin = self._origin_id, name_destination = self._destination_id, api_key = self._api_key, \
                 journey_wait_time = self._trip_wait_time, transport_type = self._transport_type, strict_transport_type = self._strict_transport_type, \
-                raw_output = False, journeys_to_return = 6
+                raw_output = False, route_filter = self._route_filter, journeys_to_return = 6
                 ))  
 
             """ We can't be entirely sure of how many trips were returned, so just try and update this index and gracefully fail if it doesn't work """
