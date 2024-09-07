@@ -36,8 +36,9 @@ sensor:
 * destination_id: the Transport NSW platform or Stop ID of the destination.
 * trip_wait_time: the minimum time from now until the journey should start, in minutes.  The default is 0.
 * transport_type: a transport type, as defined by the TransportNSW API, that must be present in a journey for it to be returned by the API.  The default is no filter.
-* strict_transport_type: only accepts filtered journeys as valid if the first leg is of the correct type.
-* trips_to_create: how many trip sensors to create for each journey.
+* strict_transport_type: only accepts filtered journeys as valid if the first leg is of the correct type.  The default is False.
+* trips_to_create: how many trip sensors to create for each journey.  The default is 1.
+* route_filter: filter out journeys that don't have this text in either 'origin line name' or 'short origin line name'.  The default is no filter.
 * return_info: defines the level of detail that the sensor should include.  Valid options are basic, medium and verbose - the default is medium.
 * api_key: your Transport NSW API key
 
