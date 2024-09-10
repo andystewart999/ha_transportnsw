@@ -29,6 +29,9 @@ CONF_STRICT_TRANSPORT_TYPE = 'strict_transport_type'
 CONF_RETURN_INFO = 'return_info'
 CONF_TRIPS_TO_CREATE = 'trips_to_create'
 CONF_ROUTE_FILTER = 'route_filter'
+CONF_INCLUDE_REALTIME_LOCATION = 'include_realtime_location'
+CONF_INCLUDE_ALERTS= 'include_alerts'
+CONF_ALERT_TYPE = 'alert_type'
 
 ATTR_DUE_IN = 'due in'
 ATTR_ORIGIN_STOP_ID = 'origin_stop_id'
@@ -51,6 +54,8 @@ ATTR_OCCUPANCY = 'occupancy'
 ATTR_CHANGES = 'changes'
 
 ATTR_REAL_TIME_TRIP_ID = 'real_time_trip_id'
+
+ATTR_ALERTS = 'alerts'
 
 ATTRIBUTION = "Data provided by Transport NSW"
 DEFAULT_NAME = "TBD" #Will be based on the origina and destination IDs by default
@@ -82,7 +87,10 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
         vol.Optional(CONF_STRICT_TRANSPORT_TYPE, default=False): cv.boolean,
         vol.Optional(CONF_RETURN_INFO, default='medium'): vol.In(['brief', 'medium', 'verbose']),
         vol.Optional(CONF_TRIPS_TO_CREATE, default=1): vol.Range(min=1, max=6),
-        vol.Optional(CONF_ROUTE_FILTER, default=''): cv.string
+        vol.Optional(CONF_ROUTE_FILTER, default=''): cv.string,
+        vol.Optional(CONF_INCLUDE_REALTIME_LOCATION, default=True): cv.boolean,
+        vol.Optional(CONF_INCLUDE_ALERTS, default='none'): vol.In(['none', 'verylow', 'low', 'normal', 'high', 'veryhigh']),
+        vol.Optional(CONF_ALERT_TYPE, default='all'): cv.string
     }
 )
 
@@ -136,6 +144,9 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
     return_info = config[CONF_RETURN_INFO]
     trips_to_create = config[CONF_TRIPS_TO_CREATE]
     route_filter = config[CONF_ROUTE_FILTER]
+    include_realtime_location  = config[CONF_INCLUDE_REALTIME_LOCATION]
+    include_alerts  = config[CONF_INCLUDE_ALERTS]
+    alert_type  = config[CONF_ALERT_TYPE]
 
     sensor_list = []
 
@@ -145,7 +156,7 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
         else:
             name_suffix = "_trip_" + str(trip + 1)
         
-        data = PublicTransportData(origin_id, destination_id, api_key, trip_wait_time, return_info, transport_type, strict_transport_type, route_filter, trip)
+        data = PublicTransportData(origin_id, destination_id, api_key, trip_wait_time, return_info, transport_type, strict_transport_type, route_filter, include_realtime_location, include_alerts, alert_type, trip)
         sensor_list.append (TransportNSWv2Sensor(data, name + name_suffix, trip, return_info))
 
     add_entities(sensor_list, True)
@@ -163,6 +174,7 @@ class TransportNSWv2Sensor(Entity):
         self._index = index
         self._state = None
         self._icon = ICONS[None]
+        self._alerts = None
 
     @property
     def name(self):
@@ -186,9 +198,7 @@ class TransportNSWv2Sensor(Entity):
             attrTemp = {
                     ATTR_DUE_IN: self._times[ATTR_DUE_IN],
                     ATTR_ARRIVAL_TIME: self._times[ATTR_ARRIVAL_TIME],
-                    ATTR_CHANGES: self._times[ATTR_CHANGES],
-                    ATTR_LATITUDE: self._times[ATTR_LATITUDE],
-                    ATTR_LONGITUDE: self._times[ATTR_LONGITUDE]
+                    ATTR_CHANGES: self._times[ATTR_CHANGES]
                 }
 
             if self._return_info == 'medium' or self._return_info == 'verbose':
@@ -209,6 +219,17 @@ class TransportNSWv2Sensor(Entity):
                     ATTR_ORIGIN_TRANSPORT_NAME: self._times[ATTR_ORIGIN_TRANSPORT_NAME],
                     ATTR_REAL_TIME_TRIP_ID: self._times[ATTR_REAL_TIME_TRIP_ID]
                 })
+
+#            if self._include_realtime_location == True:
+            attrTemp.update({
+                ATTR_LATITUDE: self._times[ATTR_LATITUDE],
+                ATTR_LONGITUDE: self._times[ATTR_LONGITUDE]
+            })
+
+#            if self._include_alerts == True:
+            attrTemp.update({
+                ATTR_ALERTS: self._times[ATTR_ALERTS]
+            })
 
             return attrTemp;
         else:
@@ -234,7 +255,7 @@ class TransportNSWv2Sensor(Entity):
 class PublicTransportData:
     """The Class for handling the data retrieval."""
 
-    def __init__(self, origin_id, destination_id, api_key, trip_wait_time, return_info, transport_type, strict_transport_type, route_filter, index):
+    def __init__(self, origin_id, destination_id, api_key, trip_wait_time, return_info, transport_type, strict_transport_type, route_filter, include_realtime_location, include_alerts, alert_type, index):
         """Initialize the data object."""
         self._origin_id = origin_id
         self._destination_id = destination_id
@@ -244,6 +265,9 @@ class PublicTransportData:
         self._return_info = return_info
         self._strict_transport_type = strict_transport_type
         self._route_filter = route_filter
+        self._include_realtime_location = include_realtime_location
+        self._include_alerts = include_alerts
+        self._alert_type = alert_type
         self._index = index
         self._attr = {}
         self.info = {
@@ -264,7 +288,8 @@ class PublicTransportData:
             ATTR_CHANGES: "n/a",
             ATTR_REAL_TIME_TRIP_ID: "n/a",
             ATTR_LATITUDE: "n/a",
-            ATTR_LONGITUDE: "n/a"
+            ATTR_LONGITUDE: "n/a",
+            ATTR_ALERTS: "n/a"
         }
         self.tnsw = TransportNSWv2()
 
@@ -275,9 +300,11 @@ class PublicTransportData:
             _data = json.loads(self.tnsw.get_trip(
                 name_origin = self._origin_id, name_destination = self._destination_id, api_key = self._api_key, \
                 journey_wait_time = self._trip_wait_time, transport_type = self._transport_type, strict_transport_type = self._strict_transport_type, \
-                raw_output = False, route_filter = self._route_filter, journeys_to_return = 6
-                ))  
+                raw_output = False, route_filter = self._route_filter, journeys_to_return = 6, include_realtime_location = self._include_realtime_location, \
+                include_alerts = self._include_alerts, alert_type = self._alert_type)
+                )
 
+            """ Fix this - use len to determine how many trips were returned?  How is that better/more elegant than catching the error?  hmm """
             """ We can't be entirely sure of how many trips were returned, so just try and update this index and gracefully fail if it doesn't work """
             self.info = {
                 ATTR_DUE_IN: _data["journeys"][self._index]["due"],
@@ -297,7 +324,8 @@ class PublicTransportData:
                 ATTR_CHANGES: _data["journeys"][self._index]["changes"],
                 ATTR_REAL_TIME_TRIP_ID: _data["journeys"][self._index]["real_time_trip_id"],
                 ATTR_LATITUDE: _data["journeys"][self._index]["latitude"],
-                ATTR_LONGITUDE: _data["journeys"][self._index]["longitude"]
+                ATTR_LONGITUDE: _data["journeys"][self._index]["longitude"],
+                ATTR_ALERTS: _data["journeys"][self._index]["alerts"]
             }
 
         except Exception as ex:
@@ -319,7 +347,8 @@ class PublicTransportData:
                 ATTR_CHANGES: "n/a",
                 ATTR_REAL_TIME_TRIP_ID: "n/a",
                 ATTR_LATITUDE: "n/a",
-                ATTR_LONGITUDE: "n/a"
+                ATTR_LONGITUDE: "n/a",
+                ATTR_ALERTS: "n/a"
             }
 
     def convert_date(self, utc_string):
