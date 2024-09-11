@@ -39,6 +39,9 @@ sensor:
 * strict_transport_type: only accepts filtered journeys as valid if the first leg is of the correct type.  The default is False.
 * trips_to_create: how many trip sensors to create for each journey.  The default is 1.
 * route_filter: filter out journeys that don't have this text in either 'origin line name' or 'short origin line name'.  The default is no filter.
+* include_realtime_location: whether to include the realtime location of each journey's vehicle, assuming it is available.  The default is True.
+* include_alerts:  whether to include alerts related to that journey.  The default is False.
+* alert_type: if ```alert_type``` is ```True```, what kind of alerts to include.  See the list below for options, the default is ```all```.
 * return_info: defines the level of detail that the sensor should include.  Valid options are basic, medium and verbose - the default is medium.
 * api_key: your Transport NSW API key
 
@@ -57,6 +60,16 @@ sensor:
 ```
 Walking segments that top or tail the returned journey are ignored.  For example, if you specifiy an origin that requires you to walk to the nearest bus stop, that bus stop is considered to be the origin rather than wherever your defined `origin_id` is.
 
+### alert_type options
+```
+routeinfo:	Alerts relating to a specific route
+lineinfo:	Alerts relating to a specific journey
+stopinfo:	Alerts relating to specific stops
+stopblocking:	Alerts relating to stop closures
+bannerinfo:	Alerts potentially relating to network-wide impacts
+```
+If you want to include multiple alert types, use a | to separate them.  For example ```lineinfo|bannerinfo```
+
 ### return_info examples
 ```yaml
 return_info: basic
@@ -73,3 +86,4 @@ return_info: verbose
 ```
 <img width="500" alt="verbose" src="https://github.com/andystewart999/ha_transportnsw/assets/18434441/f2a95957-bbeb-41f8-aa9b-7efee8e62452">
 
+Note that alerts, if requested, are returned as a JSON array.  There's a lot of data in there, and many ways to process it, so for now that's left to you to determine what to do with that data.
