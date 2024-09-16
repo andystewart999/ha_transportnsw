@@ -29,7 +29,9 @@ sensor:
     trips_to_create: 3
     include_realtime_location: true
     include_alerts: normal
-    alert_type: all
+    alert_types:
+      - lineInfo
+      - routeInfo
     name: "Chatswood to Gordon"
 ```
 
@@ -44,7 +46,7 @@ sensor:
 * route_filter: filter out journeys that don't have the provided text in either 'origin line name' or 'short origin line name'.  The default is no filter.
 * include_realtime_location: whether to include the realtime location of each journey's vehicle, assuming it is available.  The default is True.
 * include_alerts:  whether to return alerts related to that journey.  The default is 'none' - if a severity is specified, then alerts of that severity or higher are returned.
-* alert_type: if ```alert_type``` is something other than 'none', what kind of alerts to include.  See the list below for options, the default is 'all'.
+* alert_types: if ```alert_type``` is something other than 'none', a list of what kind of alerts to include.  See the list below for options, if this list isn't included then the default is all alert types
 * return_info: defines the level of detail that the sensor should include.  Valid options are basic, medium and verbose - the default is medium.
 * api_key: your Transport NSW API key
 
@@ -80,7 +82,7 @@ stopinfo:	Alerts relating to specific stops
 stopblocking:	Alerts relating to stop closures
 bannerinfo:	Alerts potentially relating to network-wide impacts
 ```
-If you want to include multiple alert types, use a | to separate them .  For example ```lineinfo|bannerinfo```.  (This approach is for testing - I'll be changing this to a YAML list soon as it's more intuitive). Note that alerts, if requested, are currently returned as a JSON array from the raw API output.  There can be quite a lot of data in there, and many ways to process it, so for now that's left to you to determine what to do with that data.  If I can think of a better way to present alerts then this might change.
+Note that alerts, if requested, are currently returned as a JSON array from the raw API output.  There can be quite a lot of data in there, and many ways to process it, so for now that's left to you to determine what to do with that data.  If I can think of a better way to present alerts then this might change.
 
 
 ### return_info examples
