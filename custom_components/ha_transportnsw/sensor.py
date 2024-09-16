@@ -31,7 +31,12 @@ CONF_TRIPS_TO_CREATE = 'trips_to_create'
 CONF_ROUTE_FILTER = 'route_filter'
 CONF_INCLUDE_REALTIME_LOCATION = 'include_realtime_location'
 CONF_INCLUDE_ALERTS= 'include_alerts'
-CONF_ALERT_TYPE = 'alert_type'
+CONF_ALERT_TYPES = 'alert_types'
+
+CONF_RETURN_INFO_DEFAULT = 'medium'
+CONF_ALERT_TYPES_DEFAULT = ['lineInfo', 'stopInfo', 'routeInfo', 'stopBlocking', 'bannerInfo']
+CONF_ROUTE_FILTER_DEFAULT = ''
+CONF_INCLUDE_ALERTS_DEFAULT = 'none'
 
 ATTR_DUE_IN = 'due in'
 ATTR_ORIGIN_STOP_ID = 'origin_stop_id'
@@ -85,15 +90,14 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
         vol.Optional(CONF_TRIP_WAIT_TIME, default=0): cv.positive_int,
         vol.Optional(CONF_TRANSPORT_TYPE, default=0): cv.positive_int,
         vol.Optional(CONF_STRICT_TRANSPORT_TYPE, default=False): cv.boolean,
-        vol.Optional(CONF_RETURN_INFO, default='medium'): vol.In(['brief', 'medium', 'verbose']),
+        vol.Optional(CONF_RETURN_INFO, default=CONF_RETURN_INFO_DEFAULT): vol.In(['brief', 'medium', 'verbose']),
         vol.Optional(CONF_TRIPS_TO_CREATE, default=1): vol.Range(min=1, max=6),
-        vol.Optional(CONF_ROUTE_FILTER, default=''): cv.string,
+        vol.Optional(CONF_ROUTE_FILTER, default=CONF_ROUTE_FILTER_DEFAULT): cv.string,
         vol.Optional(CONF_INCLUDE_REALTIME_LOCATION, default=True): cv.boolean,
-        vol.Optional(CONF_INCLUDE_ALERTS, default='none'): vol.In(['none', 'verylow', 'low', 'normal', 'high', 'veryhigh']),
-        vol.Optional(CONF_ALERT_TYPE, default='all'): cv.string
+        vol.Optional(CONF_INCLUDE_ALERTS, default=CONF_INCLUDE_ALERTS_DEFAULT): vol.In(['none', 'verylow', 'low', 'normal', 'high', 'veryhigh']),
+        vol.Optional(CONF_ALERT_TYPES, default=CONF_ALERT_TYPES_DEFAULT): vol.All(cv.ensure_list, vol.All(['lineInfo', 'routeInfo', 'stopInfo', 'stopBlocking', 'bannerInfo']))
     }
 )
-
 
 def convert_date(utc_string):
     temp_date = datetime.strptime(utc_string, '%Y-%m-%dT%H:%M:%SZ')
@@ -146,9 +150,12 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
     route_filter = config[CONF_ROUTE_FILTER]
     include_realtime_location  = config[CONF_INCLUDE_REALTIME_LOCATION]
     include_alerts  = config[CONF_INCLUDE_ALERTS]
-    alert_type  = config[CONF_ALERT_TYPE]
+    alert_types = config[CONF_ALERT_TYPES] # It's a list
 
     sensor_list = []
+
+    # Convert the alert_types into a pipe-separated string
+    alert_type_full = '|'.join (alert_types)
 
     for trip in range (0, trips_to_create, 1):
         if trips_to_create == 1:
@@ -156,7 +163,7 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
         else:
             name_suffix = "_trip_" + str(trip + 1)
         
-        data = PublicTransportData(origin_id, destination_id, api_key, trip_wait_time, return_info, transport_type, strict_transport_type, route_filter, include_realtime_location, include_alerts, alert_type, trip)
+        data = PublicTransportData(origin_id, destination_id, api_key, trip_wait_time, return_info, transport_type, strict_transport_type, route_filter, include_realtime_location, include_alerts, alert_type_full, trip)
         sensor_list.append (TransportNSWv2Sensor(data, name + name_suffix, trip, return_info))
 
     add_entities(sensor_list, True)
@@ -255,7 +262,7 @@ class TransportNSWv2Sensor(Entity):
 class PublicTransportData:
     """The Class for handling the data retrieval."""
 
-    def __init__(self, origin_id, destination_id, api_key, trip_wait_time, return_info, transport_type, strict_transport_type, route_filter, include_realtime_location, include_alerts, alert_type, index):
+    def __init__(self, origin_id, destination_id, api_key, trip_wait_time, return_info, transport_type, strict_transport_type, route_filter, include_realtime_location, include_alerts, alert_type_full, index):
         """Initialize the data object."""
         self._origin_id = origin_id
         self._destination_id = destination_id
@@ -267,7 +274,7 @@ class PublicTransportData:
         self._route_filter = route_filter
         self._include_realtime_location = include_realtime_location
         self._include_alerts = include_alerts
-        self._alert_type = alert_type
+        self._alert_type_full = alert_type_full
         self._index = index
         self._attr = {}
         self.info = {
@@ -301,7 +308,7 @@ class PublicTransportData:
                 name_origin = self._origin_id, name_destination = self._destination_id, api_key = self._api_key, \
                 journey_wait_time = self._trip_wait_time, transport_type = self._transport_type, strict_transport_type = self._strict_transport_type, \
                 raw_output = False, route_filter = self._route_filter, journeys_to_return = 6, include_realtime_location = self._include_realtime_location, \
-                include_alerts = self._include_alerts, alert_type = self._alert_type)
+                include_alerts = self._include_alerts, alert_type = self._alert_type_full)
                 )
 
             """ Fix this - use len to determine how many trips were returned?  How is that better/more elegant than catching the error?  hmm """
