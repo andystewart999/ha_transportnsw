@@ -46,7 +46,7 @@ sensor:
 * route_filter: filter out journeys that don't have the provided text in either 'origin line name' or 'short origin line name'.  The default is no filter.
 * include_realtime_location: whether to include the realtime location of each journey's vehicle, assuming it is available.  The default is True.
 * include_alerts:  whether to return alerts related to that journey.  The default is 'none' - if a severity is specified, then alerts of that severity or higher are returned.
-* alert_types: if ```alert_type``` is something other than 'none', a list of what kind of alerts to include.  See the list below for options, if this list isn't included then the default is all alert types
+* alert_types: if ```include_alerts``` is something other than 'none', a list of what kind of alerts to include.  See the list below for options, if this list isn't included then the default is all alert types
 * return_info: defines the level of detail that the sensor should include.  Valid options are basic, medium and verbose - the default is medium.
 * api_key: your Transport NSW API key
 
