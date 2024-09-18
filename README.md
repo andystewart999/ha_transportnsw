@@ -1,4 +1,4 @@
-# ha_transportnsw
+# Transport NSW MkII
 A Home Assistant custom component to provide real-time Transport NSW journey information
 
 ##
