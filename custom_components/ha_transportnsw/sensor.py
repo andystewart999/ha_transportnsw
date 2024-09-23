@@ -294,8 +294,8 @@ class PublicTransportData:
             ATTR_OCCUPANCY: "n/a",
             ATTR_CHANGES: "n/a",
             ATTR_REAL_TIME_TRIP_ID: "n/a",
-            ATTR_LATITUDE: "n/a",
-            ATTR_LONGITUDE: "n/a",
+            ATTR_LATITUDE: 0,
+            ATTR_LONGITUDE: 0,
             ATTR_ALERTS: "n/a"
         }
         self.tnsw = TransportNSWv2()
@@ -313,6 +313,12 @@ class PublicTransportData:
 
             """ Fix this - use len to determine how many trips were returned?  How is that better/more elegant than catching the error?  hmm """
             """ We can't be entirely sure of how many trips were returned, so just try and update this index and gracefully fail if it doesn't work """
+            
+            """ Replace lat/lon 'n/a' with 0 if required """
+            for x in ['latitude', 'longitude']:
+                if (_data["journeys"][self._index][x] == 'n/a'):
+                    _data["journeys"][self._index][x] = 0
+            
             self.info = {
                 ATTR_DUE_IN: _data["journeys"][self._index]["due"],
                 ATTR_ORIGIN_STOP_ID: _data["journeys"][self._index]["origin_stop_id"],
@@ -353,8 +359,8 @@ class PublicTransportData:
                 ATTR_OCCUPANCY: "n/a",
                 ATTR_CHANGES: "n/a",
                 ATTR_REAL_TIME_TRIP_ID: "n/a",
-                ATTR_LATITUDE: "n/a",
-                ATTR_LONGITUDE: "n/a",
+                ATTR_LATITUDE: 0,
+                ATTR_LONGITUDE: 0,
                 ATTR_ALERTS: "n/a"
             }
 
