@@ -229,13 +229,13 @@ class TransportNSWv2Sensor(Entity):
                     ATTR_REAL_TIME_TRIP_ID: self._times[ATTR_REAL_TIME_TRIP_ID]
                 })
 
-            if self._include_realtime_location == True:
+            if self.data._include_realtime_location == True:
                 attrTemp.update({
                     ATTR_LATITUDE: self._times[ATTR_LATITUDE],
                     ATTR_LONGITUDE: self._times[ATTR_LONGITUDE]
                 })
 
-            if self._include_alerts == True:
+            if self.data._include_alerts == True:
                 attrTemp.update({
                     ATTR_ALERTS: self._times[ATTR_ALERTS]
                 })
