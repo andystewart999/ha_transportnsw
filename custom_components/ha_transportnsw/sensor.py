@@ -38,7 +38,8 @@ CONF_ALERT_TYPES_DEFAULT = ['lineInfo', 'stopInfo', 'routeInfo', 'stopBlocking',
 CONF_ROUTE_FILTER_DEFAULT = ''
 CONF_INCLUDE_ALERTS_DEFAULT = 'none'
 
-ATTR_DUE_IN = 'due in'
+ATTR_DUE_IN = 'due'
+ATTR_DELAY = 'delay'
 ATTR_ORIGIN_STOP_ID = 'origin_stop_id'
 ATTR_ORIGIN_NAME = 'origin_name'
 ATTR_ORIGIN_DETAIL = 'origin_detail'
@@ -204,6 +205,7 @@ class TransportNSWv2Sensor(Entity):
         if self._times is not None:
             attrTemp = {
                     ATTR_DUE_IN: self._times[ATTR_DUE_IN],
+                    ATTR_DELAY: self._times[ATTR_DELAY],
                     ATTR_ARRIVAL_TIME: self._times[ATTR_ARRIVAL_TIME],
                     ATTR_CHANGES: self._times[ATTR_CHANGES]
                 }
@@ -227,16 +229,16 @@ class TransportNSWv2Sensor(Entity):
                     ATTR_REAL_TIME_TRIP_ID: self._times[ATTR_REAL_TIME_TRIP_ID]
                 })
 
-#            if self._include_realtime_location == True:
-            attrTemp.update({
-                ATTR_LATITUDE: self._times[ATTR_LATITUDE],
-                ATTR_LONGITUDE: self._times[ATTR_LONGITUDE]
-            })
+            if self._include_realtime_location == True:
+                attrTemp.update({
+                    ATTR_LATITUDE: self._times[ATTR_LATITUDE],
+                    ATTR_LONGITUDE: self._times[ATTR_LONGITUDE]
+                })
 
-#            if self._include_alerts == True:
-            attrTemp.update({
-                ATTR_ALERTS: self._times[ATTR_ALERTS]
-            })
+            if self._include_alerts == True:
+                attrTemp.update({
+                    ATTR_ALERTS: self._times[ATTR_ALERTS]
+                })
 
             return attrTemp;
         else:
@@ -321,6 +323,7 @@ class PublicTransportData:
             
             self.info = {
                 ATTR_DUE_IN: _data["journeys"][self._index]["due"],
+                ATTR_DELAY: _data["journeys"][self._index]["delay"],
                 ATTR_ORIGIN_STOP_ID: _data["journeys"][self._index]["origin_stop_id"],
                 ATTR_ORIGIN_NAME: _data["journeys"][self._index]["origin_name"],
                 ATTR_ORIGIN_DETAIL: get_specific_platform(_data["journeys"][self._index]["origin_name"], _data["journeys"][self._index]["origin_transport_type"]),
@@ -344,6 +347,7 @@ class PublicTransportData:
         except Exception as ex:
             self.info = {
                 ATTR_DUE_IN: "n/a",
+                ATTR_DELAY: "n/a",
                 ATTR_ORIGIN_STOP_ID: self._origin_id,
                 ATTR_ORIGIN_NAME: "n/a",
                 ATTR_ORIGIN_DETAIL: "n/a",
