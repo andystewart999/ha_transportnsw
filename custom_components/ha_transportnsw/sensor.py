@@ -80,7 +80,7 @@ ICONS = {
     None: "mdi:clock"
 }
 
-SCAN_INTERVAL = timedelta(seconds=60)
+SCAN_INTERVAL = timedelta(seconds=120)
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
     {
@@ -345,6 +345,7 @@ class PublicTransportData:
             }
 
         except Exception as ex:
+            _LOGGER.error("Error " + str(ex) + " retrieving journey from " + str(self._origin_id) + " to " + str(self._destination_id))
             self.info = {
                 ATTR_DUE_IN: "n/a",
                 ATTR_DELAY: "n/a",
