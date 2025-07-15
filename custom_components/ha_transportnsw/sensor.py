@@ -164,7 +164,7 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
         else:
             name_suffix = "_trip_" + str(trip + 1)
         
-        data = PublicTransportData(origin_id, destination_id, api_key, trip_wait_time, return_info, transport_type, strict_transport_type, route_filter, include_realtime_location, include_alerts, alert_type_full, trip)
+        data = PublicTransportData(name + name_suffix, origin_id, destination_id, api_key, trip_wait_time, return_info, transport_type, strict_transport_type, route_filter, include_realtime_location, include_alerts, alert_type_full, trip)
         sensor_list.append (TransportNSWv2Sensor(data, name + name_suffix, trip, return_info))
 
     add_entities(sensor_list, True)
@@ -202,46 +202,49 @@ class TransportNSWv2Sensor(Entity):
     @property
     def extra_state_attributes(self):
         """Return the state attributes."""
-        if self._times is not None:
-            attrTemp = {
-                    ATTR_DUE_IN: self._times[ATTR_DUE_IN],
-                    ATTR_DELAY: self._times[ATTR_DELAY],
-                    ATTR_ARRIVAL_TIME: self._times[ATTR_ARRIVAL_TIME],
-                    ATTR_CHANGES: self._times[ATTR_CHANGES]
-                }
-
-            if self._return_info == 'medium' or self._return_info == 'verbose':
-                attrTemp.update({
-                    ATTR_ORIGIN_NAME: self._times[ATTR_ORIGIN_NAME],
-                    ATTR_ORIGIN_DETAIL: self._times[ATTR_ORIGIN_DETAIL],
-                    ATTR_DEPARTURE_TIME: self._times[ATTR_DEPARTURE_TIME],
-                    ATTR_DESTINATION_NAME: self._times[ATTR_DESTINATION_NAME],
-                    ATTR_DESTINATION_DETAIL: self._times[ATTR_DESTINATION_DETAIL],
-                    ATTR_OCCUPANCY: self._times[ATTR_OCCUPANCY]
-                })
-
-            if self._return_info == 'verbose':
-                attrTemp.update({
-                    ATTR_ORIGIN_LINE_NAME: self._times[ATTR_ORIGIN_LINE_NAME],
-                    ATTR_ORIGIN_LINE_NAME_SHORT: self._times[ATTR_ORIGIN_LINE_NAME_SHORT],
-                    ATTR_ORIGIN_TRANSPORT_TYPE: self._times[ATTR_ORIGIN_TRANSPORT_TYPE],
-                    ATTR_ORIGIN_TRANSPORT_NAME: self._times[ATTR_ORIGIN_TRANSPORT_NAME],
-                    ATTR_REAL_TIME_TRIP_ID: self._times[ATTR_REAL_TIME_TRIP_ID]
-                })
-
-            if self.data._include_realtime_location == True:
-                attrTemp.update({
-                    ATTR_LATITUDE: self._times[ATTR_LATITUDE],
-                    ATTR_LONGITUDE: self._times[ATTR_LONGITUDE]
-                })
-
-            if self.data._include_alerts == True:
-                attrTemp.update({
-                    ATTR_ALERTS: self._times[ATTR_ALERTS]
-                })
-
-            return attrTemp;
-        else:
+        try:
+            if self._times is not None:
+                attrTemp = {
+                        ATTR_DUE_IN: self._times[ATTR_DUE_IN],
+                        ATTR_DELAY: self._times[ATTR_DELAY],
+                        ATTR_ARRIVAL_TIME: self._times[ATTR_ARRIVAL_TIME],
+                        ATTR_CHANGES: self._times[ATTR_CHANGES]
+                    }
+    
+                if self._return_info == 'medium' or self._return_info == 'verbose':
+                    attrTemp.update({
+                        ATTR_ORIGIN_NAME: self._times[ATTR_ORIGIN_NAME],
+                        ATTR_ORIGIN_DETAIL: self._times[ATTR_ORIGIN_DETAIL],
+                        ATTR_DEPARTURE_TIME: self._times[ATTR_DEPARTURE_TIME],
+                        ATTR_DESTINATION_NAME: self._times[ATTR_DESTINATION_NAME],
+                        ATTR_DESTINATION_DETAIL: self._times[ATTR_DESTINATION_DETAIL],
+                        ATTR_OCCUPANCY: self._times[ATTR_OCCUPANCY]
+                    })
+    
+                if self._return_info == 'verbose':
+                    attrTemp.update({
+                        ATTR_ORIGIN_LINE_NAME: self._times[ATTR_ORIGIN_LINE_NAME],
+                        ATTR_ORIGIN_LINE_NAME_SHORT: self._times[ATTR_ORIGIN_LINE_NAME_SHORT],
+                        ATTR_ORIGIN_TRANSPORT_TYPE: self._times[ATTR_ORIGIN_TRANSPORT_TYPE],
+                        ATTR_ORIGIN_TRANSPORT_NAME: self._times[ATTR_ORIGIN_TRANSPORT_NAME],
+                        ATTR_REAL_TIME_TRIP_ID: self._times[ATTR_REAL_TIME_TRIP_ID]
+                    })
+    
+                if self.data._include_realtime_location == True:
+                    attrTemp.update({
+                        ATTR_LATITUDE: self._times[ATTR_LATITUDE],
+                        ATTR_LONGITUDE: self._times[ATTR_LONGITUDE]
+                    })
+    
+                if self.data._include_alerts == True:
+                    attrTemp.update({
+                        ATTR_ALERTS: self._times[ATTR_ALERTS]
+                    })
+    
+                return attrTemp;
+            else:
+                return {};
+        except:
             return {};
 
     @property
@@ -264,8 +267,9 @@ class TransportNSWv2Sensor(Entity):
 class PublicTransportData:
     """The Class for handling the data retrieval."""
 
-    def __init__(self, origin_id, destination_id, api_key, trip_wait_time, return_info, transport_type, strict_transport_type, route_filter, include_realtime_location, include_alerts, alert_type_full, index):
+    def __init__(self, name, origin_id, destination_id, api_key, trip_wait_time, return_info, transport_type, strict_transport_type, route_filter, include_realtime_location, include_alerts, alert_type_full, index):
         """Initialize the data object."""
+        self._name = name
         self._origin_id = origin_id
         self._destination_id = destination_id
         self._api_key = api_key
@@ -313,39 +317,43 @@ class PublicTransportData:
                 include_alerts = self._include_alerts, alert_type = self._alert_type_full)
                 )
 
-            """ Fix this - use len to determine how many trips were returned?  How is that better/more elegant than catching the error?  hmm """
-            """ We can't be entirely sure of how many trips were returned, so just try and update this index and gracefully fail if it doesn't work """
-            
-            """ Replace lat/lon 'n/a' with 0 if required """
-            for x in ['latitude', 'longitude']:
-                if (_data["journeys"][self._index][x] == 'n/a'):
-                    _data["journeys"][self._index][x] = 0
-            
-            self.info = {
-                ATTR_DUE_IN: _data["journeys"][self._index]["due"],
-                ATTR_DELAY: _data["journeys"][self._index]["delay"],
-                ATTR_ORIGIN_STOP_ID: _data["journeys"][self._index]["origin_stop_id"],
-                ATTR_ORIGIN_NAME: _data["journeys"][self._index]["origin_name"],
-                ATTR_ORIGIN_DETAIL: get_specific_platform(_data["journeys"][self._index]["origin_name"], _data["journeys"][self._index]["origin_transport_type"]),
-                ATTR_DEPARTURE_TIME: convert_date(_data["journeys"][self._index]["departure_time"]),
-                ATTR_DESTINATION_STOP_ID: _data["journeys"][self._index]["destination_stop_id"],
-                ATTR_DESTINATION_NAME: _data["journeys"][self._index]["destination_name"],
-                ATTR_DESTINATION_DETAIL: get_specific_platform(_data["journeys"][self._index]["destination_name"], _data["journeys"][self._index]["origin_transport_type"]),
-                ATTR_ARRIVAL_TIME: convert_date(_data["journeys"][self._index]["arrival_time"]),
-                ATTR_ORIGIN_TRANSPORT_TYPE: _data["journeys"][self._index]["origin_transport_type"],
-                ATTR_ORIGIN_TRANSPORT_NAME: _data["journeys"][self._index]["origin_transport_name"],
-                ATTR_ORIGIN_LINE_NAME: _data["journeys"][self._index]["origin_line_name"],
-                ATTR_ORIGIN_LINE_NAME_SHORT: _data["journeys"][self._index]["origin_line_name_short"],
-                ATTR_OCCUPANCY: _data["journeys"][self._index]["occupancy"].lower(),
-                ATTR_CHANGES: _data["journeys"][self._index]["changes"],
-                ATTR_REAL_TIME_TRIP_ID: _data["journeys"][self._index]["real_time_trip_id"],
-                ATTR_LATITUDE: _data["journeys"][self._index]["latitude"],
-                ATTR_LONGITUDE: _data["journeys"][self._index]["longitude"],
-                ATTR_ALERTS: _data["journeys"][self._index]["alerts"]
-            }
+            # Some error-checking
+            if (_data is None) or ("journeys" not in _data) or (len(_data['journeys']) == 0):
+                # Nothing came back - possibly an API error, temporary fault etc
+                # Don't update, but don't raise an error either
+                pass
+            else:
+                #Some housekeeping - replace lat/lon 'n/a' with 0 if required, fixes an issue with HA's maps """
+                for x in ['latitude', 'longitude']:
+                    if (_data["journeys"][self._index][x] == 'n/a'):
+                        _data["journeys"][self._index][x] = 0
+
+                # Update with the journey-specific data
+                self.info = {
+                    ATTR_DUE_IN: _data["journeys"][self._index]["due"],
+                    ATTR_DELAY: _data["journeys"][self._index]["delay"],
+                    ATTR_ORIGIN_STOP_ID: _data["journeys"][self._index]["origin_stop_id"],
+                    ATTR_ORIGIN_NAME: _data["journeys"][self._index]["origin_name"],
+                    ATTR_ORIGIN_DETAIL: get_specific_platform(_data["journeys"][self._index]["origin_name"], _data["journeys"][self._index]["origin_transport_type"]),
+                    ATTR_DEPARTURE_TIME: convert_date(_data["journeys"][self._index]["departure_time"]),
+                    ATTR_DESTINATION_STOP_ID: _data["journeys"][self._index]["destination_stop_id"],
+                    ATTR_DESTINATION_NAME: _data["journeys"][self._index]["destination_name"],
+                    ATTR_DESTINATION_DETAIL: get_specific_platform(_data["journeys"][self._index]["destination_name"], _data["journeys"][self._index]["origin_transport_type"]),
+                    ATTR_ARRIVAL_TIME: convert_date(_data["journeys"][self._index]["arrival_time"]),
+                    ATTR_ORIGIN_TRANSPORT_TYPE: _data["journeys"][self._index]["origin_transport_type"],
+                    ATTR_ORIGIN_TRANSPORT_NAME: _data["journeys"][self._index]["origin_transport_name"],
+                    ATTR_ORIGIN_LINE_NAME: _data["journeys"][self._index]["origin_line_name"],
+                    ATTR_ORIGIN_LINE_NAME_SHORT: _data["journeys"][self._index]["origin_line_name_short"],
+                    ATTR_OCCUPANCY: _data["journeys"][self._index]["occupancy"].lower(),
+                    ATTR_CHANGES: _data["journeys"][self._index]["changes"],
+                    ATTR_REAL_TIME_TRIP_ID: _data["journeys"][self._index]["real_time_trip_id"],
+                    ATTR_LATITUDE: _data["journeys"][self._index]["latitude"],
+                    ATTR_LONGITUDE: _data["journeys"][self._index]["longitude"],
+                    ATTR_ALERTS: _data["journeys"][self._index]["alerts"]
+                }
 
         except Exception as ex:
-            _LOGGER.error("Error " + str(ex) + " retrieving journey from " + str(self._origin_id) + " to " + str(self._destination_id))
+            _LOGGER.error("Error " + str(ex) + " retrieving journey from " + self._name)
             self.info = {
                 ATTR_DUE_IN: "n/a",
                 ATTR_DELAY: "n/a",
