@@ -36,9 +36,13 @@ sensor:
 ```
 
 ### All settings explained
-* name - the name of the sensor.  The default is based on the origin and destinatio IDs.
+**Mandatory**
+* name: the name of the sensor.  The default is based on the origin and destinatio IDs.
+* api_key: your Transport NSW API key
 * origin_id: the Transport NSW platform or Stop ID of the origin.
 * destination_id: the Transport NSW platform or Stop ID of the destination.
+
+**Optional**
 * trip_wait_time: the minimum time from now until the journey should start, in minutes.  The default is 0.
 * transport_type: a transport type, as defined by the TransportNSW API, that must be present in a journey for it to be returned by the API.  The default is no filter.
 * strict_transport_type: only accepts filtered journeys as valid if the first leg is of the correct type.  The default is False.
@@ -46,9 +50,8 @@ sensor:
 * route_filter: filter out journeys that don't have the provided text in either 'origin line name' or 'short origin line name'.  The default is no filter.
 * include_realtime_location: whether to include the realtime location of each journey's vehicle, assuming it is available.  The default is True.
 * include_alerts:  whether to return alerts related to that journey.  The default is 'none' - if a severity is specified, then alerts of that severity or higher are returned.
-* alert_types: if ```include_alerts``` is something other than 'none', a list of what kind of alerts to include.  See the list below for options, if this list isn't included then the default is all alert types
+* alert_types: if ```include_alerts``` is something other than 'none', a list of what kind of alerts to include.  See the list below for options, if this setting isn't included then the default is all alert types
 * return_info: defines the level of detail that the sensor should include.  Valid options are basic, medium and verbose - the default is medium.
-* api_key: your Transport NSW API key
 
 ### transport_type filters
 ```
@@ -67,6 +70,7 @@ Walking segments that top or tail the returned journey are ignored.  For example
 
 ### alert severities
 ```
+all (the same as verylow)
 verylow
 low
 normal
