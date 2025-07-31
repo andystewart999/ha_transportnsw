@@ -19,6 +19,8 @@ from homeassistant.const import (
 import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.entity import Entity
 
+import sys
+
 _LOGGER = logging.getLogger(__name__)
 
 CONF_ORIGIN_ID = 'origin_id'
@@ -95,10 +97,11 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
         vol.Optional(CONF_TRIPS_TO_CREATE, default=1): vol.Range(min=1, max=6),
         vol.Optional(CONF_ROUTE_FILTER, default=CONF_ROUTE_FILTER_DEFAULT): cv.string,
         vol.Optional(CONF_INCLUDE_REALTIME_LOCATION, default=True): cv.boolean,
-        vol.Optional(CONF_INCLUDE_ALERTS, default=CONF_INCLUDE_ALERTS_DEFAULT): vol.In(['none', 'verylow', 'low', 'normal', 'high', 'veryhigh']),
+        vol.Optional(CONF_INCLUDE_ALERTS, default=CONF_INCLUDE_ALERTS_DEFAULT): vol.In(['none', 'all', 'verylow', 'low', 'normal', 'high', 'veryhigh']),
         vol.Optional(CONF_ALERT_TYPES, default=CONF_ALERT_TYPES_DEFAULT): vol.All(cv.ensure_list, vol.All(['lineInfo', 'routeInfo', 'stopInfo', 'stopBlocking', 'bannerInfo']))
     }
 )
+
 
 def convert_date(utc_string):
     temp_date = datetime.strptime(utc_string, '%Y-%m-%dT%H:%M:%SZ')
@@ -115,7 +118,6 @@ def get_specific_platform(location_info, transport_type):
         if tmpLen == 4:
             return location_info.split(", ")[1] + ", " + location_info.split(", ")[2]
         elif tmpLen == 3:
-            #return location_info.split(", ")[0] + ", " + location_info.split(", ")[1]
             return location_info.split(", ")[1]
         elif tmpLen == 2:
             return location_info.split(", ")[1]
@@ -155,7 +157,8 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
 
     sensor_list = []
 
-    # Convert the alert_types into a pipe-separated string
+    # Convert the alert_types into a pipe-separated string as that's what the function is expecting
+    # TODO - change the function to expect either type and deal
     alert_type_full = '|'.join (alert_types)
 
     for trip in range (0, trips_to_create, 1):
@@ -230,20 +233,27 @@ class TransportNSWv2Sensor(Entity):
                         ATTR_REAL_TIME_TRIP_ID: self._times[ATTR_REAL_TIME_TRIP_ID]
                     })
     
-                if self.data._include_realtime_location == True:
+                if self.data._include_realtime_location:
                     attrTemp.update({
                         ATTR_LATITUDE: self._times[ATTR_LATITUDE],
                         ATTR_LONGITUDE: self._times[ATTR_LONGITUDE]
                     })
     
-                if self.data._include_alerts == True:
-                    attrTemp.update({
-                        ATTR_ALERTS: self._times[ATTR_ALERTS]
-                    })
+                if self.data._include_alerts != 'none':
+                    if ATTR_ALERTS in self._times:
+                        attrTemp.update({
+                            ATTR_ALERTS: self._times[ATTR_ALERTS]
+                        })
+                    else:
+                        attrTemp.update({
+                            ATTR_ALERTS: "{}"
+                        })
     
                 return attrTemp;
+
             else:
                 return {};
+
         except:
             return {};
 
@@ -310,19 +320,30 @@ class PublicTransportData:
     def update(self):
         try:
             """Get the next leave times."""
-            _data = json.loads(self.tnsw.get_trip(
+            _data = self.tnsw.get_trip(
                 name_origin = self._origin_id, name_destination = self._destination_id, api_key = self._api_key, \
                 journey_wait_time = self._trip_wait_time, transport_type = self._transport_type, strict_transport_type = self._strict_transport_type, \
                 raw_output = False, route_filter = self._route_filter, journeys_to_return = 6, include_realtime_location = self._include_realtime_location, \
                 include_alerts = self._include_alerts, alert_type = self._alert_type_full)
-                )
 
-            # Some error-checking
-            if (_data is None) or ("journeys" not in _data) or (len(_data['journeys']) == 0):
-                # Nothing came back - possibly an API error, temporary fault etc
-                # Don't update, but don't raise an error either
-                pass
+            # Some error-checking, getting more specific as we go
+            if _data is None:
+                _LOGGER.debug("No data returned from get_trip()")
+                return
             else:
+                _data = json.loads(_data)
+
+                if "journeys" not in _data or len(_data["journeys"]) == 0:
+                    # Nothing came back - possibly an API error, temporary fault etc
+                    # Don't update, but don't raise an error either
+                    _LOGGER.debug("No journeys returned from get_trip()")
+                    return
+
+                if len(_data["journeys"]) < self._index:
+                    # We got some journeys back, but not enough to meet the number requested
+                    _LOGGER.warn(f"get_trip() didn't return enough journeys to update sensors for sensor index {self._index}")
+                    return
+
                 #Some housekeeping - replace lat/lon 'n/a' with 0 if required, fixes an issue with HA's maps """
                 for x in ['latitude', 'longitude']:
                     if (_data["journeys"][self._index][x] == 'n/a'):
@@ -353,7 +374,9 @@ class PublicTransportData:
                 }
 
         except Exception as ex:
-            _LOGGER.error("Error " + str(ex) + " retrieving journey from " + self._name)
+            #debugging
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            _LOGGER.error("Error " + str(ex) + " on line " + str(exc_tb.tb_lineno) + " retrieving journey from " + self._name)
             self.info = {
                 ATTR_DUE_IN: "n/a",
                 ATTR_DELAY: "n/a",
@@ -382,4 +405,4 @@ class PublicTransportData:
         temp_date = datetime.strptime(departure_time, fmt)
         now_timestamp = time.time()
         offset = datetime.fromtimestamp(now_timestamp) - datetime.utcfromtimestamp(now_timestamp)
-        return  temp_date + offset
+        return temp_date + offset
