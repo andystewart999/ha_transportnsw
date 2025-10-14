@@ -1,6 +1,6 @@
 # Transport NSW (AU) – Raw Trip Sensor (Custom Fork)
 
-> _Vibe-coded by **ChatGPT**; **tested & reviewed by Fabricio Monteiro Pontes**._
+> _Vibe-coded by **ChatGPT**; **tested & reviewed by Fabricio**._
 
 This custom sensor integrates with Transport for NSW Trip Planner and exposes the **next departures** between an origin and destination.  
 It uses a **single raw Trip Planner call** and parses the JSON locally to provide robust attributes suitable for Home Assistant UIs (PIDS-style boards, dashboards, etc.).
