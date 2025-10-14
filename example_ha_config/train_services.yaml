@@ -1,0 +1,69 @@
+# === Sensors: Transport NSW MkII (ha_transportnsw) ===
+sensor:
+  - platform: ha_transportnsw
+    name: Train Services
+    api_key: !secret tnsw_api_key
+    origin_id: 221710 # Kogarah
+    destination_id: 202210 # Bondi Jn
+    transport_type: 1 # 1 = Train
+    strict_transport_type: true # first leg must be a Train
+    trip_wait_time: 0 # "no waiting time"
+    trips_to_create: 5 # next 5 departures
+    return_info: verbose
+    include_realtime_location: false
+    include_alerts: none
+
+# === Automations: fast refresh during peak ===
+automation:
+  - id: train_services_peak_fast_refresh
+    alias: Train Services – peak fast refresh (5s)
+    trigger:
+      - platform: time_pattern
+        seconds: "/10"
+    condition:
+      - condition: time
+        after: "05:30:00"
+        before: "09:00:00"
+    action:
+      - service: homeassistant.update_entity
+        target:
+          entity_id:
+            - sensor.train_services
+            - sensor.train_services_trip_2
+            - sensor.train_services_trip_3
+            - sensor.train_services_trip_4
+            - sensor.train_services_trip_5
+        continue_on_error: true
+    mode: restart
+
+# configuration.yaml (or a package)
+template:
+  - trigger:
+      - platform: time_pattern
+        seconds: "/15" # refresh every 15s
+    sensor:
+      - name: "Tronbyt Trains JSON"
+        unique_id: tronbyt_trains_json
+        state: "{{ now() }}" # any changing value
+        attributes:
+          payload: >-
+            {% set trips = [] %}
+            {% for i in range(1,5) %}
+              {% set mins = states('sensor.tnsw_due_in_trip_' ~ i) | int(0) %}
+              {% set dest = state_attr('sensor.tnsw_destination_trip_' ~ i, 'friendly_name') 
+                              or states('sensor.tnsw_destination_trip_' ~ i) %}
+              {% set via  = states('sensor.tnsw_via_trip_' ~ i) %}
+              {% set plat = states('sensor.tnsw_platform_trip_' ~ i) %}
+              {% set stat = states('sensor.tnsw_status_trip_' ~ i) %}
+              {% if mins is number and mins >= 0 %}
+                {% set trips = trips + [ {
+                  "line":    (state_attr('sensor.tnsw_line_trip_' ~ i, 'short') or "T"),
+                  "destination": dest,
+                  "via":     via,
+                  "platform": plat,
+                  "status":  stat,
+                  "due_mins": mins
+                } ] %}
+              {% endif %}
+            {% endfor %}
+            {{ trips | tojson }}
