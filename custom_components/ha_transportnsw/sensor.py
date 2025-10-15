@@ -1,408 +1,470 @@
-"""Support for Transport NSW (AU) to query next leave event."""
-from datetime import datetime, timezone, timedelta
-import time
+"""Interfaces with the Integration 101 Template api sensors."""
+
 import logging
-import json
+from datetime import datetime, timezone, timedelta
+import pytz
+import tzlocal
+import time
 
-from TransportNSWv2 import TransportNSWv2
-import voluptuous as vol
+from homeassistant.components.sensor import (
+    SensorDeviceClass,
+    SensorEntity,
+    SensorEntityDescription,
+    SensorStateClass,
+)
 
-from homeassistant.components.sensor import PLATFORM_SCHEMA
 from homeassistant.const import (
-    ATTR_ATTRIBUTION,
     CONF_API_KEY,
     CONF_NAME,
     UnitOfTime,
-    ATTR_LATITUDE,
-    ATTR_LONGITUDE
 )
-import homeassistant.helpers.config_validation as cv
-from homeassistant.helpers.entity import Entity
 
-import sys
+from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers.device_registry import DeviceInfo
+from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
+from homeassistant.config_entries import ConfigSubentry
+from homeassistant.const import EntityCategory
+
+from . import MyConfigEntry
+from .const import *
+from .coordinator import ExampleCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
-CONF_ORIGIN_ID = 'origin_id'
-CONF_DESTINATION_ID = 'destination_id'
-CONF_TRIP_WAIT_TIME = 'trip_wait_time'
-CONF_TRANSPORT_TYPE = 'transport_type'
-CONF_STRICT_TRANSPORT_TYPE = 'strict_transport_type'
-CONF_RETURN_INFO = 'return_info'
-CONF_TRIPS_TO_CREATE = 'trips_to_create'
-CONF_ROUTE_FILTER = 'route_filter'
-CONF_INCLUDE_REALTIME_LOCATION = 'include_realtime_location'
-CONF_INCLUDE_ALERTS= 'include_alerts'
-CONF_ALERT_TYPES = 'alert_types'
 
-CONF_RETURN_INFO_DEFAULT = 'medium'
-CONF_ALERT_TYPES_DEFAULT = ['lineInfo', 'stopInfo', 'routeInfo', 'stopBlocking', 'bannerInfo']
-CONF_ROUTE_FILTER_DEFAULT = ''
-CONF_INCLUDE_ALERTS_DEFAULT = 'none'
+DEFAULT_ENTRY_SENSORS: tuple[SensorEntityDescription, ...] = (
+    SensorEntityDescription(
+        key=API_CALLS,
+        name=API_CALLS_NAME,
+        native_unit_of_measurement='calls',
+        icon='mdi:counter',
+        entity_category=EntityCategory.DIAGNOSTIC
+    ),
+)
 
-ATTR_DUE_IN = 'due'
-ATTR_DELAY = 'delay'
-ATTR_ORIGIN_STOP_ID = 'origin_stop_id'
-ATTR_ORIGIN_NAME = 'origin_name'
-ATTR_ORIGIN_DETAIL = 'origin_detail'
-ATTR_DEPARTURE_TIME = 'departure_time'
+DEFAULT_SUBENTRY_SENSORS: tuple[SensorEntityDescription, ...] = (
+    SensorEntityDescription(
+        key=CONF_DUE_SENSOR,
+        name=CONF_DUE_FRIENDLY,
+        native_unit_of_measurement=UnitOfTime.MINUTES
+    ),
+)
 
-ATTR_DESTINATION_STOP_ID = 'destination_stop_id'
-ATTR_DESTINATION_NAME = 'destination_name'
-ATTR_DESTINATION_DETAIL = 'destination_detail'
-ATTR_ARRIVAL_TIME = 'arrival_time'
+# Create sensor definitions for everything that isn't a basic text sensor
+# Everything else is defined and created as needed
+TIME_AND_CHANGE_SENSORS: tuple[SensorEntityDescription, ...] = (
+    SensorEntityDescription(
+        key=CONF_FIRST_LEG_DEPARTURE_TIME_SENSOR,
+        name=CONF_FIRST_LEG_DEPARTURE_TIME_FRIENDLY,
+        icon = 'mdi:clock-outline',
+        device_class = SensorDeviceClass.TIMESTAMP
+    ),
+    SensorEntityDescription(
+        key=CONF_LAST_LEG_ARRIVAL_TIME_SENSOR,
+        name=CONF_LAST_LEG_ARRIVAL_TIME_FRIENDLY,
+        icon = 'mdi:clock-outline',
+        device_class = SensorDeviceClass.TIMESTAMP
+    ),
+    SensorEntityDescription(
+        key=CONF_DELAY_SENSOR,
+        name=CONF_DELAY_FRIENDLY,
+        native_unit_of_measurement=UnitOfTime.MINUTES
+    ),
+    SensorEntityDescription(
+        key=CONF_CHANGES_SENSOR,
+        name=CONF_CHANGES_FRIENDLY,
+        native_unit_of_measurement = 'changes',
+        icon = 'mdi:map-marker-path'
+    )
+)
+CONF_FIRST_LEG_TRANSPORT_TYPE_SENSOR = 'origin_transport_type'
+CONF_FIRST_LEG_TRANSPORT_NAME_SENSOR = 'origin_transport_name'
 
-ATTR_ORIGIN_TRANSPORT_TYPE = 'origin_transport_type'
-ATTR_ORIGIN_TRANSPORT_NAME = 'origin_transport_name'
+ORIGIN_SENSORS: tuple[SensorEntityDescription, ...] = (
+    SensorEntityDescription(
+        key=CONF_ORIGIN_NAME_SENSOR,
+        name=CONF_ORIGIN_NAME_FRIENDLY,
+#        icon = 'mdi:train',
+    ),
+    SensorEntityDescription(
+        key=CONF_FIRST_LEG_LINE_NAME_SENSOR,
+        name=CONF_FIRST_LEG_LINE_NAME_FRIENDLY,
+#        icon = 'mdi:train',
+    ),
+    SensorEntityDescription(
+        key=CONF_FIRST_LEG_LINE_NAME_SHORT_SENSOR,
+        name=CONF_FIRST_LEG_LINE_NAME_SHORT_FRIENDLY,
+#        icon = 'mdi:train',
+    ),
+    SensorEntityDescription(
+        key=CONF_FIRST_LEG_TRANSPORT_TYPE_SENSOR,
+        name=CONF_FIRST_LEG_TRANSPORT_TYPE_FRIENDLY,
+#        icon = 'mdi:train',
+    ),
+    SensorEntityDescription(
+        key=CONF_FIRST_LEG_TRANSPORT_NAME_SENSOR,
+        name=CONF_FIRST_LEG_TRANSPORT_NAME_FRIENDLY,
+#        icon = 'mdi:train',
+    ),
+    SensorEntityDescription(
+        key=CONF_FIRST_LEG_OCCUPANCY_SENSOR,
+        name=CONF_FIRST_LEG_OCCUPANCY_FRIENDLY,
+#        icon = 'mdi:train',
+    )
+)
 
-ATTR_ORIGIN_LINE_NAME = 'origin_line_name'
-ATTR_ORIGIN_LINE_NAME_SHORT = 'short_origin_line_name'
+DESTINATION_SENSORS: tuple[SensorEntityDescription, ...] = (
+    SensorEntityDescription(
+        key=CONF_DESTINATION_NAME_SENSOR,
+        name=CONF_DESTINATION_NAME_FRIENDLY,
+#        icon = 'mdi:train',
+    ),
+    SensorEntityDescription(
+        key=CONF_LAST_LEG_LINE_NAME_SENSOR,
+        name=CONF_LAST_LEG_LINE_NAME_FRIENDLY,
+#        icon = 'mdi:train',
+    ),
+    SensorEntityDescription(
+        key=CONF_LAST_LEG_LINE_NAME_SHORT_SENSOR,
+        name=CONF_LAST_LEG_LINE_NAME_SHORT_FRIENDLY,
+#        icon = 'mdi:train',
+    ),
+    SensorEntityDescription(
+        key=CONF_LAST_LEG_TRANSPORT_TYPE_SENSOR,
+        name=CONF_LAST_LEG_TRANSPORT_TYPE_FRIENDLY,
+#        icon = 'mdi:train',
+    ),
+    SensorEntityDescription(
+        key=CONF_LAST_LEG_TRANSPORT_NAME_SENSOR,
+        name=CONF_LAST_LEG_TRANSPORT_NAME_FRIENDLY,
+#        icon = 'mdi:train',
+    ),
+    SensorEntityDescription(
+        key=CONF_LAST_LEG_OCCUPANCY_SENSOR,
+        name=CONF_LAST_LEG_OCCUPANCY_FRIENDLY,
+#        icon = 'mdi:train',
+    )
+)
 
-ATTR_OCCUPANCY = 'occupancy'
-ATTR_CHANGES = 'changes'
-
-ATTR_REAL_TIME_TRIP_ID = 'real_time_trip_id'
-
-ATTR_ALERTS = 'alerts'
-
-ATTRIBUTION = "Data provided by Transport NSW"
-DEFAULT_NAME = "TBD" #Will be based on the origina and destination IDs by default
-
-ICONS = {
-    "Train": "mdi:train",
-    "Metro": "mdi:train-variant",
-    "Lightrail": "mdi:tram",
-    "Light rail": "mdi:tram",
-    "Bus": "mdi:bus",
-    "Coach": "mdi:bus",
-    "Ferry": "mdi:ferry",
-    "Schoolbus": "mdi:bus",
-    "School bus": "mdi:bus",
-    "n/a": "mdi:clock",
-    None: "mdi:clock"
-}
-
-SCAN_INTERVAL = timedelta(seconds=120)
-
-PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
-    {
-        vol.Required(CONF_ORIGIN_ID): cv.string,
-        vol.Required(CONF_DESTINATION_ID): cv.string,
-        vol.Required(CONF_API_KEY): cv.string,
-        vol.Optional(CONF_NAME, default=DEFAULT_NAME): cv.string,
-        vol.Optional(CONF_TRIP_WAIT_TIME, default=0): cv.positive_int,
-        vol.Optional(CONF_TRANSPORT_TYPE, default=0): cv.positive_int,
-        vol.Optional(CONF_STRICT_TRANSPORT_TYPE, default=False): cv.boolean,
-        vol.Optional(CONF_RETURN_INFO, default=CONF_RETURN_INFO_DEFAULT): vol.In(['brief', 'medium', 'verbose']),
-        vol.Optional(CONF_TRIPS_TO_CREATE, default=1): vol.Range(min=1, max=6),
-        vol.Optional(CONF_ROUTE_FILTER, default=CONF_ROUTE_FILTER_DEFAULT): cv.string,
-        vol.Optional(CONF_INCLUDE_REALTIME_LOCATION, default=True): cv.boolean,
-        vol.Optional(CONF_INCLUDE_ALERTS, default=CONF_INCLUDE_ALERTS_DEFAULT): vol.In(['none', 'all', 'verylow', 'low', 'normal', 'high', 'veryhigh']),
-        vol.Optional(CONF_ALERT_TYPES, default=CONF_ALERT_TYPES_DEFAULT): vol.All(cv.ensure_list, vol.All(['lineInfo', 'routeInfo', 'stopInfo', 'stopBlocking', 'bannerInfo']))
-    }
+ALERT_SENSORS: tuple[SensorEntityDescription, ...] = (
+    SensorEntityDescription(
+        key=CONF_ALERTS_SENSOR,
+        name=CONF_ALERTS_FRIENDLY,
+        icon="mdi:alert-outline"
+    ),
 )
 
 
-def convert_date(utc_string):
-    temp_date = datetime.strptime(utc_string, '%Y-%m-%dT%H:%M:%SZ')
-    now_timestamp = time.time()
-    temp_date = temp_date + (datetime.fromtimestamp(now_timestamp) - datetime.utcfromtimestamp(now_timestamp))
-    return temp_date.strftime('%Y-%m-%dT%H:%M:%S')
+def get_highest_alert(alerts):
+    # Search the alerts and return the highest
+    highest_alert = -1
+    highest_alert_text = 'None'
 
-
-def get_specific_platform(location_info, transport_type):
-    if (transport_type == "Train" or transport_type == "Metro"):
-        return location_info.split(", ")[1]
-    elif transport_type == "Ferry":
-        tmpLen = len(location_info.split(", "))
-        if tmpLen == 4:
-            return location_info.split(", ")[1] + ", " + location_info.split(", ")[2]
-        elif tmpLen == 3:
-            return location_info.split(", ")[1]
-        elif tmpLen == 2:
-            return location_info.split(", ")[1]
-        else:
-            return location_info.split(", ")[0]
-    elif transport_type == "Bus":
-        return location_info.split(", ")[0]
-    elif transport_type == "Light rail":
-        tmpFind = location_info.find(" Light Rail")
-        if tmpFind == -1:
-            return location_info
-        else:
-            return location_info[: tmpFind]
-    else:
-        return location_info
-
-
-def setup_platform(hass, config, add_entities, discovery_info=None):
-    """Set up the Transport NSW sensor."""
-    origin_id = config[CONF_ORIGIN_ID]
-    destination_id = config[CONF_DESTINATION_ID]
-    api_key = config[CONF_API_KEY]
-
-    if config[CONF_NAME] == 'TBD':
-        config[CONF_NAME] = origin_id + "_to_" + destination_id
-    name = config[CONF_NAME]
-
-    trip_wait_time = config[CONF_TRIP_WAIT_TIME]
-    transport_type = config[CONF_TRANSPORT_TYPE]
-    strict_transport_type = config[CONF_STRICT_TRANSPORT_TYPE]
-    return_info = config[CONF_RETURN_INFO]
-    trips_to_create = config[CONF_TRIPS_TO_CREATE]
-    route_filter = config[CONF_ROUTE_FILTER]
-    include_realtime_location  = config[CONF_INCLUDE_REALTIME_LOCATION]
-    include_alerts  = config[CONF_INCLUDE_ALERTS]
-    alert_types = config[CONF_ALERT_TYPES] # It's a list
-
-    sensor_list = []
-
-    # Convert the alert_types into a pipe-separated string as that's what the function is expecting
-    # TODO - change the function to expect either type and deal
-    alert_type_full = '|'.join (alert_types)
-
-    for trip in range (0, trips_to_create, 1):
-        if trips_to_create == 1:
-            name_suffix = ""
-        else:
-            name_suffix = "_trip_" + str(trip + 1)
-        
-        data = PublicTransportData(name + name_suffix, origin_id, destination_id, api_key, trip_wait_time, return_info, transport_type, strict_transport_type, route_filter, include_realtime_location, include_alerts, alert_type_full, trip)
-        sensor_list.append (TransportNSWv2Sensor(data, name + name_suffix, trip, return_info))
-
-    add_entities(sensor_list, True)
-
-
-class TransportNSWv2Sensor(Entity):
-    """Implementation of a Transport NSW sensor."""
-
-    def __init__(self, data, name, index, return_info):
-        """Initialize the sensor."""
-        self.data = data
-        self._name = name
-        self._times = None
-        self._return_info = return_info
-        self._index = index
-        self._state = None
-        self._icon = ICONS[None]
-        self._alerts = None
-
-    @property
-    def name(self):
-        """Return the name of the sensor."""
-        return self._name
-
-    @property
-    def unique_id(self):
-        """Return the unique ID for this sensor."""
-        return self._name
+    try:
+        for alert in alerts:
+            if ALERT_PRIORITIES.get(alert['priority'],-1) > highest_alert:
+                highest_alert = ALERT_PRIORITIES.get(alert['priority'],-1)
+                highest_alert_text = alert['priority']
     
+    finally:
+        return highest_alert_text
+
+
+def convert_date(utc_string) -> datetime:
+    fmt = '%Y-%m-%dT%H:%M:%SZ'
+    #fmt = '%H:%M:%SZ'
+    
+    utc_dt = datetime.strptime(utc_string, fmt)
+    utc_dt = utc_dt.replace(tzinfo=pytz.utc)
+    local_timezone = tzlocal.get_localzone()
+    local_dt = utc_dt.astimezone(local_timezone)
+    
+    return local_dt
+
+def remove_entity(entity_reg, configentry_id, subentry_id, trip_index, key):
+    # Search for and remove a sensor that's no longer needed
+    unique_id = f"{subentry_id}_{key}_{trip_index}"
+
+    try:
+        # Get all the entities for this config entry
+        entities = entity_reg.entities.get_entries_for_config_entry_id(configentry_id)
+
+        # Search for the one to remove
+        # TODO - probably we can do this in a one-liner!
+        for entity in entities:
+            if entity.unique_id == unique_id:
+                entity_reg.async_remove(entity.entity_id)
+                break
+
+    except Exception as err:
+        # Don't log an error as it's possible the entity never existed in the first place
+        pass
+
+def remove_device(device_reg, subentry_id, origin_id, destination_id, device_identifier):
+    # Search for and remove a device that's no longer needed
+    try:
+        device = device_reg.async_get_device(identifiers={(DOMAIN, f"{subentry_id}_{origin_id}_{destination_id}_{device_identifier}")})
+        if device is not None:
+            device_reg.async_remove_device(device.id)
+    finally:
+        pass
+        
+async def async_setup_entry(
+    hass: HomeAssistant,
+    config_entry: MyConfigEntry,
+    async_add_entities: AddConfigEntryEntitiesCallback,
+):
+    """Set up the Sensors."""
+    # This gets the data update coordinator from the config entry runtime data as specified in your __init__.py
+    coordinator: ExampleCoordinator = config_entry.runtime_data.coordinator
+
+    # Be ready to remove devices and sensors if required
+    device_reg = dr.async_get(hass)
+    entity_reg = er.async_get(hass)
+
+    # Create the subentry sensors
+    # TODO - try and have the names auto-truncate, there's a sensor flag for that I think
+    # TODO - rename some of the sensors, ie 'arrival time' is the arrival time at the DESTINATION, so make sure it's clear
+    # The upshot of the above is that I may have to manually define more sensor types, which might end up making it simpler to just define ALL of them
+    
+    for subentry in config_entry.subentries.values():
+        if subentry.subentry_type == SUBENTRY_TYPE_JOURNEY:
+            trips_to_create = subentry.data[CONF_TRIPS_TO_CREATE]
+
+#            for trip_index in range (0, trips_to_create, 1):   # TODO - consider doing 0 to 4, and if greater than trips_to_create then just delete?
+            for trip_index in range (0, 3, 1):   # TODO - consider doing 0 to 3, and if greater than trips_to_create then just delete?
+                if trips_to_create == 1:
+                    sensor_suffix = ""
+                    name_suffix = ""
+                    device_suffix = ""
+                    device_identifier = f"trip_{str(trip_index + 1)}"
+                else:
+                    sensor_suffix = f"trip_{str(trip_index + 1)}"
+                    name_suffix = f" ({str(trip_index + 1)})"
+                    device_suffix = f" trip {str(trip_index + 1)}"
+                    device_identifier = f"trip_{str(trip_index + 1)}"
+
+                sensors = []
+                if trip_index >= trips_to_create:
+                    # We've finished creating sensors, now we need to start trying to delete sensors and devices
+                    # that may have been created previously but that aren't needed any more
+                    for sensor_group in [DEFAULT_SUBENTRY_SENSORS, TIME_AND_CHANGE_SENSORS, ORIGIN_SENSORS, DESTINATION_SENSORS, ALERT_SENSORS]:
+                        for sensor in sensor_group:
+                            remove_entity (entity_reg, config_entry.entry_id, subentry.subentry_id, trip_index, sensor.key)
+
+                    remove_device (device_reg, subentry.subentry_id, subentry.data[CONF_ORIGIN_ID], subentry.data[CONF_DESTINATION_ID], device_identifier)
+                else:
+                    # Define the default sensors for this trip
+                    sensors = [
+                        ExampleSubentrySensor(coordinator, description, subentry, trip_index, sensor_suffix, name_suffix, device_suffix, device_identifier)
+                        for description in DEFAULT_SUBENTRY_SENSORS
+                    ]
+        
+                    # Now the optional sensors
+                    if 'time_and_change_sensors' in subentry.data:
+                        for sensor in TIME_AND_CHANGE_SENSORS:
+                            if subentry.data['time_and_change_sensors'].get(sensor.key, False):
+                                sensors.append(ExampleSubentrySensor(coordinator, sensor, subentry, trip_index, sensor_suffix, name_suffix, device_suffix, device_identifier))
+                            else:
+                                # Try and remove it - don't worry if it never existed
+                                remove_entity (entity_reg, config_entry.entry_id, subentry.subentry_id, trip_index, sensor.key)
+
+                    if 'origin_sensors' in subentry.data:
+                        for sensor in ORIGIN_SENSORS:
+                            if subentry.data['origin_sensors'].get(sensor.key, False):
+                                sensors.append(ExampleSubentrySensor(coordinator, sensor, subentry, trip_index, sensor_suffix, name_suffix, device_suffix, device_identifier))
+                            else:
+                                # Try and remove it - don't worry if it never existed
+                                remove_entity (entity_reg, config_entry.entry_id, subentry.subentry_id, trip_index, sensor.key)
+
+                    if 'destination_sensors' in subentry.data:
+                        for sensor in DESTINATION_SENSORS:
+                            if subentry.data['destination_sensors'].get(sensor.key, False):
+                                sensors.append(ExampleSubentrySensor(coordinator, sensor, subentry, trip_index, sensor_suffix, name_suffix, device_suffix, device_identifier))
+                            else:
+                                # Try and remove it - don't worry if it never existed
+                                remove_entity (entity_reg, config_entry.entry_id, subentry.subentry_id, trip_index, sensor.key)
+
+                    for sensor in ALERT_SENSORS:
+                        if subentry.data.get(sensor.key, False):
+                            sensors.append(ExampleSubentrySensor(coordinator, sensor, subentry, trip_index, sensor_suffix, name_suffix, device_suffix, device_identifier))
+                        else:
+                            # Try and remove it - don't worry if it never existed
+                            remove_entity (entity_reg, config_entry.entry_id, subentry.subentry_id, trip_index, sensor.key)
+
+                    # Create the subentry sensors, assuming there are any
+                    if len(sensors) > 0:
+                        async_add_entities(sensors, config_subentry_id = subentry.subentry_id, update_before_add = True)
+
+                
+    # Create the top-level config entry sensors
+    configentry_sensors = [
+        ExampleConfigentrySensor(coordinator, description, config_entry)
+        for description in DEFAULT_ENTRY_SENSORS
+    ]
+
+    async_add_entities(configentry_sensors, update_before_add = True)
+
+
+class ExampleConfigentrySensor(CoordinatorEntity, SensorEntity):
+    """Implementation of a configentry sensor."""
+
+    def __init__(self, coordinator: ExampleCoordinator, description: SensorEntityDescription, config_entry: MyConfigEntry) -> None:
+        """Initialise sensor."""
+        super().__init__(coordinator)
+
+        """Initialize the sensor."""
+        self.entity_description = description
+        self.config_entry = config_entry
+
+        self._attr_unique_id = f"{config_entry.entry_id}_{description.key}_0"
+        self._attr_name = f"{description.name}"
+        #self._attr_name = f"{config_entry.title} {description.name}{name_suffix}"
+ 
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        """Update sensor with latest data from coordinator."""
+        # This method is called by your DataUpdateCoordinator when a successful update runs.
+        self.async_write_ha_state()
+
+    # @property
+    # def device_info(self):
+        # """Return device info for this sensor."""
+        # identifiers = {
+        # "identifiers": {(DOMAIN, f"{self.config_entry.entry_id}")},
+        # "name": f"API count",
+        # "manufacturer": "Transport for NSW"
+        # }
+
+        # return identifiers
+
+
     @property
-    def state(self):
-        """Return the state of the sensor."""
-        return self._state
+    def native_value(self) -> int | float | str | datetime:
+        """Return the state of the entity."""
+            
+        return self.coordinator.api_calls
 
     @property
     def extra_state_attributes(self):
-        """Return the state attributes."""
-        try:
-            if self._times is not None:
-                attrTemp = {
-                        ATTR_DUE_IN: self._times[ATTR_DUE_IN],
-                        ATTR_DELAY: self._times[ATTR_DELAY],
-                        ATTR_ARRIVAL_TIME: self._times[ATTR_ARRIVAL_TIME],
-                        ATTR_CHANGES: self._times[ATTR_CHANGES]
-                    }
-    
-                if self._return_info == 'medium' or self._return_info == 'verbose':
-                    attrTemp.update({
-                        ATTR_ORIGIN_NAME: self._times[ATTR_ORIGIN_NAME],
-                        ATTR_ORIGIN_DETAIL: self._times[ATTR_ORIGIN_DETAIL],
-                        ATTR_DEPARTURE_TIME: self._times[ATTR_DEPARTURE_TIME],
-                        ATTR_DESTINATION_NAME: self._times[ATTR_DESTINATION_NAME],
-                        ATTR_DESTINATION_DETAIL: self._times[ATTR_DESTINATION_DETAIL],
-                        ATTR_OCCUPANCY: self._times[ATTR_OCCUPANCY]
-                    })
-    
-                if self._return_info == 'verbose':
-                    attrTemp.update({
-                        ATTR_ORIGIN_LINE_NAME: self._times[ATTR_ORIGIN_LINE_NAME],
-                        ATTR_ORIGIN_LINE_NAME_SHORT: self._times[ATTR_ORIGIN_LINE_NAME_SHORT],
-                        ATTR_ORIGIN_TRANSPORT_TYPE: self._times[ATTR_ORIGIN_TRANSPORT_TYPE],
-                        ATTR_ORIGIN_TRANSPORT_NAME: self._times[ATTR_ORIGIN_TRANSPORT_NAME],
-                        ATTR_REAL_TIME_TRIP_ID: self._times[ATTR_REAL_TIME_TRIP_ID]
-                    })
-    
-                if self.data._include_realtime_location:
-                    attrTemp.update({
-                        ATTR_LATITUDE: self._times[ATTR_LATITUDE],
-                        ATTR_LONGITUDE: self._times[ATTR_LONGITUDE]
-                    })
-    
-                if self.data._include_alerts != 'none':
-                    if ATTR_ALERTS in self._times:
-                        attrTemp.update({
-                            ATTR_ALERTS: self._times[ATTR_ALERTS]
-                        })
-                    else:
-                        attrTemp.update({
-                            ATTR_ALERTS: "{}"
-                        })
-    
-                return attrTemp;
+        """Return the extra state attributes."""
+        # Add any additional attributes you want on your sensor.
+        attrs = {}
+        attrs["Entry ID"] = self.config_entry.entry_id
+        
+        return attrs
 
-            else:
-                return {};
+class ExampleSubentrySensor(CoordinatorEntity, SensorEntity):
+    """Implementation of subentry sensor."""
 
-        except:
-            return {};
+    def __init__(self, coordinator: ExampleCoordinator, description: SensorEntityDescription, subentry: ConfigSubentry, index: int, sensor_suffix: str, name_suffix: str, device_suffix: str, device_identifier: str) -> None:
+        """Initialise sensor."""
+        super().__init__(coordinator)
+
+        """Initialize the sensor."""
+        self.entity_description = description
+        self.subentry = subentry
+        self.journey_index = index
+        self.device_suffix = device_suffix
+        self.sensor_suffix = sensor_suffix
+        self.device_identifier = device_identifier
+
+        self._attr_unique_id = f"{subentry.subentry_id}_{description.key}_{index}"
+        self._attr_name = f"{subentry.data[CONF_ORIGIN_NAME]} to {subentry.data[CONF_DESTINATION_NAME]}{device_suffix} {description.name}"
+        #self._attr_name = f"{config_entry.title} {description.name}{name_suffix}"
+
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        """Update sensor with latest data from coordinator."""
+        # This method is called by your DataUpdateCoordinator when a successful update runs.
+        self.async_write_ha_state()
+
 
     @property
-    def unit_of_measurement(self):
-        """Return the unit this state is expressed in."""
-        return UnitOfTime.MINUTES
-
-    @property
-    def icon(self):
-        """Icon to use in the frontend, if any."""
-        return self._icon
-
-    def update(self):
-        """Get the latest data from Transport NSW and update the states."""
-        self.data.update()
-        self._times = self.data.info
-        self._state = self._times[ATTR_DUE_IN]
-        self._icon = ICONS[self._times[ATTR_ORIGIN_TRANSPORT_TYPE]]
-
-class PublicTransportData:
-    """The Class for handling the data retrieval."""
-
-    def __init__(self, name, origin_id, destination_id, api_key, trip_wait_time, return_info, transport_type, strict_transport_type, route_filter, include_realtime_location, include_alerts, alert_type_full, index):
-        """Initialize the data object."""
-        self._name = name
-        self._origin_id = origin_id
-        self._destination_id = destination_id
-        self._api_key = api_key
-        self._trip_wait_time = trip_wait_time
-        self._transport_type = transport_type
-        self._return_info = return_info
-        self._strict_transport_type = strict_transport_type
-        self._route_filter = route_filter
-        self._include_realtime_location = include_realtime_location
-        self._include_alerts = include_alerts
-        self._alert_type_full = alert_type_full
-        self._index = index
-        self._attr = {}
-        self.info = {
-            ATTR_DUE_IN: "n/a",
-            ATTR_ORIGIN_STOP_ID: "n/a",
-            ATTR_ORIGIN_NAME: "n/a",
-            ATTR_ORIGIN_DETAIL: "n/a",
-            ATTR_DEPARTURE_TIME: "n/a",
-            ATTR_DESTINATION_STOP_ID: "n/a",
-            ATTR_DESTINATION_NAME: "n/a",
-            ATTR_DESTINATION_DETAIL: "n/a",
-            ATTR_ARRIVAL_TIME: "n/a",
-            ATTR_ORIGIN_TRANSPORT_TYPE: "n/a",
-            ATTR_ORIGIN_TRANSPORT_NAME: "n/a",
-            ATTR_ORIGIN_LINE_NAME: "n/a",
-            ATTR_ORIGIN_LINE_NAME_SHORT: "n/a",
-            ATTR_OCCUPANCY: "n/a",
-            ATTR_CHANGES: "n/a",
-            ATTR_REAL_TIME_TRIP_ID: "n/a",
-            ATTR_LATITUDE: 0,
-            ATTR_LONGITUDE: 0,
-            ATTR_ALERTS: "n/a"
+    def device_info(self) -> DeviceInfo:
+        """Return device info for this sensor."""
+        identifiers = {
+        "identifiers": {(DOMAIN, f"{self.subentry.subentry_id}_{self.subentry.data[CONF_ORIGIN_ID]}_{self.subentry.data[CONF_DESTINATION_ID]}_{self.device_identifier}")
+                       },
+        "name": f"{self.subentry.data[CONF_ORIGIN_NAME]} to {self.subentry.data[CONF_DESTINATION_NAME]}{self.device_suffix}",
+        "manufacturer": "Transport for NSW"
         }
-        self.tnsw = TransportNSWv2()
+
+        return identifiers
 
 
-    def update(self):
+    @property
+    def native_value(self) -> int | float | str | datetime:
+        """Return the state of the entity."""
+        # # Using native value and native unit of measurement, allows you to change units
+        # # in Lovelace and HA will automatically calculate the correct value.
+
+        if self.coordinator.data is not None and self.subentry.subentry_id in self.coordinator.data:
+            try:
+                if 'time' in self.entity_description.key:
+                    return convert_date(self.coordinator.data[self.subentry.subentry_id][self.journey_index][self.entity_description.key])
+
+                elif self.entity_description.key == CONF_ALERTS_SENSOR:
+                    # Store the highest alert value as the state - the specific alerts will go into attributes
+                    # Be aware of alert data longer than 255 characters
+                    return get_highest_alert(self.coordinator.data[self.subentry.subentry_id][self.journey_index][self.entity_description.key])
+
+                elif self.entity_description.key in [CONF_FIRST_LEG_OCCUPANCY_SENSOR, CONF_LAST_LEG_OCCUPANCY_SENSOR]:
+                    return OCCUPANCY_ICONS.get(self.coordinator.data[self.subentry.subentry_id][self.journey_index][self.entity_description.key], ["mdi:account-question", "Unknown"])[1]
+
+                else:
+                    return self.coordinator.data[self.subentry.subentry_id][self.journey_index][self.entity_description.key]
+            except:
+                pass
+        else:
+            _LOGGER.warning(f"No data for [{self.subentry.subentry_id}][{self.journey_index}][{self.entity_description.key}] in coordinator")
+           
+    @property
+    def icon(self) -> str:
+        if self.coordinator.data is not None and self.subentry.subentry_id in self.coordinator.data:
+            if self.entity_description.key in [CONF_FIRST_LEG_OCCUPANCY_SENSOR, CONF_LAST_LEG_OCCUPANCY_SENSOR]:
+                return OCCUPANCY_ICONS.get(self.coordinator.data[self.subentry.subentry_id][self.journey_index][self.entity_description.key], ["mdi:account-question", "Unknown"])[0]
+                
+            elif self.entity_description.key in [CONF_DUE_SENSOR, CONF_FIRST_LEG_LINE_NAME_SENSOR, CONF_FIRST_LEG_LINE_NAME_SHORT_SENSOR, CONF_FIRST_LEG_TRANSPORT_TYPE_SENSOR, CONF_FIRST_LEG_TRANSPORT_NAME_SENSOR, CONF_ORIGIN_NAME_SENSOR]:
+               return JOURNEY_ICONS.get(self.coordinator.data[self.subentry.subentry_id][self.journey_index][CONF_FIRST_LEG_TRANSPORT_TYPE_SENSOR], "mdi:train")
+
+            elif self.entity_description.key in [CONF_LAST_LEG_LINE_NAME_SENSOR, CONF_LAST_LEG_LINE_NAME_SHORT_SENSOR, CONF_LAST_LEG_TRANSPORT_TYPE_SENSOR, CONF_LAST_LEG_TRANSPORT_NAME_SENSOR, CONF_DESTINATION_NAME_SENSOR]:
+               return JOURNEY_ICONS.get(self.coordinator.data[self.subentry.subentry_id][self.journey_index][CONF_LAST_LEG_TRANSPORT_TYPE_SENSOR], "mdi:train")
+
+            elif self.entity_description.key in [CONF_DELAY_SENSOR, CONF_ALERTS_SENSOR]:
+                return 'mdi:clock-alert-outline'
+
+            elif self.entity_description.key == CONF_CHANGES_SENSOR:
+                return 'mdi:map-marker-path'
+
+            elif 'time' in self.entity_description.key:
+                return 'mdi:clock-outline'
+
+    @property
+    def extra_state_attributes(self):
+        """Return the extra state attributes."""
+        # Add any additional attributes you want on your sensor.
+        attrs = {}
+        
+        # Attributes for all sensors
+        attrs["Origin ID"] = self.subentry.data[CONF_ORIGIN_ID]
+        attrs["Destination ID"] = self.subentry.data[CONF_DESTINATION_ID]
+        attrs["Subentry ID"] = str(self.subentry.subentry_id)
+
+        # Key-specific attributes
         try:
-            """Get the next leave times."""
-            _data = self.tnsw.get_trip(
-                name_origin = self._origin_id, name_destination = self._destination_id, api_key = self._api_key, \
-                journey_wait_time = self._trip_wait_time, transport_type = self._transport_type, strict_transport_type = self._strict_transport_type, \
-                raw_output = False, route_filter = self._route_filter, journeys_to_return = 6, include_realtime_location = self._include_realtime_location, \
-                include_alerts = self._include_alerts, alert_type = self._alert_type_full)
+            if self.coordinator.data is not None and self.subentry.subentry_id in self.coordinator.data:
+                if self.entity_description.key == CONF_CHANGES_SENSOR:
+                    # A list of changes in this journey
+                    attrs['Changes list'] =  "|".join(self.coordinator.data[self.subentry.subentry_id][self.journey_index][CHANGES_LIST])
 
-            # Some error-checking, getting more specific as we go
-            if _data is None:
-                _LOGGER.debug("No data returned from get_trip()")
-                return
-            else:
-                _data = json.loads(_data)
+                if self.entity_description.key in ['alerts']:
+                    # Alerts can be long so they need to go into attributes
+                    attrs["Alerts"] = self.coordinator.data[self.subentry.subentry_id][self.journey_index][self.entity_description.key]
+        except:
+            pass
 
-                if "journeys" not in _data or len(_data["journeys"]) == 0:
-                    # Nothing came back - possibly an API error, temporary fault etc
-                    # Don't update, but don't raise an error either
-                    _LOGGER.debug("No journeys returned from get_trip()")
-                    return
-
-                if len(_data["journeys"]) < self._index:
-                    # We got some journeys back, but not enough to meet the number requested
-                    _LOGGER.warn(f"get_trip() didn't return enough journeys to update sensors for sensor index {self._index}")
-                    return
-
-                #Some housekeeping - replace lat/lon 'n/a' with 0 if required, fixes an issue with HA's maps """
-                for x in ['latitude', 'longitude']:
-                    if (_data["journeys"][self._index][x] == 'n/a'):
-                        _data["journeys"][self._index][x] = 0
-
-                # Update with the journey-specific data
-                self.info = {
-                    ATTR_DUE_IN: _data["journeys"][self._index]["due"],
-                    ATTR_DELAY: _data["journeys"][self._index]["delay"],
-                    ATTR_ORIGIN_STOP_ID: _data["journeys"][self._index]["origin_stop_id"],
-                    ATTR_ORIGIN_NAME: _data["journeys"][self._index]["origin_name"],
-                    ATTR_ORIGIN_DETAIL: get_specific_platform(_data["journeys"][self._index]["origin_name"], _data["journeys"][self._index]["origin_transport_type"]),
-                    ATTR_DEPARTURE_TIME: convert_date(_data["journeys"][self._index]["departure_time"]),
-                    ATTR_DESTINATION_STOP_ID: _data["journeys"][self._index]["destination_stop_id"],
-                    ATTR_DESTINATION_NAME: _data["journeys"][self._index]["destination_name"],
-                    ATTR_DESTINATION_DETAIL: get_specific_platform(_data["journeys"][self._index]["destination_name"], _data["journeys"][self._index]["origin_transport_type"]),
-                    ATTR_ARRIVAL_TIME: convert_date(_data["journeys"][self._index]["arrival_time"]),
-                    ATTR_ORIGIN_TRANSPORT_TYPE: _data["journeys"][self._index]["origin_transport_type"],
-                    ATTR_ORIGIN_TRANSPORT_NAME: _data["journeys"][self._index]["origin_transport_name"],
-                    ATTR_ORIGIN_LINE_NAME: _data["journeys"][self._index]["origin_line_name"],
-                    ATTR_ORIGIN_LINE_NAME_SHORT: _data["journeys"][self._index]["origin_line_name_short"],
-                    ATTR_OCCUPANCY: _data["journeys"][self._index]["occupancy"].lower(),
-                    ATTR_CHANGES: _data["journeys"][self._index]["changes"],
-                    ATTR_REAL_TIME_TRIP_ID: _data["journeys"][self._index]["real_time_trip_id"],
-                    ATTR_LATITUDE: _data["journeys"][self._index]["latitude"],
-                    ATTR_LONGITUDE: _data["journeys"][self._index]["longitude"],
-                    ATTR_ALERTS: _data["journeys"][self._index]["alerts"]
-                }
-
-        except Exception as ex:
-            #debugging
-            exc_type, exc_obj, exc_tb = sys.exc_info()
-            _LOGGER.error("Error " + str(ex) + " on line " + str(exc_tb.tb_lineno) + " retrieving journey from " + self._name)
-            self.info = {
-                ATTR_DUE_IN: "n/a",
-                ATTR_DELAY: "n/a",
-                ATTR_ORIGIN_STOP_ID: self._origin_id,
-                ATTR_ORIGIN_NAME: "n/a",
-                ATTR_ORIGIN_DETAIL: "n/a",
-                ATTR_DEPARTURE_TIME: "n/a",
-                ATTR_DESTINATION_STOP_ID: self._destination_id,
-                ATTR_DESTINATION_NAME: "n/a",
-                ATTR_DESTINATION_DETAIL: "n/a",
-                ATTR_ARRIVAL_TIME: "n/a",
-                ATTR_ORIGIN_TRANSPORT_TYPE: "n/a",
-                ATTR_ORIGIN_TRANSPORT_NAME: "n/a",
-                ATTR_ORIGIN_LINE_NAME: "n/a",
-                ATTR_ORIGIN_LINE_NAME_SHORT: "n/a",
-                ATTR_OCCUPANCY: "n/a",
-                ATTR_CHANGES: "n/a",
-                ATTR_REAL_TIME_TRIP_ID: "n/a",
-                ATTR_LATITUDE: 0,
-                ATTR_LONGITUDE: 0,
-                ATTR_ALERTS: "n/a"
-            }
-
-    def convert_date(self, utc_string):
-        fmt = '%Y-%m-%dT%H:%M:%SZ'
-        temp_date = datetime.strptime(departure_time, fmt)
-        now_timestamp = time.time()
-        offset = datetime.fromtimestamp(now_timestamp) - datetime.utcfromtimestamp(now_timestamp)
-        return temp_date + offset
+        return attrs
