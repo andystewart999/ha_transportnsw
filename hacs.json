@@ -2,5 +2,5 @@
   "name": "Transport NSW journey information",
   "content_in_root": false,
   "render_readme": true,
-  "homeassistant": "2022.7.0"
+  "homeassistant": "2025.3.0"
 }
