@@ -1,0 +1,210 @@
+{
+  "config": {
+	"create_entry": {
+	  "authenticated": "authenticated",
+	  "created": "created",
+	  "finished": "finished",
+	  "successful": "successful",
+	  "success": "success_text",
+	  "default": "default text"
+	},
+    "title": "Transport NSW Mk II",
+    "abort": {
+      "already_configured": "That API key has already been registered.  Please use 'add new journey' to add one or more journeys instead.",
+      "reconfigure_successful": "New API key registered.",
+      "reconfigure_successful_no_change": "No changes made.",
+      "finish": "_Finish",
+      "finished": "_finished"
+    },
+    "finish": {
+		"title":"__finished",
+        "description": "__finished"
+    },
+    "finished": {
+		"title": "___finished",
+        "description": "___finished"
+    },
+    "error": {
+      "apiratelimitexceeded": "API rate limit exceeded - wait a moment and try again",
+      "invalidapikey": "Invalid API key",
+      "stoperror": "At least one invalid stop ID",
+      "triperror": "No valid journeys were returned",
+      "unknown": "Unexpected error"
+    },
+    "step": {
+      "user": {
+        "data": {
+          "api_key": "Your Transport NSW API key",
+		  "scan_interval": "Sensor update interval (seconds)"
+        },
+        "description": "Enter your Transport NSW API key.  If you don't have one you can register [here](https://opendata.transport.nsw.gov.au/data/user/register).",
+        "title": "Transport NSW MKII"
+      },
+      "finished": {
+        "description": "Created initial configuration for {name}.  Now add your journeys!"
+      },
+      "finish": {
+        "description": "Created initial configuration for {name}.  Now add your journeys!"
+      }
+    }
+  },
+  "config_subentries": {
+	  "subentry_journey": {
+		  "abort": {
+			  "already_configured": "You have already added that journey.",
+			  "outbound_already_configured": "You have already added that journey.",
+			  "return_already_configured": "You have alreadty added the return part of that journey",
+              "reconfigure_successful": "Journey reconfiguration successful.",
+			  "subentries_created": "Journey{plural} registered successfully!",
+			  "subentries_reconfigured": "Journey{plural} reconfigured successfully!",
+			  "title": "test title placeholder"
+		  },
+		  "initiate_flow": {
+			  "user": "Add new journey",
+			  "reconfigure": "Change journey options"
+		  },
+		  "step": {
+			  "user": {
+				  "data": {
+					  "origin_id": "The stop ID of your start point",
+                      "destination_id": "The stop ID of your destination",
+                      "create_reverse_trip": "Also create the return journey"
+				  },
+				  "description": "Provide the details of the journey you want to monitor.  Stop IDs can be searched for [here](https://transportnsw.info/routes/train#/).  You can also have the return journey created in addition to the outbound journey if required.",
+				  "title": "Transport NSW MKII"
+			  },
+			  "settings": {
+				"data_description": {
+					"route_filter": "Filter out journeys whose origin 'line name' or 'short line name' don't contain this text"
+				  },
+				  "data": {
+					  "origin_transport_type": "Origin transport types",
+                      "destination_transport_type": "Destination transport types",
+					  "strict_transport_type": "Strict transport type placeholder",
+					  "route_filter": "Route filter",
+                      "trip_wait_time": "The minimum time from now to wait before the journey starts (minutes)",
+                      "trips_to_create": "Trips to create"
+				  },
+				  "description": "Select the appropriate transport types and optional route filter.  Only journeys with origin and destination legs that start and end with your selected transport types will be considered valid, so if you don't mind a little bit of a walk at either end (getting off at Gadigal Station and walking to Town Hall Station for example), make sure you select 'Walk' as an option.\n\nIf you specify a route filter, only journeys with that text in the line name (eg T9 Northern Line) or short line name (eg T9) will be shown.",
+				  "title": "{journey_name}"
+			  },
+			  "sensors": {
+				"data": {
+				  "include_realtime_location": "Include realtime location placeholder",
+				  "alerts": "Include alerts related to each journey",
+                  "trips_to_create": "How many trips should be shown (1 to 3)",
+				  "sensor_creation": "Sensors to create"
+				},
+				"data description": {
+					"sensor_creation": "Sensors to create placeholder"
+				},
+				"description": "Here you can choose if an alerts sensor should be created, how many consecutive journeys should be created and what types of sensors each journey should include.",
+				  "title": "{journey_name}"
+			  },
+			  "alerts": {
+				"data": {
+				  "alert_severity": "Alert severity",
+				  "alert_types": "Select which types of alerts should be included."
+				},
+				"description": "Alerts of the selected severity and above are shown.",
+				  "title": "{journey_name}"
+			  },
+			  "custom_sensors": {
+				"data": {
+				  "location_detail_sensors": "'location detail' sensors placeholder",
+				  "line_name_detail_sensors": "line name detail' sensors placeholder",
+				  "destination_sensors": "destination sensors placeholder"
+				},
+				"sections": {
+					"time_and_change_sensors": {
+						"name": "Time and change sensors placeholder",
+						"description": "Select which sensors to create",
+						"data": {
+						  "arrival_time": "Arrival time at destination",
+						  "departure_time": "Departure time from origin (including delays)",
+						  "changes": "Journey changes",
+						  "delay": "Delay leaving origin (based on timetable)"
+						}
+					},
+					"origin_sensors": {
+						"name": "Origin sensors",
+						"description": "Select which origin/first leg-related sensors to create",
+						"data": {
+						  "origin_line_name": "First leg line name (eg T1 North Shore & Western Line)",
+						  "origin_line_name_short": "Short version of first leg line name (eg T1)",
+						  "origin_occupancy": "First leg vehicle occupancy (eg Many seats, few seats etc)",
+						  "origin_name": "Origin name (eg Gordon Station, Platform 1, Gordon)",
+						  "first_leg_device_tracker": "Device tracker based on first leg vehicle location (if provided)"
+						}
+					},
+					"destination_sensors": {
+						"name": "Destination sensors",
+						"description": "Select which sensors to create",
+						"data": {
+						  "destination_line_name": "Last leg line name (eg T9 Northern Line)",
+						  "destination_line_name_short": "Short version of last leg line name (eg T9)",
+						  "destination_name": "Destination name (eg Gadigal Station, Platform 1, Sydney)",
+						  "destination_occupancy": "Last leg vehicle occupancy (eg Many seats, few seats etc)",
+						  "last_leg_device_tracker": "Device tracker based on last leg vehicle location (if provided)"
+						}
+					}
+				},
+				"description": "Select specific optional sensors",
+				"title": "{journey_name}"
+			  },
+			  "finish": {
+				  "description": "Journey(s) registered successfully!",
+				  "title": "{journey_name}"
+			  }
+		  }		  
+	  }
+  },
+  "selector": {
+      "alert_priority_selector": {
+          "options": {
+              "none": "None",
+              "veryLow": "Very low",
+              "low": "Low",
+              "normal": "Normal",
+              "high": "High",
+              "veryHigh": "Very high"
+          }
+      },
+      "alert_type_selector": {
+          "options": {
+              "lineInfo": "Line info",
+              "stopInfo": "Stop info",
+              "routeInfo": "Route info",
+              "stopBlocking": "Stop blocking",
+              "bannerInfo": "Banner info"
+          }
+      },
+     "transport_type_selector": {
+          "options": {
+              "1": "Train",
+              "2": "Metro",
+              "4": "Light rail",
+              "5": "Bus",
+              "7": "Coach",
+              "9": "Ferry",
+              "11": "School bus",
+			  "99": "Walk"
+          }
+      },
+       "device_tracker_selector": {
+          "options": {
+              "never": "Never",
+              "if_not_duplicated": "Only if different to the origin",
+              "always": "Always"
+          }
+      },
+       "sensor_creation_selector": {
+          "options": {
+              "none": "No additional sensors",
+			  "changes_and_times": "Trip changes and arrival/departure times",
+			  "verbose": "All available sensors",
+              "custom": "Custom"
+          }
+      }
+  }
+}
