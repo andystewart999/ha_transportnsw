@@ -1,3 +1,6 @@
+# NOTE!
+This readme is due to be updated shortly to incorporate the move to version 2.0 of this integration
+
 # Transport NSW MkII
 A Home Assistant custom component to provide real-time Transport NSW journey information
 
