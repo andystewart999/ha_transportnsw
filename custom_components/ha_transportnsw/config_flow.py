@@ -1,4 +1,4 @@
-"""Config flow for Integration 101 Template integration."""
+"""Config flow for Transport NSW Mk II integration."""
 from __future__ import annotations
 from TransportNSWv2 import InvalidAPIKey, APIRateLimitExceeded, StopError, TripError
 
@@ -26,7 +26,7 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
 
 from .const import *
-from .helpers import get_trips, check_stops, get_stop_detail, set_optional_sensors
+from .helpers import get_trips, check_stops, get_stop_detail#, set_optional_sensors
 from .subentry_flow import JourneySubEntryFlowHandler
 
 _LOGGER = logging.getLogger(__name__)
@@ -37,15 +37,8 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> None:
 
     Data has the keys from STEP_USER_DATA_SCHEMA with values provided by the user.
     """
-        # ----------------------------------------------------------------------------
-        # If your api is not async, use the executor to access it
-        # If you cannot connect, raise CannotConnect
-        # If the authentication is wrong, raise InvalidAuth
-        # ----------------------------------------------------------------------------
-#        api = API(data[CONF_HOST], data[CONF_USERNAME], data[CONF_PASSWORD], mock=True)
-#        await hass.async_add_executor_job(api.get_data)
 
-    # Check that the API key is valid by calling the quick and easy 'stops' API with a hard-coded station ID (Central Station)
+    # Check that the API key is valid by calling the quick and easy 'stops' API with a hard-coded, known good station ID (Central Station)
             
     try:
         stop_data = await hass.async_add_executor_job (
@@ -53,8 +46,6 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> None:
              data[CONF_API_KEY],
              [STOP_TEST_ID]
              )
-
-        #return True
 
     except InvalidAPIKey:
         raise InvalidAPIKey
@@ -64,27 +55,16 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> None:
     
     except StopError:
         raise StopError
-    
+
     except Exception as ex:
         raise StopError
 
-    # Just in case
-    #return False
 
-class ExampleConfigFlow(ConfigFlow, domain=DOMAIN):
-    """Handle a config flow for Example Integration."""
+class TransportNSWConfigFlowHandler(ConfigFlow, domain=DOMAIN):
+    """Handle a config flow for Transport NSW Mk II"""
 
     VERSION = 1
     _input_data: dict[str, Any]
-
-    # @staticmethod
-    # @callback
-    # def async_get_options_flow(config_entry):
-        # """Get the options flow for this handler."""
-        # # Remove this method and the ExampleOptionsFlowHandler class
-        # # if you do not want any options for your integration.
-        # return ExampleOptionsFlowHandler(config_entry)
-
 
     @classmethod
     @callback
@@ -102,22 +82,9 @@ class ExampleConfigFlow(ConfigFlow, domain=DOMAIN):
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """Handle the initial step."""
-        # Called when you initiate adding an integration via the UI
         errors: dict[str, str] = {}
 
         if user_input is not None:   
-            
-            
-            
-            #hass.config_entries.async_reload(config_entry.entry_id)
-            # return self.async_update_reload_and_abort(
-                # self.reauth_entry,
-                # data=data,
-                # reload_even_if_entry_is_unchanged=False,
-            # )
-            
-            
-            
             # The form has been filled in and submitted, so process the data provided.
             try:
                 # Validate that the setup data is valid and if not handle errors.
@@ -160,14 +127,18 @@ class ExampleConfigFlow(ConfigFlow, domain=DOMAIN):
                     )
 
                 else:
-                    # Validation was successful, so create a unique id for this instance of your integration
+                    # Validation was successful, so create a unique id for this instance
                     # and create the config entry.
 
                     # Set our title variable here for use later
-                    self._title = "Transport NSW MK II"
+                    self._title = f"Transport NSW Mk II ({user_input[CONF_API_KEY][-4:]})"
                     self._input_data = user_input
 
-                    return self.async_create_entry(title=self._title, data=self._input_data, description = "test description - reason = {reason}", description_placeholders = {"reason": "mystring"} )
+                    return self.async_create_entry(
+                        title=self._title,
+                        data=self._input_data,
+                        description = "test description - reason = {reason}",
+                        description_placeholders = {"reason": "mystring"} )
 
 
         if user_input is None:
@@ -180,20 +151,20 @@ class ExampleConfigFlow(ConfigFlow, domain=DOMAIN):
                 user_input = {}
                 self._previous_key = ''
 
-        USER_DATA_SCHEMA = vol.Schema(
-            {
-                vol.Required(CONF_API_KEY, default = user_input.get(CONF_API_KEY,'')): str,
-                vol.Required(
-                    CONF_SCAN_INTERVAL,
-                    default=user_input.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),
-                ): (vol.All(vol.Coerce(int), vol.Clamp(min=MIN_SCAN_INTERVAL))),
-            }
-        )
+            USER_DATA_SCHEMA = vol.Schema(
+                {
+                    vol.Required(CONF_API_KEY, default = user_input.get(CONF_API_KEY,'')): str,
+                    vol.Required(
+                        CONF_SCAN_INTERVAL,
+                        default=user_input.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),
+                    ): (vol.All(vol.Coerce(int), vol.Clamp(min=MIN_SCAN_INTERVAL))),
+                }
+            )
 
-        # Show initial form
-        return self.async_show_form(
-            step_id="user", data_schema=USER_DATA_SCHEMA, errors=errors
-        )
+            # Show initial form
+            return self.async_show_form(
+                step_id="user", data_schema=USER_DATA_SCHEMA, errors=errors
+            )
 
     async def async_step_reconfigure(self, user_input: dict[str, Any] | None = None):
         """Re-authenticate API."""
