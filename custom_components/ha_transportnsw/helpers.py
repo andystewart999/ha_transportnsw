@@ -13,25 +13,24 @@ _LOGGER = logging.getLogger(__name__)
 
 from .const import *
 
-def convert_date(utc_string) -> datetime:
-    fmt = '%Y-%m-%dT%H:%M:%SZ'
-    #fmt = '%H:%M:%SZ'
+# def convert_date(utc_string) -> datetime:
+    # fmt = '%Y-%m-%dT%H:%M:%SZ'
     
-    utc_dt = datetime.strptime(utc_string, fmt)
-    utc_dt = utc_dt.replace(tzinfo=pytz.utc)
-    local_timezone = tzlocal.get_localzone()
-    local_dt = utc_dt.astimezone(local_timezone)
+    # utc_dt = datetime.strptime(utc_string, fmt)
+    # utc_dt = utc_dt.replace(tzinfo=pytz.utc)
+    # local_timezone = tzlocal.get_localzone()
+    # local_dt = utc_dt.astimezone(local_timezone)
     
-    return local_dt
+    # return local_dt
 
 def get_trips (api_key: str, name_origin: str, name_destination: str, journey_wait_time: int = 0, origin_transport_type: int = [0], destination_transport_type: int = [0],
               strict_transport_type: bool = False, route_filter: str = '', journeys_to_return: int = 1, include_realtime_location: bool = True, 
               include_alerts: bool = False, alert_severity: str = 'high', alert_type: str = ['all']):
+
     # Use the Transport NSW API to request trip information
     # Exceptions will be caught by the calling function
 
     if not include_alerts:
-        # A bit hacky, I'll publish an updated version of PyTransportNSWv2 to fix this soon
         alert_severity = 'none'
 
     tfnsw = TransportNSWv2()
@@ -49,8 +48,8 @@ def check_stops (api_key: str, stops: List[str]):
     try:
         tfnsw = TransportNSWv2()
         data = tfnsw.check_stops (api_key = api_key, stops = stops)
-    
-        return data
+
+        return json.loads(data)
 
     except InvalidAPIKey:
         raise InvalidAPIKey
