@@ -10,7 +10,7 @@ from homeassistant.components.device_tracker import (
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.helpers.dispatcher import async_dispatcher_connect
+#from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.config_entries import ConfigSubentry
@@ -18,7 +18,7 @@ from homeassistant.helpers import entity_registry
 
 from . import MyConfigEntry
 from .const import *
-from .coordinator import ExampleCoordinator
+from .coordinator import TransportNSWCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -31,7 +31,6 @@ def remove_entity(entity_reg, configentry_id, subentry_id,trip_index, key):
         entities = entity_reg.entities.get_entries_for_config_entry_id(configentry_id)
 
         # Search for the one to remove
-        # TODO - probably we can do this in a one-liner!
         for entity in entities:
             if entity.unique_id == unique_id:
                 entity_reg.async_remove(entity.entity_id)
@@ -49,7 +48,7 @@ async def async_setup_entry(
 ) -> None:
     """Configure device_trackers from a config entry created in the integrations UI."""
     # This gets the data update coordinator from the config entry runtime data as specified in your __init__.py
-    coordinator: ExampleCoordinator = config_entry.runtime_data.coordinator
+    coordinator: TransportNSWCoordinator = config_entry.runtime_data.coordinator
 
     # Be ready to remove sensors if required
     entity_reg = entity_registry.async_get(hass)
@@ -59,8 +58,7 @@ async def async_setup_entry(
             trips_to_create = subentry.data[CONF_TRIPS_TO_CREATE]
             device_trackers = []
 
-            for trip_index in range (0, 3, 1):   # TODO - consider doing 0 to 4, and if greater than trips_to_create then just delete?
-            #for trip_index in range (0, trips_to_create, 1):
+            for trip_index in range (0, 3, 1):   # TODO - save the previous trip count and only delete extra sensors if needed
                 if trips_to_create == 1:
                     sensor_suffix = ""
                     name_suffix = ""
@@ -92,7 +90,7 @@ async def async_setup_entry(
                                 name = f"{subentry.subentry_id}_{tracker}_{trip_index}"
                                 )
 
-                            device_trackers.append(ExampleDeviceTracker(coordinator, new_device_tracker, subentry, trip_index, sensor_suffix, name_suffix, leg_suffix, device_suffix, device_identifier))
+                            device_trackers.append(TransportNSWDeviceTracker(coordinator, new_device_tracker, subentry, trip_index, sensor_suffix, name_suffix, leg_suffix, device_suffix, device_identifier))
                         else:
                             # Try and remove it - don't worry if it never existed
                             remove_entity (entity_reg, config_entry.entry_id, subentry.subentry_id, trip_index, tracker)
@@ -100,10 +98,10 @@ async def async_setup_entry(
             async_add_entities(device_trackers, config_subentry_id = subentry.subentry_id)
 
 
-class ExampleDeviceTracker(CoordinatorEntity, TrackerEntity):
+class TransportNSWDeviceTracker(CoordinatorEntity, TrackerEntity):
     """device tracker."""
 
-    def __init__(self, coordinator: ExampleCoordinator, description: TrackerEntityDescription, subentry: ConfigSubentry, index: int, sensor_suffix: str, name_suffix: str, leg_suffix: str, device_suffix: str, device_identifier: str) -> None:
+    def __init__(self, coordinator: TransportNSWCoordinator, description: TrackerEntityDescription, subentry: ConfigSubentry, index: int, sensor_suffix: str, name_suffix: str, leg_suffix: str, device_suffix: str, device_identifier: str) -> None:
         """Initialise sensor."""
         super().__init__(coordinator)
 
@@ -116,7 +114,6 @@ class ExampleDeviceTracker(CoordinatorEntity, TrackerEntity):
         self.sensor_suffix = sensor_suffix
         self.leg_suffix = leg_suffix
 
-        #self.entity_id = f"device_tracker.{config_entry.entry_id}_{index}_{journey_part}"
         self._attr_unique_id = f"{subentry.subentry_id}_{description.key}_{index}"
         self._attr_name = f"{subentry.data[CONF_ORIGIN_NAME]} to {subentry.data[CONF_DESTINATION_NAME]}{device_suffix} {leg_suffix}location"
 
@@ -125,8 +122,10 @@ class ExampleDeviceTracker(CoordinatorEntity, TrackerEntity):
     def latitude(self) -> float | None:
         """Return latitude value of the vehicle."""
         try:
-            return self.coordinator.data[self.subentry.subentry_id][self.journey_index][ORIGIN_LATITUDE]
-
+            if self.entity_description.key == CONF_FIRST_LEG_DEVICE_TRACKER:
+                return self.coordinator.data[self.subentry.subentry_id][self.journey_index][ORIGIN_LATITUDE]
+            else:
+                return self.coordinator.data[self.subentry.subentry_id][self.journey_index][DESTINATION_LATITUDE]
         except:
             pass
 
@@ -134,31 +133,42 @@ class ExampleDeviceTracker(CoordinatorEntity, TrackerEntity):
     def longitude(self) -> float | None:
         """Return longitude value of the vehicle."""
         try:
-            return self.coordinator.data[self.subentry.subentry_id][self.journey_index][ORIGIN_LONGITUDE]
-
+            if self.entity_description.key == CONF_FIRST_LEG_DEVICE_TRACKER:
+                return self.coordinator.data[self.subentry.subentry_id][self.journey_index][ORIGIN_LONGITUDE]
+            else:
+                return self.coordinator.data[self.subentry.subentry_id][self.journey_index][DESTINATION_LONGITUDE]
         except:
             pass
 
     @property
     def available(self) -> bool:
         """Return if entity is available."""
-        try:
+        if True:
+#        try:
             # Make sure there is GPS data
-            if self.coordinator.data[self.subentry.subentry_id][self.journey_index][ORIGIN_LATITUDE] != 'n/a' and self.coordinator.data[self.subentry.subentry_id][self.journey_index][ORIGIN_LONGITUDE] != 'n/a':
-                # If this is the last leg sensor, and it's the same realtime trip ID as the first leg sensor, should we make it unavailable?
-                if self.entity_description.key != CONF_LAST_LEG_DEVICE_TRACKER:
+            if self.entity_description.key == CONF_FIRST_LEG_DEVICE_TRACKER:
+                if self.coordinator.data[self.subentry.subentry_id][self.journey_index][ORIGIN_LATITUDE] != 'n/a' and self.coordinator.data[self.subentry.subentry_id][self.journey_index][ORIGIN_LONGITUDE] != 'n/a' and self.subentry.data['origin_sensors'][CONF_FIRST_LEG_DEVICE_TRACKER]:
                     return True
                 else:
-                    # It's the last leg sensor, so check
+                    return False
+
+            if self.entity_description.key == CONF_LAST_LEG_DEVICE_TRACKER:
+                if self.coordinator.data[self.subentry.subentry_id][self.journey_index][DESTINATION_LATITUDE] != 'n/a' and self.coordinator.data[self.subentry.subentry_id][self.journey_index][DESTINATION_LONGITUDE] != 'n/a':
+                    valid_options = ['if_not_duplicated', 'always']
+
+                    # If this is the last leg sensor, and it's the same realtime trip ID as the first leg sensor, should we make it unavailable?
                     if self.coordinator.data[self.subentry.subentry_id][self.journey_index]['origin_real_time_trip_id'] == self.coordinator.data[self.subentry.subentry_id][self.journey_index]['destination_real_time_trip_id']:
-                        return False
-                    else:
+                        valid_options = ['always']
+                        
+                    if self.subentry.data['destination_sensors'][CONF_LAST_LEG_DEVICE_TRACKER] in valid_options:
                         return True
-            else:            
-                return False
-                
-        except:
-            return False
+                    else:
+                        return False
+
+                else:
+                    return False
+#        except:
+#            return False
 
     @property
     def icon(self) -> str:
@@ -188,13 +198,16 @@ class ExampleDeviceTracker(CoordinatorEntity, TrackerEntity):
         """Return the extra state attributes."""
         # Add any additional attributes you want on your sensor.
         attrs = {}
-        attrs["Origin ID"] = self.subentry.data[CONF_ORIGIN_ID]
-        attrs["Destination ID"] = self.subentry.data[CONF_DESTINATION_ID]
-        attrs["Subentry ID"] = str(self.subentry.subentry_id)
 
-        if self.entity_description.key == CONF_FIRST_LEG_DEVICE_TRACKER:
-            attrs["Realtime trip ID"] = self.coordinator.data[self.subentry.subentry_id][self.journey_index]['origin_real_time_trip_id']
-        else:
-            attrs["Realtime trip ID"] = self.coordinator.data[self.subentry.subentry_id][self.journey_index]['destination_real_time_trip_id']
+        try:
+            attrs['Attribution'] = ATTRIBUTION
+            attrs["Origin ID"] = self.subentry.data[CONF_ORIGIN_ID]
+            attrs["Destination ID"] = self.subentry.data[CONF_DESTINATION_ID]
+     
+            if self.entity_description.key == CONF_FIRST_LEG_DEVICE_TRACKER:
+                attrs["Realtime trip ID"] = self.coordinator.data[self.subentry.subentry_id][self.journey_index]['origin_real_time_trip_id']
+            else:
+                attrs["Realtime trip ID"] = self.coordinator.data[self.subentry.subentry_id][self.journey_index]['destination_real_time_trip_id']
 
-        return attrs
+        finally:
+            return attrs
