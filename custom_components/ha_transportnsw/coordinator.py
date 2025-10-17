@@ -1,4 +1,4 @@
-"""Integration 101 Template integration using DataUpdateCoordinator."""
+"""Transport NSW Mk II DataUpdateCoordinator."""
 
 from dataclasses import dataclass
 from datetime import timedelta
@@ -19,47 +19,37 @@ from .helpers import get_trips, check_stops, get_api_calls, set_api_calls
 _LOGGER = logging.getLogger(__name__)
 
 
-class ExampleCoordinator(DataUpdateCoordinator):
-    """My example coordinator."""
-
-    #data: ExampleAPIData
+class TransportNSWCoordinator(DataUpdateCoordinator):
+    """Transport NSW Mk II coordinator."""
 
     def __init__(self, hass: HomeAssistant, config_entry: ConfigEntry) -> None:
         """Initialize coordinator."""
 
 
-        # # set variables from options
+        # set variables from options
         self.hass = hass
         self.config_entry = config_entry
         self.poll_interval = config_entry.data[CONF_SCAN_INTERVAL]
         self.api_calls = 0      # We'll update it properly later, in the async function async_update_data
-        #self.api_calls = get_api_calls(self.hass.config.path('.ha_transportnsw_mkii.json'))  # This is blocking :-(
-        # TODO - work out how to do this in a non-blocking way?  Is that even possible?
         
         # Initialise DataUpdateCoordinator
         super().__init__(
             hass,
             _LOGGER,
             name=f"{DOMAIN} ({config_entry.entry_id})",
-            # Method to call on every update interval.
             update_method=self.async_update_data,
-            # Polling interval. Will only be polled if there are subscribers.
-            # Using config option here but you can just use a value.
             update_interval=timedelta(seconds=self.poll_interval),
         )
 
 
     async def async_update_data(self):
         """Fetch data from API endpoint.
-
-        This is the place to pre-process the data to lookup tables
-        so entities can quickly look up their data.
         """
         
         # TODO - option/mandate no updates between certain times,when the trains/buses aren't running?
         # TODO - option to only run between certain times (user-specified), and increase the poll rate for shorter windows?
         
-        # First, populate self.api_calls.  Don't know how to do it in __init__ :-(
+        # First, populate self.api_calls
         if self.api_calls == 0:
             # Try and load it
             try:
