@@ -14,21 +14,21 @@ CONF_DESTINATION_NAME = 'destination_name'
 CONF_TRIP_WAIT_TIME = 'trip_wait_time'
 CONF_CREATE_REVERSE_TRIP = 'create_reverse_trip'
 DEFAULT_CREATE_REVERSE_TRIP = False
-CONF_UNIQUE_KEY = 'unique_key'
+#CONF_UNIQUE_KEY = 'unique_key'
 
 # Optional settings
 CONF_RETURN_INFO = 'return_info'
 CONF_ORIGIN_TRANSPORT_TYPE = 'origin_transport_type'
 CONF_DESTINATION_TRANSPORT_TYPE = 'destination_transport_type'
-CONF_STRICT_TRANSPORT_TYPE = 'strict_transport_type'
+#CONF_STRICT_TRANSPORT_TYPE = 'strict_transport_type'
 CONF_ROUTE_FILTER = 'route_filter'
-CONF_INCLUDE_ORIGIN_LOCATION = 'include_origin_location'
-CONF_INCLUDE_DESTINATION_LOCATION = 'include_destination_location'
+#CONF_INCLUDE_ORIGIN_LOCATION = 'include_origin_location'
+#CONF_INCLUDE_DESTINATION_LOCATION = 'include_destination_location'
 CONF_ALERT_SEVERITY = 'alert_severity'
 CONF_ALERT_TYPES = 'alert_types'
 CONF_TRIPS_TO_CREATE = 'trips_to_create'
-SENSOR_ALERTS = 'alerts'
-SENSOR_ALERTS_NAME = 'alerts'
+#SENSOR_ALERTS = 'alerts'
+#SENSOR_ALERTS_NAME = 'alerts'
 
 # Sensor key names
 CONF_DUE_SENSOR = 'due'
@@ -70,7 +70,7 @@ CONF_FIRST_LEG_LINE_NAME_SHORT_FRIENDLY = 'first leg line name (short)'
 CONF_FIRST_LEG_OCCUPANCY_FRIENDLY = 'first leg occupacy'
 CONF_FIRST_LEG_TRANSPORT_TYPE_FRIENDLY = 'first leg transport type'
 CONF_FIRST_LEG_TRANSPORT_NAME_FRIENDLY = 'first leg transport name'
-CONF_FIRST_LEG_DEVICE_TRACKER_FRIENDLY = 'first leg device tracker'
+#CONF_FIRST_LEG_DEVICE_TRACKER_FRIENDLY = 'first leg device tracker'
 CONF_DESTINATION_NAME_FRIENDLY = 'destination name'
 #CONF_DESTINATION_DETAIL_FRIENDLY = 'destination detail'
 CONF_LAST_LEG_LINE_NAME_FRIENDLY = 'last leg line name'
@@ -78,18 +78,18 @@ CONF_LAST_LEG_LINE_NAME_SHORT_FRIENDLY = 'last leg line name (short)'
 CONF_LAST_LEG_OCCUPANCY_FRIENDLY = 'last leg occupancy'
 CONF_LAST_LEG_TRANSPORT_TYPE_FRIENDLY = 'last leg transport type'
 CONF_LAST_LEG_TRANSPORT_NAME_FRIENDLY = 'last leg transport name'
-CONF_LAST_LEG_DEVICE_TRACKER_FRIENDLY = 'last leg device_tracker'
+#CONF_LAST_LEG_DEVICE_TRACKER_FRIENDLY = 'last leg device_tracker'
 
 # Sensor creation defaults
 DEFAULT_TRIP_WAIT_TIME = 10
-DEFAULT_RETURN_INFO = 'none'
+#DEFAULT_RETURN_INFO = 'none'
 DEFAULT_TRANSPORT_TYPE_SELECTOR = ['Train', 'Metro', 'Light rail', 'Bus', 'Ferry']
-DEFAULT_STRICT_TRANSPORT_TYPE = False
+#DEFAULT_STRICT_TRANSPORT_TYPE = False
 DEFAULT_ROUTE_FILTER = ''
-DEFAULT_INCLUDE_ORIGIN_LOCATION = True
-DEFAULT_INCLUDE_DESTINATION_LOCATION = False
-DEFAULT_ALERTS = False
-DEFAULT_ALERT_TYPES = ['lineInfo', 'stopInfo', 'routeInfo', 'stopBlocking', 'bannerInfo']
+#DEFAULT_INCLUDE_ORIGIN_LOCATION = True
+#DEFAULT_INCLUDE_DESTINATION_LOCATION = False
+#DEFAULT_ALERTS = False
+DEFAULT_ALERT_TYPES = ['lineinfo', 'stopinfo', 'routeinfo', 'stopblocking', 'bannerinfo']
 DEFAULT_ALERT_SEVERITY = 'high'
 DEFAULT_TRIPS_TO_CREATE = 1
 ORIGIN_TRANSPORT_TYPE_LIST = ['Train', 'Metro', 'Light rail', 'Bus', 'Coach', 'Ferry', 'School bus', 'Walk']
@@ -102,13 +102,13 @@ DEFAULT_ALERTS_SENSOR = False
 DEFAULT_FIRST_LEG_DEPARTURE_TIME_SENSOR = False
 DEFAULT_LAST_LEG_ARRIVAL_TIME_SENSOR = False
 DEFAULT_ORIGIN_NAME_SENSOR = False
-DEFAULT_ORIGIN_DETAIL_SENSOR = False
+#DEFAULT_ORIGIN_DETAIL_SENSOR = False
 DEFAULT_FIRST_LEG_LINE_NAME_SENSOR = False
 DEFAULT_FIRST_LEG_LINE_NAME_SHORT_SENSOR = False
 DEFAULT_FIRST_LEG_OCCUPANCY_SENSOR = False
 DEFAULT_FIRST_LEG_DEVICE_TRACKER = True
 DEFAULT_DESTINATION_NAME_SENSOR = False
-DEFAULT_DESTINATION_DETAIL_SENSOR = False
+#DEFAULT_DESTINATION_DETAIL_SENSOR = False
 DEFAULT_LAST_LEG_LINE_NAME_SENSOR = False
 DEFAULT_LAST_LEG_LINE_NAME_SHORT_SENSOR = False
 DEFAULT_LAST_LEG_OCCUPANCY_SENSOR = False
@@ -120,19 +120,19 @@ DEFAULT_LAST_LEG_DEVICE_TRACKER = 'if_not_duplicated'
 CONF_INCLUDE_REALTIME_LOCATION = 'include_realtime_location'
 CONF_ORIGIN_DEVICE_TRACKER = 'origin_device_tracker'
 CONF_DESTINATION_DEVICE_TRACKER = 'destination_device_tracker'
-DEFAULT_ORIGIN_DEVICE_TRACKER = 'always'
-DEFAULT_DESTINATION_DEVICE_TRACKER = 'if_not_duplicated'
+#DEFAULT_ORIGIN_DEVICE_TRACKER = 'always'
+#DEFAULT_DESTINATION_DEVICE_TRACKER = 'if_not_duplicated'
 
-ORIGIN_LOCATION = 'origin_location'
-DESTINATION_LOCATION = 'destination_location'
+#ORIGIN_LOCATION = 'origin_location'
+#DESTINATION_LOCATION = 'destination_location'
 ORIGIN_LATITUDE = 'origin_latitude'
 ORIGIN_LONGITUDE = 'origin_longitude'
 DESTINATION_LATITUDE = 'destination_latitude'
 DESTINATION_LONGITUDE = 'destination_longitude'
 
-DEFAULT_DESTINATION_LINE_NAME = False
-DEFAULT_DESTINATION_LINE_NAME_SHORT = False
-DEFAULT_DESTINATION_TRANSPORT_TYPE = False
+#DEFAULT_DESTINATION_LINE_NAME = False
+#DEFAULT_DESTINATION_LINE_NAME_SHORT = False
+#DEFAULT_DESTINATION_TRANSPORT_TYPE = False
        
 
 
@@ -215,7 +215,7 @@ DEFAULT_DESTINATION_TRANSPORT_TYPE = False
 # ATTR_ALERTS = 'alerts'
 
 ATTRIBUTION = "Data provided by Transport NSW"
-DEFAULT_NAME = "TBD" #Will be based on the origina and destination IDs by default
+#DEFAULT_NAME = "TBD" #Will be based on the origina and destination IDs by default
 
 # #Sensors
 # SENSOR_DUE = 'due'
@@ -256,7 +256,6 @@ OCCUPANCY_ICONS = {
     None: ["mdi:account-question", "Unknown"]
 }
 
-
 TRANSPORT_TYPE = {
     "All": 0,
     "Train": 1,
@@ -278,21 +277,7 @@ ALERT_PRIORITIES = {
 }
  
 SUBENTRY_TYPE_JOURNEY = 'subentry_journey'
-SUBENTRY_JOURNEYPART = 'subentry_journeypart'
+#SUBENTRY_JOURNEYPART = 'subentry_journeypart'
 API_CALLS = 'api_calls'
 API_CALLS_NAME = 'API calls'
 STOP_TEST_ID = '200060' # Central station
-
-# Testing stop IDs
-# 207210 | 200070
-# G207536 | 207210
-# Dev notes
-# Keep 'due' as a dumb integer (doesn't update in lovelace') or kill it and use 'departure from origin' (which does, but it's a date/time object so harder to manipulate
-# General sensor groupings thoughts
-# General sensor names thoughts
-# Should the 'changes list' attribute have the ENTIRE journey origin/destination list, or just the changes within the journey (with the origin and destination sensors already available to top/tail) ?
-
-# TODO - delete legacy devices when reconfiguring
-#device = device_registry.async_get_device(
-#            identifiers={(DOMAIN, entry.entry_id)}
-#  something from here probably
