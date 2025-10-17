@@ -1,4 +1,4 @@
-"""Interfaces with the Integration 101 Template api sensors."""
+"""Interfaces with the Transport NSW Mk II API sensors."""
 
 import logging
 from datetime import datetime, timezone, timedelta
@@ -30,7 +30,7 @@ from homeassistant.const import EntityCategory
 
 from . import MyConfigEntry
 from .const import *
-from .coordinator import ExampleCoordinator
+from .coordinator import TransportNSWCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -53,8 +53,7 @@ DEFAULT_SUBENTRY_SENSORS: tuple[SensorEntityDescription, ...] = (
     ),
 )
 
-# Create sensor definitions for everything that isn't a basic text sensor
-# Everything else is defined and created as needed
+# Create sensor definitions
 TIME_AND_CHANGE_SENSORS: tuple[SensorEntityDescription, ...] = (
     SensorEntityDescription(
         key=CONF_FIRST_LEG_DEPARTURE_TIME_SENSOR,
@@ -87,32 +86,26 @@ ORIGIN_SENSORS: tuple[SensorEntityDescription, ...] = (
     SensorEntityDescription(
         key=CONF_ORIGIN_NAME_SENSOR,
         name=CONF_ORIGIN_NAME_FRIENDLY,
-#        icon = 'mdi:train',
     ),
     SensorEntityDescription(
         key=CONF_FIRST_LEG_LINE_NAME_SENSOR,
         name=CONF_FIRST_LEG_LINE_NAME_FRIENDLY,
-#        icon = 'mdi:train',
     ),
     SensorEntityDescription(
         key=CONF_FIRST_LEG_LINE_NAME_SHORT_SENSOR,
         name=CONF_FIRST_LEG_LINE_NAME_SHORT_FRIENDLY,
-#        icon = 'mdi:train',
     ),
     SensorEntityDescription(
         key=CONF_FIRST_LEG_TRANSPORT_TYPE_SENSOR,
         name=CONF_FIRST_LEG_TRANSPORT_TYPE_FRIENDLY,
-#        icon = 'mdi:train',
     ),
     SensorEntityDescription(
         key=CONF_FIRST_LEG_TRANSPORT_NAME_SENSOR,
         name=CONF_FIRST_LEG_TRANSPORT_NAME_FRIENDLY,
-#        icon = 'mdi:train',
     ),
     SensorEntityDescription(
         key=CONF_FIRST_LEG_OCCUPANCY_SENSOR,
         name=CONF_FIRST_LEG_OCCUPANCY_FRIENDLY,
-#        icon = 'mdi:train',
     )
 )
 
@@ -120,32 +113,26 @@ DESTINATION_SENSORS: tuple[SensorEntityDescription, ...] = (
     SensorEntityDescription(
         key=CONF_DESTINATION_NAME_SENSOR,
         name=CONF_DESTINATION_NAME_FRIENDLY,
-#        icon = 'mdi:train',
     ),
     SensorEntityDescription(
         key=CONF_LAST_LEG_LINE_NAME_SENSOR,
         name=CONF_LAST_LEG_LINE_NAME_FRIENDLY,
-#        icon = 'mdi:train',
     ),
     SensorEntityDescription(
         key=CONF_LAST_LEG_LINE_NAME_SHORT_SENSOR,
         name=CONF_LAST_LEG_LINE_NAME_SHORT_FRIENDLY,
-#        icon = 'mdi:train',
     ),
     SensorEntityDescription(
         key=CONF_LAST_LEG_TRANSPORT_TYPE_SENSOR,
         name=CONF_LAST_LEG_TRANSPORT_TYPE_FRIENDLY,
-#        icon = 'mdi:train',
     ),
     SensorEntityDescription(
         key=CONF_LAST_LEG_TRANSPORT_NAME_SENSOR,
         name=CONF_LAST_LEG_TRANSPORT_NAME_FRIENDLY,
-#        icon = 'mdi:train',
     ),
     SensorEntityDescription(
         key=CONF_LAST_LEG_OCCUPANCY_SENSOR,
         name=CONF_LAST_LEG_OCCUPANCY_FRIENDLY,
-#        icon = 'mdi:train',
     )
 )
 
@@ -175,7 +162,6 @@ def get_highest_alert(alerts):
 
 def convert_date(utc_string) -> datetime:
     fmt = '%Y-%m-%dT%H:%M:%SZ'
-    #fmt = '%H:%M:%SZ'
     
     utc_dt = datetime.strptime(utc_string, fmt)
     utc_dt = utc_dt.replace(tzinfo=pytz.utc)
@@ -193,7 +179,6 @@ def remove_entity(entity_reg, configentry_id, subentry_id, trip_index, key):
         entities = entity_reg.entities.get_entries_for_config_entry_id(configentry_id)
 
         # Search for the one to remove
-        # TODO - probably we can do this in a one-liner!
         for entity in entities:
             if entity.unique_id == unique_id:
                 entity_reg.async_remove(entity.entity_id)
@@ -219,23 +204,18 @@ async def async_setup_entry(
 ):
     """Set up the Sensors."""
     # This gets the data update coordinator from the config entry runtime data as specified in your __init__.py
-    coordinator: ExampleCoordinator = config_entry.runtime_data.coordinator
+    coordinator: TransportNSWCoordinator = config_entry.runtime_data.coordinator
 
     # Be ready to remove devices and sensors if required
     device_reg = dr.async_get(hass)
     entity_reg = er.async_get(hass)
 
     # Create the subentry sensors
-    # TODO - try and have the names auto-truncate, there's a sensor flag for that I think
-    # TODO - rename some of the sensors, ie 'arrival time' is the arrival time at the DESTINATION, so make sure it's clear
-    # The upshot of the above is that I may have to manually define more sensor types, which might end up making it simpler to just define ALL of them
-    
     for subentry in config_entry.subentries.values():
         if subentry.subentry_type == SUBENTRY_TYPE_JOURNEY:
             trips_to_create = subentry.data[CONF_TRIPS_TO_CREATE]
 
-#            for trip_index in range (0, trips_to_create, 1):   # TODO - consider doing 0 to 4, and if greater than trips_to_create then just delete?
-            for trip_index in range (0, 3, 1):   # TODO - consider doing 0 to 3, and if greater than trips_to_create then just delete?
+            for trip_index in range (0, 3, 1):
                 if trips_to_create == 1:
                     sensor_suffix = ""
                     name_suffix = ""
@@ -259,7 +239,7 @@ async def async_setup_entry(
                 else:
                     # Define the default sensors for this trip
                     sensors = [
-                        ExampleSubentrySensor(coordinator, description, subentry, trip_index, sensor_suffix, name_suffix, device_suffix, device_identifier)
+                        TransportNSWSubentrySensor(coordinator, description, subentry, trip_index, sensor_suffix, name_suffix, device_suffix, device_identifier)
                         for description in DEFAULT_SUBENTRY_SENSORS
                     ]
         
@@ -267,7 +247,7 @@ async def async_setup_entry(
                     if 'time_and_change_sensors' in subentry.data:
                         for sensor in TIME_AND_CHANGE_SENSORS:
                             if subentry.data['time_and_change_sensors'].get(sensor.key, False):
-                                sensors.append(ExampleSubentrySensor(coordinator, sensor, subentry, trip_index, sensor_suffix, name_suffix, device_suffix, device_identifier))
+                                sensors.append(TransportNSWSubentrySensor(coordinator, sensor, subentry, trip_index, sensor_suffix, name_suffix, device_suffix, device_identifier))
                             else:
                                 # Try and remove it - don't worry if it never existed
                                 remove_entity (entity_reg, config_entry.entry_id, subentry.subentry_id, trip_index, sensor.key)
@@ -275,7 +255,7 @@ async def async_setup_entry(
                     if 'origin_sensors' in subentry.data:
                         for sensor in ORIGIN_SENSORS:
                             if subentry.data['origin_sensors'].get(sensor.key, False):
-                                sensors.append(ExampleSubentrySensor(coordinator, sensor, subentry, trip_index, sensor_suffix, name_suffix, device_suffix, device_identifier))
+                                sensors.append(TransportNSWSubentrySensor(coordinator, sensor, subentry, trip_index, sensor_suffix, name_suffix, device_suffix, device_identifier))
                             else:
                                 # Try and remove it - don't worry if it never existed
                                 remove_entity (entity_reg, config_entry.entry_id, subentry.subentry_id, trip_index, sensor.key)
@@ -283,14 +263,14 @@ async def async_setup_entry(
                     if 'destination_sensors' in subentry.data:
                         for sensor in DESTINATION_SENSORS:
                             if subentry.data['destination_sensors'].get(sensor.key, False):
-                                sensors.append(ExampleSubentrySensor(coordinator, sensor, subentry, trip_index, sensor_suffix, name_suffix, device_suffix, device_identifier))
+                                sensors.append(TransportNSWSubentrySensor(coordinator, sensor, subentry, trip_index, sensor_suffix, name_suffix, device_suffix, device_identifier))
                             else:
                                 # Try and remove it - don't worry if it never existed
                                 remove_entity (entity_reg, config_entry.entry_id, subentry.subentry_id, trip_index, sensor.key)
 
                     for sensor in ALERT_SENSORS:
                         if subentry.data.get(sensor.key, False):
-                            sensors.append(ExampleSubentrySensor(coordinator, sensor, subentry, trip_index, sensor_suffix, name_suffix, device_suffix, device_identifier))
+                            sensors.append(TransportNSWSubentrySensor(coordinator, sensor, subentry, trip_index, sensor_suffix, name_suffix, device_suffix, device_identifier))
                         else:
                             # Try and remove it - don't worry if it never existed
                             remove_entity (entity_reg, config_entry.entry_id, subentry.subentry_id, trip_index, sensor.key)
@@ -302,17 +282,17 @@ async def async_setup_entry(
                 
     # Create the top-level config entry sensors
     configentry_sensors = [
-        ExampleConfigentrySensor(coordinator, description, config_entry)
+        TransportNSWSensor(coordinator, description, config_entry)
         for description in DEFAULT_ENTRY_SENSORS
     ]
 
     async_add_entities(configentry_sensors, update_before_add = True)
 
 
-class ExampleConfigentrySensor(CoordinatorEntity, SensorEntity):
+class TransportNSWSensor(CoordinatorEntity, SensorEntity):
     """Implementation of a configentry sensor."""
 
-    def __init__(self, coordinator: ExampleCoordinator, description: SensorEntityDescription, config_entry: MyConfigEntry) -> None:
+    def __init__(self, coordinator: TransportNSWCoordinator, description: SensorEntityDescription, config_entry: MyConfigEntry) -> None:
         """Initialise sensor."""
         super().__init__(coordinator)
 
@@ -322,7 +302,6 @@ class ExampleConfigentrySensor(CoordinatorEntity, SensorEntity):
 
         self._attr_unique_id = f"{config_entry.entry_id}_{description.key}_0"
         self._attr_name = f"{description.name}"
-        #self._attr_name = f"{config_entry.title} {description.name}{name_suffix}"
  
     @callback
     def _handle_coordinator_update(self) -> None:
@@ -330,37 +309,16 @@ class ExampleConfigentrySensor(CoordinatorEntity, SensorEntity):
         # This method is called by your DataUpdateCoordinator when a successful update runs.
         self.async_write_ha_state()
 
-    # @property
-    # def device_info(self):
-        # """Return device info for this sensor."""
-        # identifiers = {
-        # "identifiers": {(DOMAIN, f"{self.config_entry.entry_id}")},
-        # "name": f"API count",
-        # "manufacturer": "Transport for NSW"
-        # }
-
-        # return identifiers
-
-
     @property
     def native_value(self) -> int | float | str | datetime:
         """Return the state of the entity."""
             
         return self.coordinator.api_calls
 
-    @property
-    def extra_state_attributes(self):
-        """Return the extra state attributes."""
-        # Add any additional attributes you want on your sensor.
-        attrs = {}
-        attrs["Entry ID"] = self.config_entry.entry_id
-        
-        return attrs
-
-class ExampleSubentrySensor(CoordinatorEntity, SensorEntity):
+class TransportNSWSubentrySensor(CoordinatorEntity, SensorEntity):
     """Implementation of subentry sensor."""
 
-    def __init__(self, coordinator: ExampleCoordinator, description: SensorEntityDescription, subentry: ConfigSubentry, index: int, sensor_suffix: str, name_suffix: str, device_suffix: str, device_identifier: str) -> None:
+    def __init__(self, coordinator: TransportNSWCoordinator, description: SensorEntityDescription, subentry: ConfigSubentry, index: int, sensor_suffix: str, name_suffix: str, device_suffix: str, device_identifier: str) -> None:
         """Initialise sensor."""
         super().__init__(coordinator)
 
@@ -374,14 +332,12 @@ class ExampleSubentrySensor(CoordinatorEntity, SensorEntity):
 
         self._attr_unique_id = f"{subentry.subentry_id}_{description.key}_{index}"
         self._attr_name = f"{subentry.data[CONF_ORIGIN_NAME]} to {subentry.data[CONF_DESTINATION_NAME]}{device_suffix} {description.name}"
-        #self._attr_name = f"{config_entry.title} {description.name}{name_suffix}"
 
     @callback
     def _handle_coordinator_update(self) -> None:
         """Update sensor with latest data from coordinator."""
         # This method is called by your DataUpdateCoordinator when a successful update runs.
         self.async_write_ha_state()
-
 
     @property
     def device_info(self) -> DeviceInfo:
@@ -399,17 +355,15 @@ class ExampleSubentrySensor(CoordinatorEntity, SensorEntity):
     @property
     def native_value(self) -> int | float | str | datetime:
         """Return the state of the entity."""
-        # # Using native value and native unit of measurement, allows you to change units
-        # # in Lovelace and HA will automatically calculate the correct value.
 
         if self.coordinator.data is not None and self.subentry.subentry_id in self.coordinator.data:
+
             try:
                 if 'time' in self.entity_description.key:
                     return convert_date(self.coordinator.data[self.subentry.subentry_id][self.journey_index][self.entity_description.key])
 
                 elif self.entity_description.key == CONF_ALERTS_SENSOR:
                     # Store the highest alert value as the state - the specific alerts will go into attributes
-                    # Be aware of alert data longer than 255 characters
                     return get_highest_alert(self.coordinator.data[self.subentry.subentry_id][self.journey_index][self.entity_description.key])
 
                 elif self.entity_description.key in [CONF_FIRST_LEG_OCCUPANCY_SENSOR, CONF_LAST_LEG_OCCUPANCY_SENSOR]:
@@ -420,7 +374,7 @@ class ExampleSubentrySensor(CoordinatorEntity, SensorEntity):
             except:
                 pass
         else:
-            _LOGGER.warning(f"No data for [{self.subentry.subentry_id}][{self.journey_index}][{self.entity_description.key}] in coordinator")
+            _LOGGER.debug(f"No data for [{self.subentry.subentry_id}][{self.journey_index}][{self.entity_description.key}] in coordinator")
            
     @property
     def icon(self) -> str:
@@ -450,12 +404,12 @@ class ExampleSubentrySensor(CoordinatorEntity, SensorEntity):
         attrs = {}
         
         # Attributes for all sensors
-        attrs["Origin ID"] = self.subentry.data[CONF_ORIGIN_ID]
-        attrs["Destination ID"] = self.subentry.data[CONF_DESTINATION_ID]
-        attrs["Subentry ID"] = str(self.subentry.subentry_id)
-
-        # Key-specific attributes
         try:
+            attrs['Attribution'] = ATTRIBUTION
+            attrs["Origin ID"] = self.subentry.data[CONF_ORIGIN_ID]
+            attrs["Destination ID"] = self.subentry.data[CONF_DESTINATION_ID]
+
+            # Key-specific attributes
             if self.coordinator.data is not None and self.subentry.subentry_id in self.coordinator.data:
                 if self.entity_description.key == CONF_CHANGES_SENSOR:
                     # A list of changes in this journey
@@ -464,7 +418,5 @@ class ExampleSubentrySensor(CoordinatorEntity, SensorEntity):
                 if self.entity_description.key in ['alerts']:
                     # Alerts can be long so they need to go into attributes
                     attrs["Alerts"] = self.coordinator.data[self.subentry.subentry_id][self.journey_index][self.entity_description.key]
-        except:
-            pass
-
-        return attrs
+        finally:
+            return attrs
