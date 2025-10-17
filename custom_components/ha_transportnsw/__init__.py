@@ -1,4 +1,4 @@
-"""The Integration 101 Template integration."""
+"""The Transport NSW Mk II integration."""
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers.device_registry import DeviceEntry
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
-from .coordinator import ExampleCoordinator
+from .coordinator import TransportNSWCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -35,7 +35,7 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: MyConfigEntry) ->
 
     # Initialise the coordinator that manages data updates from your api.
     # This is defined in coordinator.py
-    coordinator = ExampleCoordinator(hass, config_entry)
+    coordinator = TransportNSWCoordinator(hass, config_entry)
 
     # Add the coordinator and update listener to config runtime data to make
     # accessible throughout your integration
@@ -47,8 +47,6 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: MyConfigEntry) ->
 
     # Return true to denote a successful setup.
     return True
-
-
 
 async def async_unload_entry(hass: HomeAssistant, config_entry: MyConfigEntry) -> bool:
     """Unload a config entry."""
