@@ -1,2 +1,4 @@
-branding
-images
+.github/
+branding/
+images/
+.gitignore
