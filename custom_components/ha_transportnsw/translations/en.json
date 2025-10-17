@@ -6,7 +6,9 @@
 	  "finished": "finished",
 	  "successful": "successful",
 	  "success": "success_text",
-	  "default": "default text"
+	  "default": "default text",
+	  "title": "title text",
+	  "finish": "finish text"
 	},
     "title": "Transport NSW Mk II",
     "abort": {
@@ -15,14 +17,6 @@
       "reconfigure_successful_no_change": "No changes made.",
       "finish": "_Finish",
       "finished": "_finished"
-    },
-    "finish": {
-		"title":"__finished",
-        "description": "__finished"
-    },
-    "finished": {
-		"title": "___finished",
-        "description": "___finished"
     },
     "error": {
       "apiratelimitexceeded": "API rate limit exceeded - wait a moment and try again",
@@ -38,7 +32,7 @@
 		  "scan_interval": "Sensor update interval (seconds)"
         },
         "description": "Enter your Transport NSW API key.  If you don't have one you can register [here](https://opendata.transport.nsw.gov.au/data/user/register).",
-        "title": "Transport NSW MKII"
+        "title": "Transport NSW Mk II"
       },
       "finished": {
         "description": "Created initial configuration for {name}.  Now add your journeys!"
@@ -49,16 +43,22 @@
     }
   },
   "config_subentries": {
+	  "create_entry": {
+		  "default": "default",
+		  "title": "title",
+		  "success": "success"
+	  },
 	  "subentry_journey": {
 		  "abort": {
 			  "already_configured": "You have already added that journey.",
 			  "outbound_already_configured": "You have already added that journey.",
 			  "return_already_configured": "You have alreadty added the return part of that journey",
               "reconfigure_successful": "Journey reconfiguration successful.",
-			  "subentries_created": "Journey{plural} registered successfully!",
+			  "subentries_created": "Journey{plural} registered successfully.",
 			  "subentries_reconfigured": "Journey{plural} reconfigured successfully!",
 			  "title": "test title placeholder"
 		  },
+		  "title": "test title placeholder",
 		  "initiate_flow": {
 			  "user": "Add new journey",
 			  "reconfigure": "Change journey options"
@@ -66,12 +66,12 @@
 		  "step": {
 			  "user": {
 				  "data": {
-					  "origin_id": "The stop ID of your start point",
-                      "destination_id": "The stop ID of your destination",
-                      "create_reverse_trip": "Also create the return journey"
+					  "origin_id": "The stop ID or name of your start point.",
+                      "destination_id": "The stop ID or name of your destination.",
+                      "create_reverse_trip": "Also create the return journey."
 				  },
-				  "description": "Provide the details of the journey you want to monitor.  Stop IDs can be searched for [here](https://transportnsw.info/routes/train#/).  You can also have the return journey created in addition to the outbound journey if required.",
-				  "title": "Transport NSW MKII"
+				  "description": "Provide the details of the journey you want to monitor - you can either provide the Stop ID or type in the stop names directly.  If entering a stop name, such as 'Central station' the more specific you are the more likely that the API will find the right stop!\n\nYou can also have the return journey created in addition to the outbound journey if required.\n\nStop IDs can be looked up [here](https://transportnsw.info/routes/train#/).",
+				  "title": "Transport NSW Mk II"
 			  },
 			  "settings": {
 				"data_description": {
@@ -85,7 +85,7 @@
                       "trip_wait_time": "The minimum time from now to wait before the journey starts (minutes)",
                       "trips_to_create": "Trips to create"
 				  },
-				  "description": "Select the appropriate transport types and optional route filter.  Only journeys with origin and destination legs that start and end with your selected transport types will be considered valid, so if you don't mind a little bit of a walk at either end (getting off at Gadigal Station and walking to Town Hall Station for example), make sure you select 'Walk' as an option.\n\nIf you specify a route filter, only journeys with that text in the line name (eg T9 Northern Line) or short line name (eg T9) will be shown.",
+				  "description": "Select the appropriate transport types, the minimum departure time from now and an optional route filter.\n\nOnly journeys with origin and destination legs that start and end with your selected transport types will be considered valid, so if you don't mind a little bit of a walk at either end (getting off at Gadigal Station and walking to Town Hall Station for example), make sure you select 'Walk' as an option.\n\nIf you specify a route filter, only journeys with that text in the line name (eg T9 Northern Line) or short line name (eg T9) will be shown.",
 				  "title": "{journey_name}"
 			  },
 			  "sensors": {
@@ -98,7 +98,7 @@
 				"data description": {
 					"sensor_creation": "Sensors to create placeholder"
 				},
-				"description": "Here you can choose if an alerts sensor should be created, how many consecutive journeys should be created and what types of sensors each journey should include.",
+				"description": "Here you can choose if an alerts sensor should be created, how many consecutive journeys should be created and what types of sensors each journey should include - by default,only the 'due' sensor and origin/destination device trackers will be created.",
 				  "title": "{journey_name}"
 			  },
 			  "alerts": {
@@ -163,20 +163,20 @@
       "alert_priority_selector": {
           "options": {
               "none": "None",
-              "veryLow": "Very low",
+              "verylow": "Very low",
               "low": "Low",
               "normal": "Normal",
               "high": "High",
-              "veryHigh": "Very high"
+              "veryhigh": "Very high"
           }
       },
       "alert_type_selector": {
           "options": {
-              "lineInfo": "Line info",
-              "stopInfo": "Stop info",
-              "routeInfo": "Route info",
-              "stopBlocking": "Stop blocking",
-              "bannerInfo": "Banner info"
+              "lineinfo": "Line info",
+              "stopinfo": "Stop info",
+              "routeinfo": "Route info",
+              "stopvlocking": "Stop blocking",
+              "bannerinfo": "Banner info"
           }
       },
      "transport_type_selector": {
