@@ -2,7 +2,7 @@
   "domain": "ha_transportnsw",
   "name": "Transport NSW Mk II",
   "documentation": "https://github.com/andystewart999/ha_transportnsw",
-  "issues": "https://github.com/andystewart999/ha_transportnsw",
+  "issue_tracker": "https://github.com/andystewart999/ha_transportnsw",
   "config_flow": true,
   "requirements": ["PyTransportNSWv2==2.0.8"],
   "codeowners": [],
