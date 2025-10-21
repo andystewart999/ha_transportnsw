@@ -1,29 +1,20 @@
 {
   "config": {
 	"create_entry": {
-	  "authenticated": "authenticated",
-	  "created": "created",
-	  "finished": "finished",
-	  "successful": "successful",
-	  "success": "success_text",
-	  "default": "default text",
-	  "title": "title text",
-	  "finish": "finish text"
+	  "default": "API key registered.  Now add your journeys!"
 	},
     "title": "Transport NSW Mk II",
     "abort": {
       "already_configured": "That API key has already been registered.  Please use 'add new journey' to add one or more journeys instead.",
       "reconfigure_successful": "New API key registered.",
-      "reconfigure_successful_no_change": "No changes made.",
-      "finish": "_Finish",
-      "finished": "_finished"
+      "reconfigure_successful_no_change": "No changes made."
     },
     "error": {
-      "apiratelimitexceeded": "API rate limit exceeded - wait a moment and try again",
-      "invalidapikey": "Invalid API key",
-      "stoperror": "At least one invalid stop ID",
-      "triperror": "No valid journeys were returned",
-      "unknown": "Unexpected error"
+      "apiratelimitexceeded": "API rate limit exceeded - wait a moment and try again.",
+      "invalidapikey": "Invalid API key, please check and retry.",
+      "stoperror": "At least one invalid stop ID, please check and retry.",
+      "triperror": "No valid journeys were returned.  Check your filters and retry.",
+      "unknown": "Unexpected error."
     },
     "step": {
       "user": {
@@ -33,32 +24,22 @@
         },
         "description": "Enter your Transport NSW API key.  If you don't have one you can register [here](https://opendata.transport.nsw.gov.au/data/user/register).",
         "title": "Transport NSW Mk II"
-      },
-      "finished": {
-        "description": "Created initial configuration for {name}.  Now add your journeys!"
-      },
-      "finish": {
-        "description": "Created initial configuration for {name}.  Now add your journeys!"
       }
     }
   },
   "config_subentries": {
 	  "create_entry": {
-		  "default": "default",
-		  "title": "title",
-		  "success": "success"
+		  "title": "Transport NSW Mk II"
 	  },
 	  "subentry_journey": {
 		  "abort": {
 			  "already_configured": "You have already added that journey.",
-			  "outbound_already_configured": "You have already added that journey.",
+			  "outbound_already_configured": "You have already added the outbound journey.",
 			  "return_already_configured": "You have alreadty added the return part of that journey",
               "reconfigure_successful": "Journey reconfiguration successful.",
 			  "subentries_created": "Journey{plural} registered successfully.",
-			  "subentries_reconfigured": "Journey{plural} reconfigured successfully!",
-			  "title": "test title placeholder"
+			  "subentries_reconfigured": "Journey{plural} reconfigured successfully!"
 		  },
-		  "title": "test title placeholder",
 		  "initiate_flow": {
 			  "user": "Add new journey",
 			  "reconfigure": "Change journey options"
@@ -80,7 +61,6 @@
 				  "data": {
 					  "origin_transport_type": "Origin transport types",
                       "destination_transport_type": "Destination transport types",
-					  "strict_transport_type": "Strict transport type placeholder",
 					  "route_filter": "Route filter",
                       "trip_wait_time": "The minimum time from now to wait before the journey starts (minutes)",
                       "trips_to_create": "Trips to create"
@@ -90,7 +70,6 @@
 			  },
 			  "sensors": {
 				"data": {
-				  "include_realtime_location": "Include realtime location placeholder",
 				  "alerts": "Include alerts related to each journey",
                   "trips_to_create": "How many trips should be shown (1 to 3)",
 				  "sensor_creation": "Sensors to create"
@@ -98,7 +77,7 @@
 				"data description": {
 					"sensor_creation": "Sensors to create placeholder"
 				},
-				"description": "Here you can choose if an alerts sensor should be created, how many consecutive journeys should be created and what types of sensors each journey should include - by default,only the 'due' sensor and origin/destination device trackers will be created.",
+				"description": "Here you can choose if an alerts sensor should be created, how many consecutive journeys should be created and what types of sensors each journey should include - by default only the 'due' sensor and origin/destination device trackers will be created.",
 				  "title": "{journey_name}"
 			  },
 			  "alerts": {
@@ -110,15 +89,10 @@
 				  "title": "{journey_name}"
 			  },
 			  "custom_sensors": {
-				"data": {
-				  "location_detail_sensors": "'location detail' sensors placeholder",
-				  "line_name_detail_sensors": "line name detail' sensors placeholder",
-				  "destination_sensors": "destination sensors placeholder"
-				},
 				"sections": {
 					"time_and_change_sensors": {
-						"name": "Time and change sensors placeholder",
-						"description": "Select which sensors to create",
+						"name": "Time and change sensors",
+						"description": "Select which time- and change-related sensors to create",
 						"data": {
 						  "arrival_time": "Arrival time at destination",
 						  "departure_time": "Departure time from origin (including delays)",
@@ -132,6 +106,7 @@
 						"data": {
 						  "origin_line_name": "First leg line name (eg T1 North Shore & Western Line)",
 						  "origin_line_name_short": "Short version of first leg line name (eg T1)",
+						  "origin_detail": "The specific origin platform, stop, wharf etc (eg Platform 4)",
 						  "origin_occupancy": "First leg vehicle occupancy (eg Many seats, few seats etc)",
 						  "origin_name": "Origin name (eg Gordon Station, Platform 1, Gordon)",
 						  "first_leg_device_tracker": "Device tracker based on first leg vehicle location (if provided)"
@@ -139,22 +114,19 @@
 					},
 					"destination_sensors": {
 						"name": "Destination sensors",
-						"description": "Select which sensors to create",
+						"description": "Select which destination/last leg-related sensors to create",
 						"data": {
 						  "destination_line_name": "Last leg line name (eg T9 Northern Line)",
 						  "destination_line_name_short": "Short version of last leg line name (eg T9)",
+						  "destination_detail": "The specific destination platform, stop, wharf etc (eg Platform 4)",
 						  "destination_name": "Destination name (eg Gadigal Station, Platform 1, Sydney)",
 						  "destination_occupancy": "Last leg vehicle occupancy (eg Many seats, few seats etc)",
 						  "last_leg_device_tracker": "Device tracker based on last leg vehicle location (if provided)"
 						}
 					}
 				},
-				"description": "Select specific optional sensors",
+				"description": "Select the optional journey-specific sensors you want.",
 				"title": "{journey_name}"
-			  },
-			  "finish": {
-				  "description": "Journey(s) registered successfully!",
-				  "title": "{journey_name}"
 			  }
 		  }		  
 	  }
@@ -172,11 +144,11 @@
       },
       "alert_type_selector": {
           "options": {
-              "lineinfo": "Line info",
-              "stopinfo": "Stop info",
-              "routeinfo": "Route info",
-              "stopvlocking": "Stop blocking",
-              "bannerinfo": "Banner info"
+              "lineinfo": "Alerts relating to the journey",
+              "stopinfo": "Alerts relating to specific stops",
+              "routeinfo": "Alerts related to a specific route",
+              "stopblocking": "Alerts related to stop closures",
+              "bannerinfo": "Potentially network-wide alerts"
           }
       },
      "transport_type_selector": {
