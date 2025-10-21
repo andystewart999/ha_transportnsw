@@ -1,4 +1,4 @@
-.github/
-branding/
-images/
-.gitignore
+/.github/
+/branding/
+/images/
+/.gitignore
