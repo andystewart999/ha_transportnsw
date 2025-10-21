@@ -31,10 +31,11 @@ from homeassistant.const import EntityCategory
 from . import MyConfigEntry
 from .const import *
 from .coordinator import TransportNSWCoordinator
+from .helpers import remove_entity, remove_device
 
 _LOGGER = logging.getLogger(__name__)
 
-
+# Default sensor definitions
 DEFAULT_ENTRY_SENSORS: tuple[SensorEntityDescription, ...] = (
     SensorEntityDescription(
         key=API_CALLS,
@@ -53,7 +54,7 @@ DEFAULT_SUBENTRY_SENSORS: tuple[SensorEntityDescription, ...] = (
     ),
 )
 
-# Create sensor definitions
+# Optional sensor definitions
 TIME_AND_CHANGE_SENSORS: tuple[SensorEntityDescription, ...] = (
     SensorEntityDescription(
         key=CONF_FIRST_LEG_DEPARTURE_TIME_SENSOR,
@@ -79,13 +80,15 @@ TIME_AND_CHANGE_SENSORS: tuple[SensorEntityDescription, ...] = (
         icon = 'mdi:map-marker-path'
     )
 )
-CONF_FIRST_LEG_TRANSPORT_TYPE_SENSOR = 'origin_transport_type'
-CONF_FIRST_LEG_TRANSPORT_NAME_SENSOR = 'origin_transport_name'
 
 ORIGIN_SENSORS: tuple[SensorEntityDescription, ...] = (
     SensorEntityDescription(
         key=CONF_ORIGIN_NAME_SENSOR,
         name=CONF_ORIGIN_NAME_FRIENDLY,
+    ),
+    SensorEntityDescription(
+        key=CONF_ORIGIN_DETAIL_SENSOR,
+        name=CONF_ORIGIN_DETAIL_FRIENDLY,
     ),
     SensorEntityDescription(
         key=CONF_FIRST_LEG_LINE_NAME_SENSOR,
@@ -113,6 +116,10 @@ DESTINATION_SENSORS: tuple[SensorEntityDescription, ...] = (
     SensorEntityDescription(
         key=CONF_DESTINATION_NAME_SENSOR,
         name=CONF_DESTINATION_NAME_FRIENDLY,
+    ),
+    SensorEntityDescription(
+        key=CONF_DESTINATION_DETAIL_SENSOR,
+        name=CONF_DESTINATION_DETAIL_FRIENDLY,
     ),
     SensorEntityDescription(
         key=CONF_LAST_LEG_LINE_NAME_SENSOR,
@@ -144,7 +151,6 @@ ALERT_SENSORS: tuple[SensorEntityDescription, ...] = (
     ),
 )
 
-
 def get_highest_alert(alerts):
     # Search the alerts and return the highest
     highest_alert = -1
@@ -160,6 +166,52 @@ def get_highest_alert(alerts):
         return highest_alert_text
 
 
+def get_specific_platform(journey_detail, key):
+    if key == CONF_ORIGIN_DETAIL_SENSOR:
+        transport_type_key = CONF_FIRST_LEG_TRANSPORT_TYPE_SENSOR
+        origin_name_key = CONF_ORIGIN_NAME_SENSOR
+    else:
+        transport_type_key = CONF_LAST_LEG_TRANSPORT_TYPE_SENSOR
+        origin_name_key = CONF_DESTINATION_NAME_SENSOR
+
+    try:
+        transport_type = journey_detail[transport_type_key]
+        origin_name = journey_detail[origin_name_key]
+
+        if (transport_type == "Train" or transport_type == "Metro"):
+            return origin_name.split(", ")[1]
+
+        elif transport_type == "Ferry":
+            tmpLen = len(origin_name.split(", "))
+
+            if tmpLen == 4:
+                return origin_name.split(", ")[1] + ", " + origin_name.split(", ")[2]
+
+            elif tmpLen == 3:
+                return origin_name.split(", ")[1]
+
+            elif tmpLen == 2:
+                return origin_name.split(", ")[1]
+
+            else:
+                return origin_name.split(", ")[0]
+
+        elif transport_type == "Bus":
+            return origin_name.split(", ")[0]
+
+        elif transport_type == "Light rail":
+            tmpFind = origin_name.find(" Light Rail")
+            if tmpFind == -1:
+                return origin_name
+            else:
+                return origin_name[: tmpFind]
+        else:
+            return origin_name
+
+    except:
+        return origin_name
+
+
 def convert_date(utc_string) -> datetime:
     fmt = '%Y-%m-%dT%H:%M:%SZ'
     
@@ -170,32 +222,32 @@ def convert_date(utc_string) -> datetime:
     
     return local_dt
 
-def remove_entity(entity_reg, configentry_id, subentry_id, trip_index, key):
-    # Search for and remove a sensor that's no longer needed
-    unique_id = f"{subentry_id}_{key}_{trip_index}"
+# def remove_entity(entity_reg, configentry_id, subentry_id, trip_index, key):
+    # # Search for and remove a sensor that's no longer needed
+    # unique_id = f"{subentry_id}_{key}_{trip_index}"
 
-    try:
-        # Get all the entities for this config entry
-        entities = entity_reg.entities.get_entries_for_config_entry_id(configentry_id)
+    # try:
+        # # Get all the entities for this config entry
+        # entities = entity_reg.entities.get_entries_for_config_entry_id(configentry_id)
 
-        # Search for the one to remove
-        for entity in entities:
-            if entity.unique_id == unique_id:
-                entity_reg.async_remove(entity.entity_id)
-                break
+        # # Search for the one to remove
+        # for entity in entities:
+            # if entity.unique_id == unique_id:
+                # entity_reg.async_remove(entity.entity_id)
+                # break
 
-    except Exception as err:
-        # Don't log an error as it's possible the entity never existed in the first place
-        pass
+    # except Exception as err:
+        # # Don't log an error as it's possible the entity never existed in the first place
+        # pass
 
-def remove_device(device_reg, subentry_id, origin_id, destination_id, device_identifier):
-    # Search for and remove a device that's no longer needed
-    try:
-        device = device_reg.async_get_device(identifiers={(DOMAIN, f"{subentry_id}_{origin_id}_{destination_id}_{device_identifier}")})
-        if device is not None:
-            device_reg.async_remove_device(device.id)
-    finally:
-        pass
+# def remove_device(device_reg, subentry_id, origin_id, destination_id, device_identifier):
+    # # Search for and remove a device that's no longer needed
+    # try:
+        # device = device_reg.async_get_device(identifiers={(DOMAIN, f"{subentry_id}_{origin_id}_{destination_id}_{device_identifier}")})
+        # if device is not None:
+            # device_reg.async_remove_device(device.id)
+    # finally:
+        # pass
         
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -299,14 +351,16 @@ class TransportNSWSensor(CoordinatorEntity, SensorEntity):
         """Initialize the sensor."""
         self.entity_description = description
         self.config_entry = config_entry
+        self.api_short = config_entry.data[CONF_API_KEY][-4:]
 
         self._attr_unique_id = f"{config_entry.entry_id}_{description.key}_0"
-        self._attr_name = f"{description.name}"
+        self._attr_name = f"{description.name} ({self.api_short})"
+
  
     @callback
     def _handle_coordinator_update(self) -> None:
         """Update sensor with latest data from coordinator."""
-        # This method is called by your DataUpdateCoordinator when a successful update runs.
+        # This method is called by the DataUpdateCoordinator when a successful update runs.
         self.async_write_ha_state()
 
     @property
@@ -336,7 +390,7 @@ class TransportNSWSubentrySensor(CoordinatorEntity, SensorEntity):
     @callback
     def _handle_coordinator_update(self) -> None:
         """Update sensor with latest data from coordinator."""
-        # This method is called by your DataUpdateCoordinator when a successful update runs.
+        # This method is called by the DataUpdateCoordinator when a successful update runs.
         self.async_write_ha_state()
 
     @property
@@ -369,6 +423,9 @@ class TransportNSWSubentrySensor(CoordinatorEntity, SensorEntity):
                 elif self.entity_description.key in [CONF_FIRST_LEG_OCCUPANCY_SENSOR, CONF_LAST_LEG_OCCUPANCY_SENSOR]:
                     return OCCUPANCY_ICONS.get(self.coordinator.data[self.subentry.subentry_id][self.journey_index][self.entity_description.key], ["mdi:account-question", "Unknown"])[1]
 
+                elif self.entity_description.key in [CONF_ORIGIN_DETAIL_SENSOR, CONF_DESTINATION_DETAIL_SENSOR]:
+                    return get_specific_platform(self.coordinator.data[self.subentry.subentry_id][self.journey_index], self.entity_description.key)
+
                 else:
                     return self.coordinator.data[self.subentry.subentry_id][self.journey_index][self.entity_description.key]
             except:
@@ -378,25 +435,29 @@ class TransportNSWSubentrySensor(CoordinatorEntity, SensorEntity):
            
     @property
     def icon(self) -> str:
-        if self.coordinator.data is not None and self.subentry.subentry_id in self.coordinator.data:
-            if self.entity_description.key in [CONF_FIRST_LEG_OCCUPANCY_SENSOR, CONF_LAST_LEG_OCCUPANCY_SENSOR]:
-                return OCCUPANCY_ICONS.get(self.coordinator.data[self.subentry.subentry_id][self.journey_index][self.entity_description.key], ["mdi:account-question", "Unknown"])[0]
-                
-            elif self.entity_description.key in [CONF_DUE_SENSOR, CONF_FIRST_LEG_LINE_NAME_SENSOR, CONF_FIRST_LEG_LINE_NAME_SHORT_SENSOR, CONF_FIRST_LEG_TRANSPORT_TYPE_SENSOR, CONF_FIRST_LEG_TRANSPORT_NAME_SENSOR, CONF_ORIGIN_NAME_SENSOR]:
-               return JOURNEY_ICONS.get(self.coordinator.data[self.subentry.subentry_id][self.journey_index][CONF_FIRST_LEG_TRANSPORT_TYPE_SENSOR], "mdi:train")
+        try:
+            if self.coordinator.data is not None and self.subentry.subentry_id in self.coordinator.data:
+                if self.entity_description.key in [CONF_FIRST_LEG_OCCUPANCY_SENSOR, CONF_LAST_LEG_OCCUPANCY_SENSOR]:
+                    return OCCUPANCY_ICONS.get(self.coordinator.data[self.subentry.subentry_id][self.journey_index][self.entity_description.key], ["mdi:account-question", "Unknown"])[0]
+                    
+                elif self.entity_description.key in [CONF_DUE_SENSOR, CONF_FIRST_LEG_LINE_NAME_SENSOR, CONF_FIRST_LEG_LINE_NAME_SHORT_SENSOR, CONF_FIRST_LEG_TRANSPORT_TYPE_SENSOR, CONF_FIRST_LEG_TRANSPORT_NAME_SENSOR, CONF_ORIGIN_NAME_SENSOR, CONF_ORIGIN_DETAIL_SENSOR]:
+                   return JOURNEY_ICONS.get(self.coordinator.data[self.subentry.subentry_id][self.journey_index][CONF_FIRST_LEG_TRANSPORT_TYPE_SENSOR], "mdi:train")
 
-            elif self.entity_description.key in [CONF_LAST_LEG_LINE_NAME_SENSOR, CONF_LAST_LEG_LINE_NAME_SHORT_SENSOR, CONF_LAST_LEG_TRANSPORT_TYPE_SENSOR, CONF_LAST_LEG_TRANSPORT_NAME_SENSOR, CONF_DESTINATION_NAME_SENSOR]:
-               return JOURNEY_ICONS.get(self.coordinator.data[self.subentry.subentry_id][self.journey_index][CONF_LAST_LEG_TRANSPORT_TYPE_SENSOR], "mdi:train")
+                elif self.entity_description.key in [CONF_LAST_LEG_LINE_NAME_SENSOR, CONF_LAST_LEG_LINE_NAME_SHORT_SENSOR, CONF_LAST_LEG_TRANSPORT_TYPE_SENSOR, CONF_LAST_LEG_TRANSPORT_NAME_SENSOR, CONF_DESTINATION_NAME_SENSOR, CONF_DESTINATION_DETAIL_SENSOR]:
+                   return JOURNEY_ICONS.get(self.coordinator.data[self.subentry.subentry_id][self.journey_index][CONF_LAST_LEG_TRANSPORT_TYPE_SENSOR], "mdi:train")
 
-            elif self.entity_description.key in [CONF_DELAY_SENSOR, CONF_ALERTS_SENSOR]:
-                return 'mdi:clock-alert-outline'
+                elif self.entity_description.key in [CONF_DELAY_SENSOR, CONF_ALERTS_SENSOR]:
+                    return 'mdi:clock-alert-outline'
 
-            elif self.entity_description.key == CONF_CHANGES_SENSOR:
-                return 'mdi:map-marker-path'
+                elif self.entity_description.key == CONF_CHANGES_SENSOR:
+                    return 'mdi:map-marker-path'
 
-            elif 'time' in self.entity_description.key:
-                return 'mdi:clock-outline'
+                elif 'time' in self.entity_description.key:
+                    return 'mdi:clock-outline'
 
+        except:
+            return 'mdi:train'
+     
     @property
     def extra_state_attributes(self):
         """Return the extra state attributes."""
