@@ -14,7 +14,7 @@ from homeassistant.const import (
 from homeassistant.core import DOMAIN, HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from .const import *
-from .helpers import get_trips, check_stops, get_api_calls, set_api_calls
+from .helpers import get_trips, get_api_calls, set_api_calls
 
 _LOGGER = logging.getLogger(__name__)
 
