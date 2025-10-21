@@ -8,37 +8,37 @@ from homeassistant.components.device_tracker import (
     TrackerEntityDescription
 )
 
-from homeassistant.config_entries import ConfigEntry
+from homeassistant.config_entries import ConfigEntry, ConfigSubentry
 from homeassistant.core import HomeAssistant, callback
 #from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
-from homeassistant.config_entries import ConfigSubentry
 from homeassistant.helpers import entity_registry
 
 from . import MyConfigEntry
 from .const import *
 from .coordinator import TransportNSWCoordinator
+from .helpers import remove_entity
 
 _LOGGER = logging.getLogger(__name__)
 
-def remove_entity(entity_reg, configentry_id, subentry_id,trip_index, key):
-    # Search for and remove a sensor that's no longer needed
-    unique_id = f"{subentry_id}_{key}_{trip_index}"
+# def remove_entity(entity_reg, configentry_id, subentry_id,trip_index, key):
+    # # Search for and remove a sensor that's no longer needed
+    # unique_id = f"{subentry_id}_{key}_{trip_index}"
 
-    try:
-        # Get all the entities for this config entry
-        entities = entity_reg.entities.get_entries_for_config_entry_id(configentry_id)
+    # try:
+        # # Get all the entities for this config entry
+        # entities = entity_reg.entities.get_entries_for_config_entry_id(configentry_id)
 
-        # Search for the one to remove
-        for entity in entities:
-            if entity.unique_id == unique_id:
-                entity_reg.async_remove(entity.entity_id)
-                break
+        # # Search for the one to remove
+        # for entity in entities:
+            # if entity.unique_id == unique_id:
+                # entity_reg.async_remove(entity.entity_id)
+                # break
 
-    except Exception as err:
-        # Don't log an error as it's possible the entity never existed in the first place
-        pass
+    # except Exception as err:
+        # # Don't log an error as it's possible the entity never existed in the first place
+        # pass
 
 
 async def async_setup_entry(
@@ -126,6 +126,7 @@ class TransportNSWDeviceTracker(CoordinatorEntity, TrackerEntity):
                 return self.coordinator.data[self.subentry.subentry_id][self.journey_index][ORIGIN_LATITUDE]
             else:
                 return self.coordinator.data[self.subentry.subentry_id][self.journey_index][DESTINATION_LATITUDE]
+
         except:
             pass
 
@@ -137,14 +138,15 @@ class TransportNSWDeviceTracker(CoordinatorEntity, TrackerEntity):
                 return self.coordinator.data[self.subentry.subentry_id][self.journey_index][ORIGIN_LONGITUDE]
             else:
                 return self.coordinator.data[self.subentry.subentry_id][self.journey_index][DESTINATION_LONGITUDE]
+
         except:
             pass
 
     @property
     def available(self) -> bool:
         """Return if entity is available."""
-        if True:
-#        try:
+
+        try:
             # Make sure there is GPS data
             if self.entity_description.key == CONF_FIRST_LEG_DEVICE_TRACKER:
                 if self.coordinator.data[self.subentry.subentry_id][self.journey_index][ORIGIN_LATITUDE] != 'n/a' and self.coordinator.data[self.subentry.subentry_id][self.journey_index][ORIGIN_LONGITUDE] != 'n/a' and self.subentry.data['origin_sensors'][CONF_FIRST_LEG_DEVICE_TRACKER]:
@@ -162,13 +164,14 @@ class TransportNSWDeviceTracker(CoordinatorEntity, TrackerEntity):
                         
                     if self.subentry.data['destination_sensors'][CONF_LAST_LEG_DEVICE_TRACKER] in valid_options:
                         return True
+
                     else:
                         return False
 
                 else:
                     return False
-#        except:
-#            return False
+        except:
+            return False
 
     @property
     def icon(self) -> str:
