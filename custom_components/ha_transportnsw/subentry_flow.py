@@ -7,7 +7,7 @@ import copy
 from typing import Any
 
 import voluptuous as vol
-from homeassistant.helpers.selector import selector, BooleanSelector, BooleanSelectorConfig
+from homeassistant.helpers.selector import selector#, BooleanSelector, BooleanSelectorConfig
 import homeassistant.helpers.config_validation as cv
 from homeassistant.data_entry_flow import section
 from homeassistant.config_entries import (
@@ -28,7 +28,7 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
 
 from .const import *
-from .helpers import get_trips, check_stops#, get_stop_detail#, set_optional_sensors
+from .helpers import get_trips, check_stops, set_optional_sensors
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -58,11 +58,11 @@ def convert_transport_types_numeric_to_friendly(transport_type_list: dict[str]) 
     
     return temp_list
 
-
 def create_subentries(self, config_entry, input_data):
 
     description_placeholders = {}
-    
+    description_placeholders['plural'] = ''
+
     if input_data[CONF_CREATE_REVERSE_TRIP]:
 
         # There and back again (two subentries)
@@ -119,7 +119,7 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
                  )
             
             if stop_data['all_stops_valid']:
-                # Get the origin and destination stop names
+                # Get the origin and destination stop names, we'll need them to name the subentry
                 origin_name = stop_data['stop_list'][0]['stop_detail']['disassembledName']
                 destination_name = stop_data['stop_list'][1]['stop_detail']['disassembledName']
             
@@ -130,9 +130,8 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
                 
                 return {
                     "title": f"{origin_name} to {destination_name}"
-#                    "origin_id": stop_data['stop_list'][0]['stop_id'],
-#                    "destination_id": stop_data['stop_list'][1]['stop_id']
                 }
+
             else:
                 #TODO - something here to call out issues, granular fails, etc
                 raise StopError
@@ -149,7 +148,6 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
         except Exception as ex:
             raise StopError
 
-
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> SubentryFlowResult:
@@ -162,7 +160,6 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
             # The form has been filled in and submitted, so process the data provided.
             try:
                 # Validate that the setup data is valid and if not handle errors.
-                # The errors["base"] values match the values in your strings.json and translation files.
                 info = await self._validate_input(self.hass, user_input)
                 
             except InvalidAPIKey as ex:
@@ -210,15 +207,8 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
 
                 # Call the next step
                 return await self.async_step_settings()
-#remove this
-#        JOURNEY_DATA_SCHEMA = vol.Schema(
-#            {
-#                vol.Required(CONF_ORIGIN_ID, default =""): str,
-#                vol.Required(CONF_DESTINATION_ID, default = ""): str,
-#            }
-#        )
 
-        # Are we reconfiguring or are we creating a new journey?  TODO - this needs work so 'reconfigure' currently jumps straight to async_step_settings
+        # Are we reconfiguring or are we creating a new journey?
         if user_input is None:
             if self.source == SOURCE_RECONFIGURE:
                 config_subentry = self._get_reconfigure_subentry()
@@ -305,26 +295,7 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
                 user_input[CONF_INCLUDE_REALTIME_LOCATION] = True
                 self._input_data.update(user_input)
 
-                if self._input_data[CONF_SENSOR_CREATION] == 'changes_and_times':
-                    sensor_options = {
-                                	'time_and_change_sensors': {CONF_CHANGES_SENSOR: True, CONF_DELAY_SENSOR: True, CONF_FIRST_LEG_DEPARTURE_TIME_SENSOR: True, CONF_LAST_LEG_ARRIVAL_TIME_SENSOR: True},
-                                	'origin_sensors': {CONF_ORIGIN_NAME_SENSOR: False, CONF_FIRST_LEG_LINE_NAME_SENSOR: False, CONF_FIRST_LEG_LINE_NAME_SHORT_SENSOR: False, CONF_FIRST_LEG_TRANSPORT_TYPE_SENSOR: False, CONF_FIRST_LEG_TRANSPORT_NAME_SENSOR: False, CONF_FIRST_LEG_OCCUPANCY_SENSOR: False, CONF_FIRST_LEG_DEVICE_TRACKER: DEFAULT_FIRST_LEG_DEVICE_TRACKER}, 
-                                	'destination_sensors': {CONF_DESTINATION_NAME_SENSOR: False, CONF_LAST_LEG_LINE_NAME_SENSOR: False, CONF_LAST_LEG_LINE_NAME_SHORT_SENSOR: False, CONF_LAST_LEG_OCCUPANCY_SENSOR: False, CONF_LAST_LEG_DEVICE_TRACKER: DEFAULT_LAST_LEG_DEVICE_TRACKER}
-                                    }
-
-                elif self._input_data[CONF_SENSOR_CREATION] == 'verbose':
-                    sensor_options = {
-                                	'time_and_change_sensors': {CONF_CHANGES_SENSOR: True, CONF_DELAY_SENSOR: True, CONF_FIRST_LEG_DEPARTURE_TIME_SENSOR: True, CONF_LAST_LEG_ARRIVAL_TIME_SENSOR: True},
-                                	'origin_sensors': {CONF_ORIGIN_NAME_SENSOR: True, CONF_FIRST_LEG_LINE_NAME_SENSOR: True, CONF_FIRST_LEG_LINE_NAME_SHORT_SENSOR: True, CONF_FIRST_LEG_OCCUPANCY_SENSOR: True, CONF_FIRST_LEG_DEVICE_TRACKER: True}, 
-                                	'destination_sensors': {CONF_DESTINATION_NAME_SENSOR: True, CONF_LAST_LEG_LINE_NAME_SENSOR: True, CONF_LAST_LEG_LINE_NAME_SHORT_SENSOR: True, CONF_LAST_LEG_OCCUPANCY_SENSOR:True, CONF_LAST_LEG_DEVICE_TRACKER: DEFAULT_LAST_LEG_DEVICE_TRACKER}
-                                    }
-
-                else:
-                    sensor_options = {
-                                	'time_and_change_sensors': {CONF_CHANGES_SENSOR: False, CONF_DELAY_SENSOR: False, CONF_FIRST_LEG_DEPARTURE_TIME_SENSOR: False, CONF_LAST_LEG_ARRIVAL_TIME_SENSOR: False},
-                                	'origin_sensors': {CONF_ORIGIN_NAME_SENSOR: False, CONF_FIRST_LEG_LINE_NAME_SENSOR: False, CONF_FIRST_LEG_LINE_NAME_SHORT_SENSOR: False, CONF_FIRST_LEG_OCCUPANCY_SENSOR: False, CONF_FIRST_LEG_DEVICE_TRACKER: DEFAULT_FIRST_LEG_DEVICE_TRACKER}, 
-                                	'destination_sensors': {CONF_DESTINATION_NAME_SENSOR: False, CONF_LAST_LEG_LINE_NAME_SENSOR: False, CONF_LAST_LEG_LINE_NAME_SHORT_SENSOR: False, CONF_LAST_LEG_OCCUPANCY_SENSOR: False, CONF_LAST_LEG_DEVICE_TRACKER: DEFAULT_LAST_LEG_DEVICE_TRACKER}
-                                }
+                sensor_options = set_optional_sensors(self._input_data[CONF_SENSOR_CREATION])
 
                 # Add to the options
                 self._input_data.update(sensor_options)
@@ -355,6 +326,7 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
                     data = self._input_data,
                     title=f"{self._input_data[CONF_ORIGIN_NAME]} to {self._input_data[CONF_DESTINATION_NAME]}"
                 )
+
             else:
                 description_placeholders = create_subentries(self, self._get_entry(), self._input_data)
 
@@ -400,7 +372,6 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
                 description_placeholders = {"journey_name": f"{self._input_data[CONF_ORIGIN_NAME]} to {self._input_data[CONF_DESTINATION_NAME]}"}
             )
 
-
     async def async_step_alerts(self, user_input=None):
         errors: dict[str, str] = {}
 
@@ -409,7 +380,7 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
 
             if self._input_data[CONF_SENSOR_CREATION] == 'custom':
                 # Show the 'custom sensors' options page, it will be responsible for updating the entry at the end
-                return await self.async_step_custom()
+                return await self.async_step_custom_sensors()
             else:
                 # No more flows to process so we can create/update the subentries as required
                 if self.source == SOURCE_RECONFIGURE:
@@ -526,6 +497,7 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
             ORIGIN_SENSORS_SCHEMA = vol.Schema(
                 {
                     vol.Required(CONF_ORIGIN_NAME_SENSOR, default = user_input['origin_sensors'].get(CONF_ORIGIN_NAME_SENSOR, DEFAULT_ORIGIN_NAME_SENSOR)): bool,
+                    vol.Required(CONF_ORIGIN_DETAIL_SENSOR, default = user_input['origin_sensors'].get(CONF_ORIGIN_DETAIL_SENSOR, DEFAULT_ORIGIN_DETAIL_SENSOR)): bool,
                     vol.Required(CONF_FIRST_LEG_LINE_NAME_SENSOR, default = user_input['origin_sensors'].get(CONF_FIRST_LEG_LINE_NAME_SENSOR, DEFAULT_FIRST_LEG_LINE_NAME_SENSOR)): bool,
                     vol.Required(CONF_FIRST_LEG_LINE_NAME_SHORT_SENSOR, default = user_input['origin_sensors'].get(CONF_FIRST_LEG_LINE_NAME_SHORT_SENSOR, DEFAULT_FIRST_LEG_LINE_NAME_SHORT_SENSOR)): bool,
                     vol.Required(CONF_FIRST_LEG_OCCUPANCY_SENSOR, default = user_input['origin_sensors'].get(CONF_FIRST_LEG_OCCUPANCY_SENSOR, DEFAULT_FIRST_LEG_OCCUPANCY_SENSOR)): bool,
@@ -536,6 +508,7 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
             DESTINATION_SENSORS_SCHEMA = vol.Schema(
                 {
                     vol.Required(CONF_DESTINATION_NAME_SENSOR, default = user_input['destination_sensors'].get(CONF_DESTINATION_NAME_SENSOR, DEFAULT_DESTINATION_NAME_SENSOR)): bool,
+                    vol.Required(CONF_DESTINATION_DETAIL_SENSOR, default = user_input['destination_sensors'].get(CONF_DESTINATION_DETAIL_SENSOR, DEFAULT_DESTINATION_DETAIL_SENSOR)): bool,
                     vol.Required(CONF_LAST_LEG_LINE_NAME_SENSOR, default = user_input['destination_sensors'].get(CONF_LAST_LEG_LINE_NAME_SENSOR, DEFAULT_LAST_LEG_LINE_NAME_SENSOR)): bool,
                     vol.Required(CONF_LAST_LEG_LINE_NAME_SHORT_SENSOR, default = user_input['destination_sensors'].get(CONF_LAST_LEG_LINE_NAME_SHORT_SENSOR, DEFAULT_LAST_LEG_LINE_NAME_SHORT_SENSOR)): bool,
                     vol.Required(CONF_LAST_LEG_OCCUPANCY_SENSOR, default = user_input['destination_sensors'].get(CONF_LAST_LEG_OCCUPANCY_SENSOR, DEFAULT_LAST_LEG_OCCUPANCY_SENSOR)): bool,
