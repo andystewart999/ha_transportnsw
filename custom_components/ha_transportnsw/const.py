@@ -72,8 +72,6 @@ CONF_LAST_LEG_OCCUPANCY_FRIENDLY = 'last leg occupancy'
 CONF_LAST_LEG_TRANSPORT_TYPE_FRIENDLY = 'last leg transport type'
 CONF_LAST_LEG_TRANSPORT_NAME_FRIENDLY = 'last leg transport name'
 CONF_INCLUDE_REALTIME_LOCATION = 'include_realtime_location'
-CONF_ORIGIN_DEVICE_TRACKER = 'origin_device_tracker'
-CONF_DESTINATION_DEVICE_TRACKER = 'destination_device_tracker'
 
 ORIGIN_TRANSPORT_TYPE_LIST = ['Train', 'Metro', 'Light rail', 'Bus', 'Coach', 'Ferry', 'School bus', 'Walk']
 DESTINATION_TRANSPORT_TYPE_LIST = ['Train', 'Metro', 'Light rail', 'Bus', 'Coach', 'Ferry', 'School bus', 'Walk']
