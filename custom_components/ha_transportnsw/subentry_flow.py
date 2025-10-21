@@ -286,6 +286,8 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
             )
 
     async def async_step_sensors(self, user_input=None):
+        # Handle sensor options
+
         """Handle options flow."""
         errors: dict[str, str] = {}
         if user_input is not None:
@@ -373,6 +375,8 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
             )
 
     async def async_step_alerts(self, user_input=None):
+        # Handle alerts if requested
+
         errors: dict[str, str] = {}
 
         if user_input is not None:
@@ -449,10 +453,10 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
 
 
     async def async_step_custom_sensors(self, user_input=None):
-        """Handle custom sensors options flow.
-        """
+        # Handle customer sensors if requested
+
         if user_input is not None:
-            if (user_input['origin_sensors'][CONF_ORIGIN_DEVICE_TRACKER]) or (user_input['destination_sensors'][CONF_DESTINATION_DEVICE_TRACKER] in ['if_not_duplicated', 'always']):
+            if (user_input['origin_sensors'][CONF_FIRST_LEG_DEVICE_TRACKER]) or (user_input['destination_sensors'][CONF_LAST_LEG_DEVICE_TRACKER] in ['if_not_duplicated', 'always']):
                 user_input[CONF_INCLUDE_REALTIME_LOCATION] = True
             else:
                 user_input[CONF_INCLUDE_REALTIME_LOCATION] = False
@@ -484,6 +488,9 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
                 user_input = dict(config_subentry.data)
             else:
                 user_input = {}
+                user_input['time_and_change_sensors'] = {}
+                user_input['origin_sensors'] = {}
+                user_input['destination_sensors'] = {}
         
             ADDITIONAL_SENSORS_SCHEMA = vol.Schema(
                 {
@@ -501,7 +508,7 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
                     vol.Required(CONF_FIRST_LEG_LINE_NAME_SENSOR, default = user_input['origin_sensors'].get(CONF_FIRST_LEG_LINE_NAME_SENSOR, DEFAULT_FIRST_LEG_LINE_NAME_SENSOR)): bool,
                     vol.Required(CONF_FIRST_LEG_LINE_NAME_SHORT_SENSOR, default = user_input['origin_sensors'].get(CONF_FIRST_LEG_LINE_NAME_SHORT_SENSOR, DEFAULT_FIRST_LEG_LINE_NAME_SHORT_SENSOR)): bool,
                     vol.Required(CONF_FIRST_LEG_OCCUPANCY_SENSOR, default = user_input['origin_sensors'].get(CONF_FIRST_LEG_OCCUPANCY_SENSOR, DEFAULT_FIRST_LEG_OCCUPANCY_SENSOR)): bool,
-                    vol.Required(CONF_FIRST_LEG_DEVICE_TRACKER, default = user_input['origin_sensors'].get(CONF_FIRST_LEG_DEVICE_TRACKER, DEFAULT_LAST_LEG_DEVICE_TRACKER)): bool
+                    vol.Required(CONF_FIRST_LEG_DEVICE_TRACKER, default = user_input['origin_sensors'].get(CONF_FIRST_LEG_DEVICE_TRACKER, DEFAULT_FIRST_LEG_DEVICE_TRACKER)): bool
                 }
             )
 
