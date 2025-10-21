@@ -7,30 +7,30 @@ import random
 from typing import Any
 
 import voluptuous as vol
-from homeassistant.helpers.selector import selector, BooleanSelector, BooleanSelectorConfig
+#from homeassistant.helpers.selector import selector, BooleanSelector, BooleanSelectorConfig
 import homeassistant.helpers.config_validation as cv
-from homeassistant.data_entry_flow import section
+#from homeassistant.data_entry_flow import section
 from homeassistant.config_entries import (
     ConfigEntry,
     ConfigFlow,
     ConfigFlowResult,
     ConfigSubentryFlow,
-#    OptionsFlow,
-    SOURCE_RECONFIGURE
+    SOURCE_RECONFIGURE,
+    SOURCE_IMPORT
 )
 from homeassistant.const import (
     CONF_API_KEY,
-    CONF_SCAN_INTERVAL,
+    CONF_SCAN_INTERVAL
 )
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
+from homeassistant.components import persistent_notification
 
 from .const import *
 from .helpers import get_trips, check_stops, get_stop_detail#, set_optional_sensors
 from .subentry_flow import JourneySubEntryFlowHandler
 
 _LOGGER = logging.getLogger(__name__)
-
 
 async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> None:
     """Validate the user input allows us to retrieve data.
@@ -46,7 +46,7 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> None:
              data[CONF_API_KEY],
              [STOP_TEST_ID]
              )
-
+  
     except InvalidAPIKey:
         raise InvalidAPIKey
     
@@ -84,15 +84,17 @@ class TransportNSWConfigFlowHandler(ConfigFlow, domain=DOMAIN):
         """Handle the initial step."""
         errors: dict[str, str] = {}
 
-        if user_input is not None:   
+        if user_input is not None:
+            if self.source == SOURCE_IMPORT:
+                self._previous_key = ''
+                
             # The form has been filled in and submitted, so process the data provided.
             try:
-                # Validate that the setup data is valid and if not handle errors.
-                # The errors["base"] values match the values in your strings.json and translation files.
+                # Validate that the setup data is valid and if not handle errors
                 await validate_input(self.hass, user_input)
 
             except InvalidAPIKey as ex:
-                errors[CONF_API_KEY] = "invalidapikey"
+                errors["base"] = "invalidapikey"
         
             except APIRateLimitExceeded as ex:
                 errors["base"] = "apiratelimitexceeded"
@@ -106,11 +108,32 @@ class TransportNSWConfigFlowHandler(ConfigFlow, domain=DOMAIN):
             except Exception as err:
                 errors["base"] = "unknown"
         
+
             if not errors:
                 if user_input[CONF_API_KEY] != self._previous_key:
                     await self.async_set_unique_id(user_input[CONF_API_KEY])
 
-                    self._abort_if_unique_id_configured()
+                    if self.source == SOURCE_IMPORT:
+                        # There must be a better way of doing this?  There's no apparent way to call _abort_if_unique_id_configured and test the result
+                        persistent_notification.create(
+                            self.hass,
+                            f"Unable to import legacy configuration.yaml entries for API key {user_input[CONF_API_KEY]}, most likely because they've already been imported.  Please remove those entries from configuration.yaml." ,
+                            title='Transport NSW Mk II',
+                            notification_id=f"{DOMAIN}_{user_input[CONF_API_KEY]}_unique_check"
+                            )
+
+                        # This is going to exit straight away, no option to pre-check first
+                        self._abort_if_unique_id_configured()
+
+                        # Still here?  OK, remove that notification
+                        persistent_notification.dismiss(
+                            self.hass,
+                            notification_id=f"{DOMAIN}_{user_input[CONF_API_KEY]}_unique_check"
+                            )
+                    
+                    else:
+                        self._abort_if_unique_id_configured()
+                        
                     reason = "reconfigure_successful"
                 else:
                     reason = "reconfigure_successful_no_change"
@@ -132,14 +155,36 @@ class TransportNSWConfigFlowHandler(ConfigFlow, domain=DOMAIN):
 
                     # Set our title variable here for use later
                     self._title = f"Transport NSW Mk II ({user_input[CONF_API_KEY][-4:]})"
-                    self._input_data = user_input
 
+                    if self.source == SOURCE_IMPORT:
+                        # We want to create the config entry and then as many subentries as we've been provided
+                        # The data for the config entry is a subset of what we've been provided via the import process
+                        self._input_data = {CONF_API_KEY: user_input[CONF_API_KEY], CONF_SCAN_INTERVAL: user_input[CONF_SCAN_INTERVAL]}
+                        subentry_data = user_input['subentry_data']
+                        
+                        persistent_notification.create(
+                            self.hass,
+                            f"Successfully imported legacy configuration.yaml entries for API key {user_input[CONF_API_KEY]}.  Please remove those entries from configuration.yaml." ,
+                            title='Transport NSW Mk II',
+                            notification_id=f"{DOMAIN}_{user_input[CONF_API_KEY]}"
+                            )
+                        
+                    else:
+                        self._input_data = user_input
+                        # We're just creating the config entry now
+                        subentry_data = None
+                        
                     return self.async_create_entry(
                         title=self._title,
                         data=self._input_data,
-                        description = "test description - reason = {reason}",
-                        description_placeholders = {"reason": "mystring"} )
-
+                        subentries = subentry_data
+                        )
+            else:
+                if self.source == SOURCE_IMPORT:
+                    # We need to fail gracefully and quietly!
+                    return self.async_abort(
+                        reason = errors['base']
+                        )
 
         if user_input is None:
             if self.source == SOURCE_RECONFIGURE:
@@ -165,6 +210,16 @@ class TransportNSWConfigFlowHandler(ConfigFlow, domain=DOMAIN):
             return self.async_show_form(
                 step_id="user", data_schema=USER_DATA_SCHEMA, errors=errors
             )
+
+    async def async_step_import(self, user_input: dict[str, Any]):
+        # Make sure this entry hasn't been imported already
+        self._async_abort_entries_match(user_input)
+
+        # We're here so the config entry for this import hasn't been created already
+        # We've been passed a complete subentry data-set, plus what we need to set up the initial config entry as well
+
+        return await self.async_step_user(user_input = user_input)
+
 
     async def async_step_reconfigure(self, user_input: dict[str, Any] | None = None):
         """Re-authenticate API."""
