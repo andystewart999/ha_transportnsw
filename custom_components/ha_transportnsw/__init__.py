@@ -42,6 +42,7 @@ from .const import (
 _LOGGER = logging.getLogger(__name__)
 
 PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.DEVICE_TRACKER]
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 type MyConfigEntry = ConfigEntry[RuntimeData]
 
