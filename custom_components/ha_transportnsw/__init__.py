@@ -11,6 +11,7 @@ from homeassistant import config_entries
 from homeassistant.config_entries import ConfigEntry, ConfigSubentryData #, ConfigSubentry 
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
+from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.device_registry import DeviceEntry
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.const import Platform, CONF_API_KEY, CONF_SCAN_INTERVAL
