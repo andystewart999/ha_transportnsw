@@ -1,110 +1,57 @@
-# NOTE!
-This readme is due to be updated shortly to incorporate the move to version 2.0 of this integration
-
 # Transport NSW MkII
 A Home Assistant custom component to provide real-time Transport NSW journey information
 
-##
-This is a fork of Home Assistant's built-in Transport NSW integration.  It uses my modified version of the TransportNSW library that can be found on PyPi here: https://pypi.org/project/PyTransportNSWv2/
+## History
+This integration was initially inspired by Home Assistant's built-in [Transport NSW]([url](https://www.home-assistant.io/integrations/transport_nsw/)) integration but has now been completely re-written from scratch to incorporate a GUI-based setup and Home Assistant's recent addition of [Config Subentries]([url](https://developers.home-assistant.io/blog/2025/02/16/config-subentries/)).  It uses my modified version of the TransportNSW library that can be found on PyPi [here]([url](https://pypi.org/project/PyTransportNSWv2/)).
 
-Unlike the built-in integration, the specific origin and destination are specified rather than the origin and a general route.  Both general stop IDs (such as stations or bus stops) can be specified, as well as more detailed stop IDs such as specific platforms.  As this isn't specifically a detailed route display service, for longer journeys that involve a number of changes or multiple journey types only the origin, final destination and the number of changes are shown for clarity.
- 
-One of the most often requested feature additions for the built-in version was the option to specify a minimum 'wait time' to give people the time to get to the origin.  This is now an option, although the side-effect is that as soon as a train, for example, gets _too_ close to the station it will disappear and the sensor will jump to the next further away train.
-
-Another feature is the ability to filter by transport type, for example Train.  You can specify if the filter should be strict, in which case the first leg of the journey **must** be of the specified type, or not strict in which case a journey will be returned if **any** of the legs are of the specified type.
-
-You can specify how many trips should be returned and therefore how many sensors for that particular journey should be created.  Note that the TransportNSW API only ever returns 5 or 6 trips so specifying a strict filter might result in less sensors being generated than requested, or existing sensors showing 'n/a'.
-Trips are sorted by the departure time from the specified origin and could of course be via different routes or transport types, depending on your origin, destination and filter settings.
-
-The detail of the returned information can be selected, from brief through to verbose (see the examples below).  All detail iterations include the latitude and longitude (if the TransportNSW API returns it, and if is hasn't been disabled by the user) so the current location of the vehicle can be shown on a map.
-
-### Example settings
-```yaml
-sensor:
-  - platform: ha_transportnsw
-    api_key: 'your_api_key'
-    origin_id: 206710
-    destination_id: 207210
-    trip_wait_time: 5
-    transport_type: 1 # Only trains
-    return_info: medium
-    strict_transport_type: true
-    trips_to_create: 3
-    include_realtime_location: true
-    include_alerts: normal
-    alert_types:
-      - lineInfo
-      - routeInfo
-    name: "Chatswood to Gordon"
-```
-
-### All settings explained
-**Mandatory**
-* name: the name of the sensor.  The default is based on the origin and destinatio IDs.
-* api_key: your Transport NSW API key
-* origin_id: the Transport NSW platform or Stop ID of the origin.
-* destination_id: the Transport NSW platform or Stop ID of the destination.
-
-**Optional**
-* trip_wait_time: the minimum time from now until the journey should start, in minutes.  The default is 0.
-* transport_type: a transport type, as defined by the TransportNSW API, that must be present in a journey for it to be returned by the API.  The default is no filter.
-* strict_transport_type: only accepts filtered journeys as valid if the first leg is of the correct type.  The default is False.
-* trips_to_create: how many trip sensors to create for each journey.  The default is 1, the maximum is 6.
-* route_filter: filter out journeys that don't have the provided text in either 'origin line name' or 'short origin line name'.  The default is no filter.
-* include_realtime_location: whether to include the realtime location of each journey's vehicle, assuming it is available.  The default is True.
-* include_alerts:  whether to return alerts related to that journey.  The default is 'none' - if a severity is specified, then alerts of that severity or higher are returned.
-* alert_types: if ```include_alerts``` is something other than 'none', a list of what kind of alerts to include.  See the list below for options, if this setting isn't included then the default is all alert types
-* return_info: defines the level of detail that the sensor should include.  Valid options are basic, medium and verbose - the default is medium.
-
-### transport_type filters
-```
-1: Train
-2: Metro
-4: Light rail
-5: Bus
-7: Coach
-9: Ferry
-11: School bus
-99: Walk
-100: Walk
-107: Cycle
-```
-Walking segments that top or tail the returned journey are ignored.  For example, if you specifiy an origin that requires you to walk to the nearest bus stop, that bus stop is considered to be the origin rather than wherever your defined `origin_id` is.
-
-### alert severities
-```
-all (the same as verylow)
-verylow
-low
-normal
-high
-veryhigh
-```
-
-### alert_type options
-```
-routeinfo:	Alerts relating to a specific route
-lineinfo:	Alerts relating to a specific journey
-stopinfo:	Alerts relating to specific stops
-stopblocking:	Alerts relating to stop closures
-bannerinfo:	Alerts potentially relating to network-wide impacts
-```
-Note that alerts, if requested, are currently returned as a JSON array from the raw API output.  There can be quite a lot of data in there, and many ways to process it, so for now that's left to you to determine what to do with that data.  If I can think of a better way to present alerts then this might change.
+## Use
+You need a Transport NSW API key, available for free [here]([url](https://opendata.transport.nsw.gov.au/data/user/register)).  Enter the API key and how often you want the sensors to update and you're done!  At this stage there's only one sensor which logs how many API calls the integration has made across all subentries.  There's a limit of 60,000 calls per day and each journey, on average, requires 3 API calls - in the unlikely event that you're going to run out a future enhancement will be to auto-throttle sensor updates.
 
 
-### return_info examples
-```yaml
-return_info: basic
-```
-<img width="500" alt="basic" src="https://github.com/andystewart999/ha_transportnsw/assets/18434441/3cb11d26-d029-4250-bac6-19df8480e9ef">
+<img width="500" alt="API key entry" src="https://raw.githubusercontent.com/andystewart999/ha_transportnsw/d95f7eae1929cf81124896b35a40884193ca584f/images/1%20-%20config%20entry.png" />
 
-```yaml
-return_info: medium
-```
-<img width="500" alt="medium" src="https://github.com/andystewart999/ha_transportnsw/assets/18434441/eab2f2c3-1c4d-416a-80c5-15410c3d8fc4">
 
-```yaml
-return_info: verbose
-```
-<img width="500" alt="verbose" src="https://github.com/andystewart999/ha_transportnsw/assets/18434441/f2a95957-bbeb-41f8-aa9b-7efee8e62452">
 
+### Journey subentries
+Each journey is a subentry and has its own journey-specific set of options.  Journey-specific options can be chosen at the time of creation or at any time afterwards.  Each config flow page has a detailed explanation of the options it provides, including filtering based on your preferred transport types (train, bus, etc).
+
+
+
+### Origin and destination
+You can specify the origin and destination either by stop ID or the full name of the location.  If you enter the full (or partial) name, for example 'Central Station', the `stop_finder` API call will be called and whatever comes back as the 'best' (as determined by the API) will be used.  Using known stop IDs are obviously less likely to result in the integration choosing the wrong location, but in most cases you'll get what you want the first time.
+
+<img width="500" alt="Journey subentry" src="https://raw.githubusercontent.com/andystewart999/ha_transportnsw/refs/heads/master/images/2%20-%20subentry%20origin%20and%20destination%20%28populated%29.png" />
+
+
+
+### Journey filters
+On a per-journey basis you can specify the transport type options that are applicable, and, to give you time to get to the origin, how far in the future a journey departure time must be to be considered valid.
+
+<img width="500" alt="Journey filters" src="https://raw.githubusercontent.com/andystewart999/ha_transportnsw/refs/heads/master/images/3%20-%20subentry%20filters.png" />
+
+
+
+### Multiple trips
+Up to 3 trips per journey can be created, which are basically the next 3 departures from the origin.  Note that depending on your 'transport type' choices the trips may be quite different, and may also have some duplicated legs - it's entirely up to the Transport NSW API what to return.
+
+<img width="500" alt="Alerts and multiple trips" src="https://raw.githubusercontent.com/andystewart999/ha_transportnsw/refs/heads/master/images/4%20-%20subentry%20alerts%20and%20trips.png" />
+
+
+
+### Default sensors
+To keep things simple the default sensors comprise only of the 'due' sensor, showing minutes until departure time, and device tracker sensors for the origin and destination vehicles (assuming the API returns that information).
+
+
+### Additional sensors
+There are many additional sensors that are available if required, which can be selected when you create a new journey or at any time afterwards.  Origin/destination names, exact stops or platforms, the number of changes, the vehicle type - pretty much everything that the API returns can be included.
+
+<img width="500" alt="Additional sensors" src=https://raw.githubusercontent.com/andystewart999/ha_transportnsw/refs/heads/master/images/6%20-%20subentry%20sensor%20detail.png />
+
+
+
+### Attributes 
+Some of the sensors have their own additional attributes:
+
+- Changes: The state of this sensor is the number of changes within the journey.  The attributes are a pipe-separate list of each platform that you'll traverse as part of the journey.  It doesn't include the origin or destination platforms as they're available as individual sensors.
+- Alerts: The state of this sensor is the highest alert returned by the API.  The attributes are the full JSON dump of the alert details, which can be processed by your automations or template sensors as required
+- Device tracker: The API real-time trip ID is included for your reference.
