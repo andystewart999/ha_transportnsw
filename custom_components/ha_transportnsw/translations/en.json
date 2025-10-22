@@ -3,7 +3,6 @@
 	"create_entry": {
 	  "default": "API key registered.  Now add your journeys!"
 	},
-    "title": "Transport NSW Mk II",
     "abort": {
       "already_configured": "That API key has already been registered.  Please use 'add new journey' to add one or more journeys instead.",
       "reconfigure_successful": "New API key registered.",
@@ -73,9 +72,6 @@
 				  "alerts": "Include alerts related to each journey",
                   "trips_to_create": "How many trips should be shown (1 to 3)",
 				  "sensor_creation": "Sensors to create"
-				},
-				"data description": {
-					"sensor_creation": "Sensors to create placeholder"
 				},
 				"description": "Here you can choose if an alerts sensor should be created, how many consecutive journeys should be created and what types of sensors each journey should include - by default only the 'due' sensor and origin/destination device trackers will be created.",
 				  "title": "{journey_name}"
@@ -180,3 +176,4 @@
       }
   }
 }
+
