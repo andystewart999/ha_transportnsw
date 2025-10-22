@@ -28,7 +28,14 @@
   },
   "config_subentries": {
 	  "create_entry": {
-		  "title": "Transport NSW Mk II"
+		  "title": "Transport NSW Mk II",
+		  "step": {
+			  "user" : {
+				  "data": {
+					  "hassfest_placeholder": "hassfest_placeholder"
+				  }
+			  }
+		  }
 	  },
 	  "subentry_journey": {
 		  "abort": {
@@ -176,4 +183,5 @@
       }
   }
 }
+
 
