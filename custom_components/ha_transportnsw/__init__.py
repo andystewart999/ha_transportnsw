@@ -137,7 +137,7 @@ async def async_setup(hass: HomeAssistant, config):
 
     # Iterate through and capture the data for each existing entry, grouped by API key
     # These will be converted to a single entry per API key, with multiple subentries
-    if ['sensor'] in config:
+    if 'sensor' in config:
         for sensor in config['sensor']:
             if sensor['platform'] == DOMAIN:
                 api_key, subentry_data = await get_migration_data(hass, sensor)
