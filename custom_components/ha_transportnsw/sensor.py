@@ -456,7 +456,6 @@ class TransportNSWSubentrySensor(CoordinatorEntity, SensorEntity):
         try:
             # Is this a migrated 'due' sensor?
             if self.subentry.data[CONF_NAME] != '' and self.entity_description.key == CONF_DUE_SENSOR:
-                _LOGGER.error(f"migrated sensors")
                 attrs = {
                     'due': self.coordinator.data[self.subentry.subentry_id][self.journey_index][CONF_DUE_SENSOR],
                     'delay': self.coordinator.data[self.subentry.subentry_id][self.journey_index][CONF_DELAY_SENSOR],
