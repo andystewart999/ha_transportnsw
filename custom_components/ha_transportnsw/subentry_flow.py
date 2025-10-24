@@ -22,6 +22,7 @@ from homeassistant.config_entries import (
 )
 from homeassistant.const import (
     CONF_API_KEY,
+    CONF_NAME,
     CONF_SCAN_INTERVAL,
 )
 from homeassistant.core import HomeAssistant, callback
@@ -201,6 +202,12 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
             if "base" not in errors:
                 # Validation was successful, so create a unique id for this instance 
                 # and create the config subentry.
+                
+                # Add an empty CONF_NAME field - it's only used for migrated journeys, journeys created this way will use the new naming convention
+                user_input.update(
+                    {CONF_NAME: ''}
+                    )
+                
                 self._input_data = user_input
                 placeholders = {"journey_name": info['title']}
                 self.context["title_placeholders"] = placeholders
