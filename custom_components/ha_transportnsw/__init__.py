@@ -14,7 +14,12 @@ from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.device_registry import DeviceEntry
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
-from homeassistant.const import Platform, CONF_API_KEY, CONF_SCAN_INTERVAL
+from homeassistant.const import (
+    Platform,
+    CONF_NAME,
+    CONF_API_KEY,
+    CONF_SCAN_INTERVAL
+)
 
 from .helpers import check_stops, set_optional_sensors
 from .coordinator import TransportNSWCoordinator
@@ -36,6 +41,7 @@ from .const import (
     CONF_ALERT_TYPES,
     CONF_RETURN_INFO,
     CONF_ROUTE_FILTER,
+    CONF_SENSOR_CREATION,
     DEFAULT_SCAN_INTERVAL,
     SUBENTRY_TYPE_JOURNEY
 )
@@ -60,7 +66,6 @@ async def get_migration_data(hass, yaml_entry):
     try:
         api_key = yaml_entry[CONF_API_KEY]
         scan_interval = DEFAULT_SCAN_INTERVAL
-
         origin_id = str(yaml_entry[CONF_ORIGIN_ID])
         destination_id = str(yaml_entry[CONF_DESTINATION_ID])
         transport_type = yaml_entry.get('transport_type', 0)
@@ -71,6 +76,7 @@ async def get_migration_data(hass, yaml_entry):
         include_realtime_location = yaml_entry.get(CONF_INCLUDE_REALTIME_LOCATION, True)
         alert_severity = yaml_entry.get(CONF_ALERT_SEVERITY, 'none')
         alert_types = yaml_entry.get(CONF_ALERT_TYPES, ["lineinfo", "routeinfo", "stopinfo", "stopblocking", "bannerinfo"])
+        name = yaml_entry.get(CONF_NAME, '')
         
         # Transport type needs to be a list, and we'll assume the destination transport type should be the same as that's the current behaviour
         origin_transport_type = [transport_type]
@@ -108,6 +114,7 @@ async def get_migration_data(hass, yaml_entry):
 
         # Now put it all together
         subentry_data = {
+            CONF_NAME: name,
             CONF_ORIGIN_ID: origin_id,
             CONF_ORIGIN_NAME: origin_name,
             CONF_ORIGIN_TRANSPORT_TYPE: origin_transport_type,
@@ -118,6 +125,7 @@ async def get_migration_data(hass, yaml_entry):
             CONF_TRIPS_TO_CREATE: trips_to_create,
             CONF_INCLUDE_REALTIME_LOCATION: include_realtime_location,
             CONF_ROUTE_FILTER: route_filter,
+            CONF_SENSOR_CREATION: 'custom',
             CONF_ALERTS_SENSOR: include_alerts,
             CONF_ALERT_SEVERITY: alert_severity,
             CONF_ALERT_TYPES: alert_types
@@ -127,7 +135,7 @@ async def get_migration_data(hass, yaml_entry):
 
         return api_key, ConfigSubentryData(data = subentry_data, subentry_type = SUBENTRY_TYPE_JOURNEY, title = f"{origin_name} to {destination_name}", unique_id = f"{origin_id}_{destination_id}")
 
-    except:
+    except Exception as ex:
         return api_key, None
         
 async def async_setup(hass: HomeAssistant, config):
