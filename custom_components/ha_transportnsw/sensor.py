@@ -222,33 +222,6 @@ def convert_date(utc_string) -> datetime:
     
     return local_dt
 
-# def remove_entity(entity_reg, configentry_id, subentry_id, trip_index, key):
-    # # Search for and remove a sensor that's no longer needed
-    # unique_id = f"{subentry_id}_{key}_{trip_index}"
-
-    # try:
-        # # Get all the entities for this config entry
-        # entities = entity_reg.entities.get_entries_for_config_entry_id(configentry_id)
-
-        # # Search for the one to remove
-        # for entity in entities:
-            # if entity.unique_id == unique_id:
-                # entity_reg.async_remove(entity.entity_id)
-                # break
-
-    # except Exception as err:
-        # # Don't log an error as it's possible the entity never existed in the first place
-        # pass
-
-# def remove_device(device_reg, subentry_id, origin_id, destination_id, device_identifier):
-    # # Search for and remove a device that's no longer needed
-    # try:
-        # device = device_reg.async_get_device(identifiers={(DOMAIN, f"{subentry_id}_{origin_id}_{destination_id}_{device_identifier}")})
-        # if device is not None:
-            # device_reg.async_remove_device(device.id)
-    # finally:
-        # pass
-        
 async def async_setup_entry(
     hass: HomeAssistant,
     config_entry: MyConfigEntry,
@@ -384,8 +357,21 @@ class TransportNSWSubentrySensor(CoordinatorEntity, SensorEntity):
         self.sensor_suffix = sensor_suffix
         self.device_identifier = device_identifier
 
-        self._attr_unique_id = f"{subentry.subentry_id}_{description.key}_{index}"
-        self._attr_name = f"{subentry.data[CONF_ORIGIN_NAME]} to {subentry.data[CONF_DESTINATION_NAME]}{device_suffix} {description.name}"
+        
+        # Cater for migrated entries with a different naming convention
+        if subentry.data[CONF_NAME] == '':
+            # Use the new naming convention
+            self._attr_name = f"{subentry.data[CONF_ORIGIN_NAME]} to {subentry.data[CONF_DESTINATION_NAME]}{device_suffix} {description.name}"
+            self._attr_unique_id = f"{subentry.subentry_id}_{description.key}_{index}"
+        else:
+            # Use the migrated sensor naming convention
+            if description.key == CONF_DUE_SENSOR:
+                # A special case - don't append the description to the end
+                self._attr_name = f"{subentry.data[CONF_NAME]}{device_suffix}"
+            else:
+                self._attr_name = f"{subentry.data[CONF_NAME]}{device_suffix} {description.name}"
+                
+            self._attr_unique_id = self._attr_name
 
     @callback
     def _handle_coordinator_update(self) -> None:
@@ -463,21 +449,46 @@ class TransportNSWSubentrySensor(CoordinatorEntity, SensorEntity):
         """Return the extra state attributes."""
         # Add any additional attributes you want on your sensor.
         attrs = {}
-        
-        # Attributes for all sensors
+
         try:
-            attrs['Attribution'] = ATTRIBUTION
-            attrs["Origin ID"] = self.subentry.data[CONF_ORIGIN_ID]
-            attrs["Destination ID"] = self.subentry.data[CONF_DESTINATION_ID]
+            # Is this a migrated 'due' sensor?
+            if self.subentry.data[CONF_NAME] != '' and self.entity_description.key == CONF_DUE_SENSOR:
+                _LOGGER.error(f"migrated sensors")
+                attrs = {
+                    'due': self.coordinator.data[self.subentry.subentry_id][self.journey_index][CONF_DUE_SENSOR],
+                    'delay': self.coordinator.data[self.subentry.subentry_id][self.journey_index][CONF_DELAY_SENSOR],
+                    'arrival_time': self.coordinator.data[self.subentry.subentry_id][self.journey_index][CONF_LAST_LEG_ARRIVAL_TIME_SENSOR],
+                    'changes': self.coordinator.data[self.subentry.subentry_id][self.journey_index][CONF_CHANGES_SENSOR],
+                    'origin_name': self.coordinator.data[self.subentry.subentry_id][self.journey_index][CONF_ORIGIN_NAME_SENSOR],
+                    'origin_detail': get_specific_platform(self.coordinator.data[self.subentry.subentry_id][self.journey_index], CONF_ORIGIN_DETAIL_SENSOR),
+                    'departure_time': self.coordinator.data[self.subentry.subentry_id][self.journey_index][CONF_FIRST_LEG_DEPARTURE_TIME_SENSOR],
+                    'destination_name': self.coordinator.data[self.subentry.subentry_id][self.journey_index][CONF_DESTINATION_NAME_SENSOR],
+                    'destination_detail': get_specific_platform(self.coordinator.data[self.subentry.subentry_id][self.journey_index], CONF_DESTINATION_DETAIL_SENSOR),
+                    'occupancy': self.coordinator.data[self.subentry.subentry_id][self.journey_index][CONF_FIRST_LEG_OCCUPANCY_SENSOR],
+                    'origin_line_name': self.coordinator.data[self.subentry.subentry_id][self.journey_index][CONF_FIRST_LEG_LINE_NAME_SENSOR],
+                    'short_origin_line_name': self.coordinator.data[self.subentry.subentry_id][self.journey_index][CONF_FIRST_LEG_LINE_NAME_SHORT_SENSOR],
+                    'origin_transport_type': self.coordinator.data[self.subentry.subentry_id][self.journey_index][CONF_FIRST_LEG_TRANSPORT_TYPE_SENSOR],
+                    'origin_transport_name': self.coordinator.data[self.subentry.subentry_id][self.journey_index][CONF_FIRST_LEG_TRANSPORT_NAME_SENSOR],
+                    'latitude': self.coordinator.data[self.subentry.subentry_id][self.journey_index][ORIGIN_LATITUDE],
+                    'longitude': self.coordinator.data[self.subentry.subentry_id][self.journey_index][ORIGIN_LONGITUDE],
+                    'alerts': self.coordinator.data[self.subentry.subentry_id][self.journey_index][CONF_ALERTS_SENSOR]
+                }            
 
-            # Key-specific attributes
-            if self.coordinator.data is not None and self.subentry.subentry_id in self.coordinator.data:
-                if self.entity_description.key == CONF_CHANGES_SENSOR:
-                    # A list of changes in this journey
-                    attrs['Changes list'] =  "|".join(self.coordinator.data[self.subentry.subentry_id][self.journey_index][CHANGES_LIST])
+            else:
+                # Attributes for all sensors
+                attrs['Attribution'] = ATTRIBUTION
+                attrs["Origin ID"] = self.subentry.data[CONF_ORIGIN_ID]
+                attrs["Destination ID"] = self.subentry.data[CONF_DESTINATION_ID]
+    
+                # Key-specific attributes
+                if self.coordinator.data is not None and self.subentry.subentry_id in self.coordinator.data:
+                    if self.entity_description.key == CONF_CHANGES_SENSOR:
+                        # A list of changes in this journey
+                        attrs['Changes list'] =  "|".join(self.coordinator.data[self.subentry.subentry_id][self.journey_index][CHANGES_LIST])
+    
+                    if self.entity_description.key in ['alerts']:
+                        # Alerts can be long so they need to go into attributes
+                        attrs["Alerts"] = self.coordinator.data[self.subentry.subentry_id][self.journey_index][self.entity_description.key]
 
-                if self.entity_description.key in ['alerts']:
-                    # Alerts can be long so they need to go into attributes
-                    attrs["Alerts"] = self.coordinator.data[self.subentry.subentry_id][self.journey_index][self.entity_description.key]
         finally:
             return attrs
