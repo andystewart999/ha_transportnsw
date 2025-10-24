@@ -245,11 +245,13 @@ async def async_setup_entry(
                     sensor_suffix = ""
                     name_suffix = ""
                     device_suffix = ""
+                    migration_suffix = ""
                     device_identifier = f"trip_{str(trip_index + 1)}"
                 else:
                     sensor_suffix = f"trip_{str(trip_index + 1)}"
                     name_suffix = f" ({str(trip_index + 1)})"
                     device_suffix = f" trip {str(trip_index + 1)}"
+                    migration_suffix = f"_trip_{str(trip_index + 1)}"
                     device_identifier = f"trip_{str(trip_index + 1)}"
 
                 sensors = []
@@ -264,7 +266,7 @@ async def async_setup_entry(
                 else:
                     # Define the default sensors for this trip
                     sensors = [
-                        TransportNSWSubentrySensor(coordinator, description, subentry, trip_index, sensor_suffix, name_suffix, device_suffix, device_identifier)
+                        TransportNSWSubentrySensor(coordinator, description, subentry, trip_index, sensor_suffix, name_suffix, device_suffix, migration_suffix, device_identifier)
                         for description in DEFAULT_SUBENTRY_SENSORS
                     ]
         
@@ -272,7 +274,7 @@ async def async_setup_entry(
                     if 'time_and_change_sensors' in subentry.data:
                         for sensor in TIME_AND_CHANGE_SENSORS:
                             if subentry.data['time_and_change_sensors'].get(sensor.key, False):
-                                sensors.append(TransportNSWSubentrySensor(coordinator, sensor, subentry, trip_index, sensor_suffix, name_suffix, device_suffix, device_identifier))
+                                sensors.append(TransportNSWSubentrySensor(coordinator, sensor, subentry, trip_index, sensor_suffix, name_suffix, device_suffix, migration_suffix, device_identifier))
                             else:
                                 # Try and remove it - don't worry if it never existed
                                 remove_entity (entity_reg, config_entry.entry_id, subentry.subentry_id, trip_index, sensor.key)
@@ -280,7 +282,7 @@ async def async_setup_entry(
                     if 'origin_sensors' in subentry.data:
                         for sensor in ORIGIN_SENSORS:
                             if subentry.data['origin_sensors'].get(sensor.key, False):
-                                sensors.append(TransportNSWSubentrySensor(coordinator, sensor, subentry, trip_index, sensor_suffix, name_suffix, device_suffix, device_identifier))
+                                sensors.append(TransportNSWSubentrySensor(coordinator, sensor, subentry, trip_index, sensor_suffix, name_suffix, device_suffix, migration_suffix, device_identifier))
                             else:
                                 # Try and remove it - don't worry if it never existed
                                 remove_entity (entity_reg, config_entry.entry_id, subentry.subentry_id, trip_index, sensor.key)
@@ -288,14 +290,14 @@ async def async_setup_entry(
                     if 'destination_sensors' in subentry.data:
                         for sensor in DESTINATION_SENSORS:
                             if subentry.data['destination_sensors'].get(sensor.key, False):
-                                sensors.append(TransportNSWSubentrySensor(coordinator, sensor, subentry, trip_index, sensor_suffix, name_suffix, device_suffix, device_identifier))
+                                sensors.append(TransportNSWSubentrySensor(coordinator, sensor, subentry, trip_index, sensor_suffix, name_suffix, device_suffix, migration_suffix, device_identifier))
                             else:
                                 # Try and remove it - don't worry if it never existed
                                 remove_entity (entity_reg, config_entry.entry_id, subentry.subentry_id, trip_index, sensor.key)
 
                     for sensor in ALERT_SENSORS:
                         if subentry.data.get(sensor.key, False):
-                            sensors.append(TransportNSWSubentrySensor(coordinator, sensor, subentry, trip_index, sensor_suffix, name_suffix, device_suffix, device_identifier))
+                            sensors.append(TransportNSWSubentrySensor(coordinator, sensor, subentry, trip_index, sensor_suffix, name_suffix, device_suffix, migration_suffix, device_identifier))
                         else:
                             # Try and remove it - don't worry if it never existed
                             remove_entity (entity_reg, config_entry.entry_id, subentry.subentry_id, trip_index, sensor.key)
@@ -345,7 +347,7 @@ class TransportNSWSensor(CoordinatorEntity, SensorEntity):
 class TransportNSWSubentrySensor(CoordinatorEntity, SensorEntity):
     """Implementation of subentry sensor."""
 
-    def __init__(self, coordinator: TransportNSWCoordinator, description: SensorEntityDescription, subentry: ConfigSubentry, index: int, sensor_suffix: str, name_suffix: str, device_suffix: str, device_identifier: str) -> None:
+    def __init__(self, coordinator: TransportNSWCoordinator, description: SensorEntityDescription, subentry: ConfigSubentry, index: int, sensor_suffix: str, name_suffix: str, device_suffix: str, migration_suffix: str, device_identifier: str) -> None:
         """Initialise sensor."""
         super().__init__(coordinator)
 
@@ -354,6 +356,7 @@ class TransportNSWSubentrySensor(CoordinatorEntity, SensorEntity):
         self.subentry = subentry
         self.journey_index = index
         self.device_suffix = device_suffix
+        self.migration_suffix = migration_suffix
         self.sensor_suffix = sensor_suffix
         self.device_identifier = device_identifier
 
@@ -367,9 +370,9 @@ class TransportNSWSubentrySensor(CoordinatorEntity, SensorEntity):
             # Use the migrated sensor naming convention
             if description.key == CONF_DUE_SENSOR:
                 # A special case - don't append the description to the end
-                self._attr_name = f"{subentry.data[CONF_NAME]}{device_suffix}"
+                self._attr_name = f"{subentry.data[CONF_NAME]}{migration_suffix}"
             else:
-                self._attr_name = f"{subentry.data[CONF_NAME]}{device_suffix} {description.name}"
+                self._attr_name = f"{subentry.data[CONF_NAME]}{migration_suffix} {description.name}"
                 
             self._attr_unique_id = self._attr_name
 
