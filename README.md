@@ -2,12 +2,13 @@
 A Home Assistant custom component to provide real-time Transport NSW journey information
 
 ## History
-This integration was initially inspired by Home Assistant's built-in [Transport NSW](https://www.home-assistant.io/integrations/transport_nsw/) integration but has now been completely re-written from scratch to incorporate a GUI-based setup and Home Assistant's recent addition of [Config Subentries](https://developers.home-assistant.io/blog/2025/02/16/config-subentries/).  It uses my modified version of the TransportNSW library that can be found on PyPi [here](https://pypi.org/project/PyTransportNSWv2/).
+This integration was initially inspired by Home Assistant's built-in [Transport NSW](https://www.home-assistant.io/integrations/transport_nsw/) integration but has now been completely re-written from scratch to incorporate a GUI-based setup and Home Assistant's recent addition of [Config Subentries](https://developers.home-assistant.io/blog/2025/02/16/config-subentries/).  It uses my modified version of the TransportNSW library that can be found on PyPi [here](https://pypi.org/project/PyTransportNSWv2/), and can be installed via [HACS](https://github.com/hacs/integration).
 
 ## Use
 You need a Transport NSW API key, available for free [here](https://opendata.transport.nsw.gov.au/data/user/register) - once registered, create an API token.
 
 <img width="500" alt="image" src="https://github.com/user-attachments/assets/63c24e05-3b32-4065-9d00-77855e233a62" />
+
 
 ### Add the config entry
 From the devices page, click 'Add integration', search for 'Transport NSW Mk II' and add it.
