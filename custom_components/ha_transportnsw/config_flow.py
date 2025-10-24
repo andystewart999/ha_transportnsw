@@ -86,8 +86,9 @@ class TransportNSWConfigFlowHandler(ConfigFlow, domain=DOMAIN):
 
         if user_input is not None:
             if self.source == SOURCE_IMPORT:
+                # There won't have been a previous key to check against
                 self._previous_key = ''
-                
+
             # The form has been filled in and submitted, so process the data provided.
             try:
                 # Validate that the setup data is valid and if not handle errors
@@ -217,7 +218,6 @@ class TransportNSWConfigFlowHandler(ConfigFlow, domain=DOMAIN):
 
         # We're here so the config entry for this import hasn't been created already
         # We've been passed a complete subentry data-set, plus what we need to set up the initial config entry as well
-
         return await self.async_step_user(user_input = user_input)
 
 
