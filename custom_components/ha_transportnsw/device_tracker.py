@@ -8,6 +8,8 @@ from homeassistant.components.device_tracker import (
     TrackerEntityDescription
 )
 
+from homeassistant.const import CONF_NAME
+
 from homeassistant.config_entries import ConfigEntry, ConfigSubentry
 from homeassistant.core import HomeAssistant, callback
 #from homeassistant.helpers.dispatcher import async_dispatcher_connect
@@ -21,24 +23,6 @@ from .coordinator import TransportNSWCoordinator
 from .helpers import remove_entity
 
 _LOGGER = logging.getLogger(__name__)
-
-# def remove_entity(entity_reg, configentry_id, subentry_id,trip_index, key):
-    # # Search for and remove a sensor that's no longer needed
-    # unique_id = f"{subentry_id}_{key}_{trip_index}"
-
-    # try:
-        # # Get all the entities for this config entry
-        # entities = entity_reg.entities.get_entries_for_config_entry_id(configentry_id)
-
-        # # Search for the one to remove
-        # for entity in entities:
-            # if entity.unique_id == unique_id:
-                # entity_reg.async_remove(entity.entity_id)
-                # break
-
-    # except Exception as err:
-        # # Don't log an error as it's possible the entity never existed in the first place
-        # pass
 
 
 async def async_setup_entry(
@@ -63,11 +47,13 @@ async def async_setup_entry(
                     sensor_suffix = ""
                     name_suffix = ""
                     device_suffix = ""
+                    migration_suffix = ""
                     device_identifier = f"trip_{str(trip_index + 1)}"
                 else:
                     sensor_suffix = f"trip_{str(trip_index + 1)}"
                     name_suffix = f" ({str(trip_index + 1)})"
                     device_suffix = f" trip {str(trip_index + 1)}"
+                    migration_suffix = f"_trip_{str(trip_index + 1)}"
                     device_identifier = f"trip_{str(trip_index + 1)}"
 
                 leg_suffix = ""
@@ -90,7 +76,7 @@ async def async_setup_entry(
                                 name = f"{subentry.subentry_id}_{tracker}_{trip_index}"
                                 )
 
-                            device_trackers.append(TransportNSWDeviceTracker(coordinator, new_device_tracker, subentry, trip_index, sensor_suffix, name_suffix, leg_suffix, device_suffix, device_identifier))
+                            device_trackers.append(TransportNSWDeviceTracker(coordinator, new_device_tracker, subentry, trip_index, sensor_suffix, name_suffix, leg_suffix, device_suffix, migration_suffix, device_identifier))
                         else:
                             # Try and remove it - don't worry if it never existed
                             remove_entity (entity_reg, config_entry.entry_id, subentry.subentry_id, trip_index, tracker)
@@ -101,7 +87,7 @@ async def async_setup_entry(
 class TransportNSWDeviceTracker(CoordinatorEntity, TrackerEntity):
     """device tracker."""
 
-    def __init__(self, coordinator: TransportNSWCoordinator, description: TrackerEntityDescription, subentry: ConfigSubentry, index: int, sensor_suffix: str, name_suffix: str, leg_suffix: str, device_suffix: str, device_identifier: str) -> None:
+    def __init__(self, coordinator: TransportNSWCoordinator, description: TrackerEntityDescription, subentry: ConfigSubentry, index: int, sensor_suffix: str, name_suffix: str, leg_suffix: str, device_suffix: str, migration_suffix: str, device_identifier: str) -> None:
         """Initialise sensor."""
         super().__init__(coordinator)
 
@@ -110,12 +96,19 @@ class TransportNSWDeviceTracker(CoordinatorEntity, TrackerEntity):
         self.subentry = subentry
         self.journey_index = index
         self.device_suffix = device_suffix
+        self.migration_suffix = migration_suffix
         self.device_identifier = device_identifier
         self.sensor_suffix = sensor_suffix
         self.leg_suffix = leg_suffix
 
-        self._attr_unique_id = f"{subentry.subentry_id}_{description.key}_{index}"
-        self._attr_name = f"{subentry.data[CONF_ORIGIN_NAME]} to {subentry.data[CONF_DESTINATION_NAME]}{device_suffix} {leg_suffix}location"
+        # Cater for migrated entries with a different naming convention
+        if subentry.data[CONF_NAME] == '':
+            # Use the new naming convention
+            self._attr_unique_id = f"{subentry.subentry_id}_{description.key}_{index}"
+            self._attr_name = f"{subentry.data[CONF_ORIGIN_NAME]} to {subentry.data[CONF_DESTINATION_NAME]}{device_suffix} {leg_suffix}location"
+        else:
+            self._attr_name = f"{subentry.data[CONF_NAME]}{migration_suffix} {description.name}"
+            self._attr_unique_id = self._attr_name
 
 
     @property
