@@ -118,7 +118,7 @@ class TransportNSWConfigFlowHandler(ConfigFlow, domain=DOMAIN):
                         # There must be a better way of doing this?  There's no apparent way to call _abort_if_unique_id_configured and test the result
                         persistent_notification.create(
                             self.hass,
-                            f"Unable to import legacy configuration.yaml entries for API key {user_input[CONF_API_KEY]}, most likely because they've already been imported.  Please remove those entries from configuration.yaml." ,
+                            f"Skipping the migration of legacy configuration.yaml entries for API key {user_input[CONF_API_KEY]} as they've already been imported, or there's already a config entry with the same key.  Please remove those entries from configuration.yaml." ,
                             title='Transport NSW Mk II',
                             notification_id=f"{DOMAIN}_{user_input[CONF_API_KEY]}_unique_check"
                             )
@@ -231,5 +231,6 @@ class CannotConnect(HomeAssistantError):
 
 class InvalidAuth(HomeAssistantError):
     """Error to indicate there is invalid auth."""
+
 
 
