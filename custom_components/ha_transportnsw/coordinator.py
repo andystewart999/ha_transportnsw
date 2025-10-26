@@ -86,7 +86,7 @@ class TransportNSWCoordinator(DataUpdateCoordinator):
                         subentry.data[CONF_ALERT_TYPES]
                         )
 
-                    if journey_data is not None:
+                    if journey_data is not None and journey_data['journeys_with_data'] > 0:
                         if 'journeys' in journey_data:
                             returned_data[subentry.subentry_id] = journey_data['journeys']
 
@@ -99,8 +99,16 @@ class TransportNSWCoordinator(DataUpdateCoordinator):
 
                         returned_data[self.config_entry.entry_id] = {API_CALLS: self.api_calls}
 
+                    else:
+                        # Offer a slightly different warning message if it's a forced train journey
+                        if subentry.data[CONF_ORIGIN_TRANSPORT_TYPE]  == [1]:
+                            _LOGGER.warning (f"No data returned for train-only journey {subentry.title} - there may be a bus replacement service active at the moment.")
+                        else:
+                            _LOGGER.warning(f"No data returned for journey {subentry.title} - consider relaxing the journey restrictions.")
+
                 except Exception as ex:
                     # This will show entities as unavailable by raising UpdateFailed exception
+                    # Not entirely sure how that works though TBH so I'm also checking/setting in sensor.py
                     raise UpdateFailed(f"Error communicating with API: {ex}") from ex
 
         # Update the persistent API counter
