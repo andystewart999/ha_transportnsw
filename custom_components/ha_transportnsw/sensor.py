@@ -167,6 +167,7 @@ def get_highest_alert(alerts):
 
 
 def get_specific_platform(journey_detail, key):
+    # Extract the specific platform, wharf etc for this journey
     if key == CONF_ORIGIN_DETAIL_SENSOR:
         transport_type_key = CONF_FIRST_LEG_TRANSPORT_TYPE_SENSOR
         origin_name_key = CONF_ORIGIN_NAME_SENSOR
@@ -174,7 +175,8 @@ def get_specific_platform(journey_detail, key):
         transport_type_key = CONF_LAST_LEG_TRANSPORT_TYPE_SENSOR
         origin_name_key = CONF_DESTINATION_NAME_SENSOR
 
-    try:
+    if True:
+    #try:
         transport_type = journey_detail[transport_type_key]
         origin_name = journey_detail[origin_name_key]
 
@@ -208,8 +210,8 @@ def get_specific_platform(journey_detail, key):
         else:
             return origin_name
 
-    except:
-        return origin_name
+#    except:
+#        return origin_name
 
 
 def convert_date(utc_string) -> datetime:
@@ -394,7 +396,6 @@ class TransportNSWSubentrySensor(CoordinatorEntity, SensorEntity):
 
         return identifiers
 
-
     @property
     def native_value(self) -> int | float | str | datetime:
         """Return the state of the entity."""
@@ -425,28 +426,49 @@ class TransportNSWSubentrySensor(CoordinatorEntity, SensorEntity):
     @property
     def icon(self) -> str:
         try:
-            if self.coordinator.data is not None and self.subentry.subentry_id in self.coordinator.data:
-                if self.entity_description.key in [CONF_FIRST_LEG_OCCUPANCY_SENSOR, CONF_LAST_LEG_OCCUPANCY_SENSOR]:
-                    return OCCUPANCY_ICONS.get(self.coordinator.data[self.subentry.subentry_id][self.journey_index][self.entity_description.key], ["mdi:account-question", "Unknown"])[0]
-                    
-                elif self.entity_description.key in [CONF_DUE_SENSOR, CONF_FIRST_LEG_LINE_NAME_SENSOR, CONF_FIRST_LEG_LINE_NAME_SHORT_SENSOR, CONF_FIRST_LEG_TRANSPORT_TYPE_SENSOR, CONF_FIRST_LEG_TRANSPORT_NAME_SENSOR, CONF_ORIGIN_NAME_SENSOR, CONF_ORIGIN_DETAIL_SENSOR]:
-                   return JOURNEY_ICONS.get(self.coordinator.data[self.subentry.subentry_id][self.journey_index][CONF_FIRST_LEG_TRANSPORT_TYPE_SENSOR], "mdi:train")
+            if self.entity_description.key in [CONF_FIRST_LEG_OCCUPANCY_SENSOR, CONF_LAST_LEG_OCCUPANCY_SENSOR]:
+                return OCCUPANCY_ICONS.get(self.coordinator.data[self.subentry.subentry_id][self.journey_index][self.entity_description.key], ["mdi:account-question", "Unknown"])[0]
+                
+            elif self.entity_description.key in [CONF_DUE_SENSOR, CONF_FIRST_LEG_LINE_NAME_SENSOR, CONF_FIRST_LEG_LINE_NAME_SHORT_SENSOR, CONF_FIRST_LEG_TRANSPORT_TYPE_SENSOR, CONF_FIRST_LEG_TRANSPORT_NAME_SENSOR, CONF_ORIGIN_NAME_SENSOR, CONF_ORIGIN_DETAIL_SENSOR]:
+               return JOURNEY_ICONS.get(self.coordinator.data[self.subentry.subentry_id][self.journey_index][CONF_FIRST_LEG_TRANSPORT_TYPE_SENSOR], "mdi:train")
 
-                elif self.entity_description.key in [CONF_LAST_LEG_LINE_NAME_SENSOR, CONF_LAST_LEG_LINE_NAME_SHORT_SENSOR, CONF_LAST_LEG_TRANSPORT_TYPE_SENSOR, CONF_LAST_LEG_TRANSPORT_NAME_SENSOR, CONF_DESTINATION_NAME_SENSOR, CONF_DESTINATION_DETAIL_SENSOR]:
-                   return JOURNEY_ICONS.get(self.coordinator.data[self.subentry.subentry_id][self.journey_index][CONF_LAST_LEG_TRANSPORT_TYPE_SENSOR], "mdi:train")
+            elif self.entity_description.key in [CONF_LAST_LEG_LINE_NAME_SENSOR, CONF_LAST_LEG_LINE_NAME_SHORT_SENSOR, CONF_LAST_LEG_TRANSPORT_TYPE_SENSOR, CONF_LAST_LEG_TRANSPORT_NAME_SENSOR, CONF_DESTINATION_NAME_SENSOR, CONF_DESTINATION_DETAIL_SENSOR]:
+               return JOURNEY_ICONS.get(self.coordinator.data[self.subentry.subentry_id][self.journey_index][CONF_LAST_LEG_TRANSPORT_TYPE_SENSOR], "mdi:train")
 
-                elif self.entity_description.key in [CONF_DELAY_SENSOR, CONF_ALERTS_SENSOR]:
-                    return 'mdi:clock-alert-outline'
+            elif self.entity_description.key in [CONF_DELAY_SENSOR, CONF_ALERTS_SENSOR]:
+                return 'mdi:clock-alert-outline'
 
-                elif self.entity_description.key == CONF_CHANGES_SENSOR:
-                    return 'mdi:map-marker-path'
+            elif self.entity_description.key == CONF_CHANGES_SENSOR:
+                return 'mdi:map-marker-path'
 
-                elif 'time' in self.entity_description.key:
-                    return 'mdi:clock-outline'
+            elif 'time' in self.entity_description.key:
+                return 'mdi:clock-outline'
+            else:
+                return 'mdi:train'
 
         except:
             return 'mdi:train'
-     
+
+    @property
+    def available(self) -> bool:
+        """Return if entity is available - basically check to see if there's data where it should be"""
+        try:
+            if self.entity_description.key in [CONF_ORIGIN_DETAIL_SENSOR, CONF_DESTINATION_DETAIL_SENSOR]:
+                # This is a computed sensor so get the general availabilty from the 'due' sensor
+                key_check = CONF_DUE_SENSOR
+            else:
+                # Check this sensor's data as normal
+                key_check = self.entity_description.key
+
+            if self.coordinator.data[self.subentry.subentry_id][self.journey_index][key_check] is None:
+                return False
+            else:
+                return True
+
+        except:
+            return False
+
+
     @property
     def extra_state_attributes(self):
         """Return the extra state attributes."""
