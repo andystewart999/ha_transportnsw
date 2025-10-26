@@ -46,6 +46,19 @@
 			  "subentries_created": "Journey{plural} registered successfully.",
 			  "subentries_reconfigured": "Journey{plural} reconfigured successfully!"
 		  },
+          "error": {
+            "apiratelimitexceeded": "API rate limit exceeded - wait a moment and try again.",
+            "invalidapikey": "Invalid API key, please check and retry.",
+            "stoperror": "At least one invalid stop ID, please check and retry.",
+            "stoperror_origin": "The origin has an invalid stop ID, please check and retry.",
+            "stoperror_destination": "The destination has an invalid stop ID, please check and retry.",
+            "stoperror_both": "Both stop IDs are invalid, please check and retry.",
+            "triperror": "No valid journeys were returned.  Check your filters and retry.",
+            "already_configured": "You have already added that journey.",
+            "outbound_already_configured": "You have already added the outbound journey.",
+            "return_already_configured": "You have alreadty added the return part of that journey",
+            "unknown": "Unexpected error."
+          },
 		  "initiate_flow": {
 			  "user": "Add new journey",
 			  "reconfigure": "Change journey options"
