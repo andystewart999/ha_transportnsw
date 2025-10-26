@@ -119,7 +119,8 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
                  [data[CONF_ORIGIN_ID], data[CONF_DESTINATION_ID]]
                  )
             
-            if stop_data['all_stops_valid']:
+            _LOGGER.error(f"stop_data = {stop_data}")
+            if 'all_stops_valid' in stop_data and stop_data['all_stops_valid'] == True:
                 # Get the origin and destination stop names, we'll need them to name the subentry
                 origin_name = stop_data['stop_list'][0]['stop_detail']['disassembledName']
                 destination_name = stop_data['stop_list'][1]['stop_detail']['disassembledName']
@@ -134,7 +135,19 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
                 }
 
             else:
-                #TODO - something here to call out issues, granular fails, etc
+                # Find out which stops were bad
+                _LOGGER.error(f"0 = {stop_data['stop_list'][0]['valid']}, 1 = {stop_data['stop_list'][1]['valid']}")
+                if stop_data['stop_list'][0]['valid'] == False and stop_data['stop_list'][1]['valid'] == False:
+                    _LOGGER.error("stop1")
+                    raise StopError("Both stops are invalid", "stoperror_both")
+                elif stop_data['stop_list'][0]['valid'] == False and stop_data['stop_list'][1]['valid'] == True:
+                    _LOGGER.error("stop1")
+                    raise StopError("The origin stop ID is invalid", "stoperror_origin")
+                else:
+                    _LOGGER.error("stop1")
+                    raise StopError("The destination stop ID is invalid", "stoperror_destination")
+
+                # Unecessary catch-all!
                 raise StopError
 
         except InvalidAPIKey as ex:
@@ -144,10 +157,10 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
             raise APIRateLimitExceeded
         
         except StopError as ex:
-            raise StopError
+            raise StopError(ex, ex.stop_detail)
         
         except Exception as ex:
-            raise StopError
+            raise StopError("Unknown error checking stop IDs", "stoperror")
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
@@ -160,48 +173,58 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
         if user_input is not None:
             # The form has been filled in and submitted, so process the data provided.
             try:
+                _LOGGER.error("1")
                 # Validate that the setup data is valid and if not handle errors.
                 info = await self._validate_input(self.hass, user_input)
+                _LOGGER.error("2")
                 
             except InvalidAPIKey as ex:
                 errors["base"] = "invalidapikey"
         
             except APIRateLimitExceeded as ex:
                 errors["base"] = "apiratelimitexceeded"
-        
+
             except StopError as ex:
-                errors["base"] = "stoperror"
+                _LOGGER.error(f"stop4 - {ex.stop_detail}")
+                errors["base"] = ex.stop_detail
         
             except TripError as ex:
                 errors["base"] = "triperror"
         
             except Exception as ex:
+                _LOGGER.error(f"ex = {ex}")
                 errors["base"] = "unknown"
 
-            # Validation was successful, so create a unique id for this instance 
-            # and create the config subentry.
-
-            # Check the unique ID against the existing subentries
-            # The actual unique ID will be set during subentry creation later
-
-            # It's possible that the stop validation function returned better stop IDs, so use them
-            unique_id = f"{user_input[CONF_ORIGIN_ID]}_{user_input[CONF_DESTINATION_ID]}"
-
-            if self.source != SOURCE_RECONFIGURE:
-                for existing_subentry in self._get_entry().subentries.values():
-                    if existing_subentry.unique_id == unique_id:
-                        errors["base"] = "outbound_already_configured"
-
-                if user_input[CONF_CREATE_REVERSE_TRIP]:
-                    unique_id = f"{user_input[CONF_DESTINATION_ID]}_{user_input[CONF_ORIGIN_ID]}"
-
-                    for existing_subentry in self._get_entry().subentries.values():
-                        if existing_subentry.unique_id == unique_id:
-                            errors["base"] = "return_already_configured"
-
+            # Check for errors
+            _LOGGER.error("3")
             if "base" not in errors:
                 # Validation was successful, so create a unique id for this instance 
                 # and create the config subentry.
+    
+                # Check the unique ID against the existing subentries
+                # The actual unique ID will be set during subentry creation later
+
+                # It's possible that the stop validation function returned better stop IDs, so use them
+                unique_id = f"{user_input[CONF_ORIGIN_ID]}_{user_input[CONF_DESTINATION_ID]}"
+    
+                if self.source != SOURCE_RECONFIGURE:
+                    for existing_subentry in self._get_entry().subentries.values():
+                        if existing_subentry.unique_id == unique_id:
+                            errors["base"] = "outbound_already_configured"
+    
+                    if user_input[CONF_CREATE_REVERSE_TRIP]:
+                        unique_id = f"{user_input[CONF_DESTINATION_ID]}_{user_input[CONF_ORIGIN_ID]}"
+    
+                        for existing_subentry in self._get_entry().subentries.values():
+                            if existing_subentry.unique_id == unique_id:
+                                errors["base"] = "return_already_configured"
+
+            # Check for errors again - duplicate journeys are an error
+            _LOGGER.error("5")
+            if "base" not in errors:
+                _LOGGER.error("6")
+                # Validation was successful, so create a unique id for this instance 
+                # and create the config subentry/subentries
                 
                 # Add an empty CONF_NAME field - it's only used for migrated journeys, journeys created this way will use the new naming convention
                 user_input.update(
@@ -229,20 +252,22 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
                 )
 
             else:
+                # We need to create an empty user_input as the upcoming schema definition requires it
+                # Otherwise we'd have three distinct schema definition creation sections which seems... inelegent?
                 user_input = {}
 
-                JOURNEY_DATA_SCHEMA = vol.Schema(
-                    {
-                        vol.Required(CONF_ORIGIN_ID, default = user_input.get(CONF_ORIGIN_ID, "")): str,
-                        vol.Required(CONF_DESTINATION_ID, default = user_input.get(CONF_DESTINATION_ID, "")): str,
-                        vol.Required(CONF_CREATE_REVERSE_TRIP, default = user_input.get(CONF_CREATE_REVERSE_TRIP, DEFAULT_CREATE_REVERSE_TRIP)): bool,
-                    }
-                )
-
-            # Show initial form.
-            return self.async_show_form(
-                step_id="user", data_schema=JOURNEY_DATA_SCHEMA, errors=errors, last_step = False
-            )
+        JOURNEY_DATA_SCHEMA = vol.Schema(
+            {
+                vol.Required(CONF_ORIGIN_ID, default = user_input.get(CONF_ORIGIN_ID, "")): str,
+                vol.Required(CONF_DESTINATION_ID, default = user_input.get(CONF_DESTINATION_ID, "")): str,
+                vol.Required(CONF_CREATE_REVERSE_TRIP, default = user_input.get(CONF_CREATE_REVERSE_TRIP, DEFAULT_CREATE_REVERSE_TRIP)): bool,
+            }
+        )
+            
+        # Show initial form.
+        return self.async_show_form(
+            step_id="user", data_schema=JOURNEY_DATA_SCHEMA, errors=errors, last_step = False
+        )
 
     async def async_step_settings(
         self, user_input: dict[str, Any] | None = None
