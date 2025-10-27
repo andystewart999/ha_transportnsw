@@ -420,8 +420,6 @@ class TransportNSWSubentrySensor(CoordinatorEntity, SensorEntity):
                     return self.coordinator.data[self.subentry.subentry_id][self.journey_index][self.entity_description.key]
             except:
                 pass
-        else:
-            _LOGGER.debug(f"No data for [{self.subentry.subentry_id}][{self.journey_index}][{self.entity_description.key}] in coordinator")
            
     @property
     def icon(self) -> str:
