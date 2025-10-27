@@ -165,7 +165,7 @@ class TransportNSWConfigFlowHandler(ConfigFlow, domain=DOMAIN):
                         
                         persistent_notification.create(
                             self.hass,
-                            f"Successfully imported legacy configuration.yaml entries for API key {user_input[CONF_API_KEY]}.  Please remove those entries from configuration.yaml." ,
+                            f"Successfully imported legacy configuration.yaml entries for API key {user_input[CONF_API_KEY]}.  Please remove those entries from configuration.yaml.  Note that support for migrating legacy entries will be removed with HA release 2026.6." ,
                             title='Transport NSW Mk II',
                             notification_id=f"{DOMAIN}_{user_input[CONF_API_KEY]}"
                             )
@@ -231,6 +231,7 @@ class CannotConnect(HomeAssistantError):
 
 class InvalidAuth(HomeAssistantError):
     """Error to indicate there is invalid auth."""
+
 
 
 
