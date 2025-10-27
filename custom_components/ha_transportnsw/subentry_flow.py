@@ -119,7 +119,6 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
                  [data[CONF_ORIGIN_ID], data[CONF_DESTINATION_ID]]
                  )
             
-            _LOGGER.error(f"stop_data = {stop_data}")
             if 'all_stops_valid' in stop_data and stop_data['all_stops_valid'] == True:
                 # Get the origin and destination stop names, we'll need them to name the subentry
                 origin_name = stop_data['stop_list'][0]['stop_detail']['disassembledName']
@@ -136,15 +135,11 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
 
             else:
                 # Find out which stops were bad
-                _LOGGER.error(f"0 = {stop_data['stop_list'][0]['valid']}, 1 = {stop_data['stop_list'][1]['valid']}")
                 if stop_data['stop_list'][0]['valid'] == False and stop_data['stop_list'][1]['valid'] == False:
-                    _LOGGER.error("stop1")
                     raise StopError("Both stops are invalid", "stoperror_both")
                 elif stop_data['stop_list'][0]['valid'] == False and stop_data['stop_list'][1]['valid'] == True:
-                    _LOGGER.error("stop1")
                     raise StopError("The origin stop ID is invalid", "stoperror_origin")
                 else:
-                    _LOGGER.error("stop1")
                     raise StopError("The destination stop ID is invalid", "stoperror_destination")
 
                 # Unecessary catch-all!
@@ -173,10 +168,8 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
         if user_input is not None:
             # The form has been filled in and submitted, so process the data provided.
             try:
-                _LOGGER.error("1")
                 # Validate that the setup data is valid and if not handle errors.
                 info = await self._validate_input(self.hass, user_input)
-                _LOGGER.error("2")
                 
             except InvalidAPIKey as ex:
                 errors["base"] = "invalidapikey"
@@ -185,18 +178,15 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
                 errors["base"] = "apiratelimitexceeded"
 
             except StopError as ex:
-                _LOGGER.error(f"stop4 - {ex.stop_detail}")
                 errors["base"] = ex.stop_detail
         
             except TripError as ex:
                 errors["base"] = "triperror"
         
             except Exception as ex:
-                _LOGGER.error(f"ex = {ex}")
                 errors["base"] = "unknown"
 
             # Check for errors
-            _LOGGER.error("3")
             if "base" not in errors:
                 # Validation was successful, so create a unique id for this instance 
                 # and create the config subentry.
@@ -220,9 +210,7 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
                                 errors["base"] = "return_already_configured"
 
             # Check for errors again - duplicate journeys are an error
-            _LOGGER.error("5")
             if "base" not in errors:
-                _LOGGER.error("6")
                 # Validation was successful, so create a unique id for this instance 
                 # and create the config subentry/subentries
                 
@@ -599,3 +587,4 @@ class CannotConnect(HomeAssistantError):
 
 class InvalidAuth(HomeAssistantError):
     """Error to indicate there is invalid auth."""
+
