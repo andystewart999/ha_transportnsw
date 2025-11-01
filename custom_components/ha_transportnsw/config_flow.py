@@ -33,20 +33,16 @@ from .subentry_flow import JourneySubEntryFlowHandler
 _LOGGER = logging.getLogger(__name__)
 
 async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> None:
-    """Validate the user input allows us to retrieve data.
-
-    Data has the keys from STEP_USER_DATA_SCHEMA with values provided by the user.
-    """
-
+    #Validate the user input is correct
     # Check that the API key is valid by calling the quick and easy 'stops' API with a hard-coded, known good station ID (Central Station)
-            
+
     try:
         stop_data = await hass.async_add_executor_job (
              check_stops,
              data[CONF_API_KEY],
              [STOP_TEST_ID]
              )
-  
+
     except InvalidAPIKey:
         raise InvalidAPIKey
     
@@ -86,59 +82,55 @@ class TransportNSWConfigFlowHandler(ConfigFlow, domain=DOMAIN):
 
         if user_input is not None:
             if self.source == SOURCE_IMPORT:
-                # There won't have been a previous key to check against
+                # There won't have been a previous key to check against so create an empty variable
                 self._previous_key = ''
 
-            # The form has been filled in and submitted, so process the data provided.
-            try:
-                # Validate that the setup data is valid and if not handle errors
-                await validate_input(self.hass, user_input)
+                # Also we don't need to do any validation as it's already been done elsewhere
+            else:
+                # The form has been filled in and submitted, so process the data provided.
+                try:
+                    # Validate that the setup data is valid and if not handle errors
+                    await validate_input(self.hass, user_input)
+    
+                except InvalidAPIKey as ex:
+                    errors["base"] = "invalidapikey"
+            
+                except APIRateLimitExceeded as ex:
+                    errors["base"] = "apiratelimitexceeded"
+            
+                except StopError as ex:
+                    errors["base"] = "stoperror"
+            
+                except TripError as ex:
+                    errors["base"] = "triperror"
+            
+                except Exception as err:
+                    errors["base"] = "unknown"
 
-            except InvalidAPIKey as ex:
-                errors["base"] = "invalidapikey"
-        
-            except APIRateLimitExceeded as ex:
-                errors["base"] = "apiratelimitexceeded"
-        
-            except StopError as ex:
-                errors["base"] = "stoperror"
-        
-            except TripError as ex:
-                errors["base"] = "triperror"
-        
-            except Exception as err:
-                errors["base"] = "unknown"
-        
 
             if not errors:
+                # The API key is confirmed to be valid - let's make sure there isn't another entry
                 if user_input[CONF_API_KEY] != self._previous_key:
-                    await self.async_set_unique_id(user_input[CONF_API_KEY])
+#                    reason = "reconfigure_successful"
+                    existing_entry = await self.async_set_unique_id(user_input[CONF_API_KEY])
+                else:
+#                    reason = "reconfigure_successful_no_change"
+                    existing_entry = None
 
-                    if self.source == SOURCE_IMPORT:
-                        # There must be a better way of doing this?  There's no apparent way to call _abort_if_unique_id_configured and test the result
+                if self.source == SOURCE_IMPORT:
+                    if existing_entry is not None:
+                        # If we're importing but skipping, raise a persistent notification
                         persistent_notification.create(
                             self.hass,
-                            f"Skipping the migration of legacy configuration.yaml entries for API key {user_input[CONF_API_KEY]} as they've already been imported, or there's already a config entry with the same key.  Please remove those entries from configuration.yaml." ,
+                            f"Skipping the migration of legacy configuration.yaml entries for API key ending `{user_input[CONF_API_KEY][-4:]}` as they've already been imported, or there's already a config entry with the same key.\n\nPlease remove those entries from configuration.yaml.",
                             title='Transport NSW Mk II',
                             notification_id=f"{DOMAIN}_{user_input[CONF_API_KEY]}_unique_check"
                             )
 
-                        # This is going to exit straight away, no option to pre-check first
-                        self._abort_if_unique_id_configured()
+                # Abort if it's already configured
+                self._abort_if_unique_id_configured()
 
-                        # Still here?  OK, remove that notification
-                        persistent_notification.dismiss(
-                            self.hass,
-                            notification_id=f"{DOMAIN}_{user_input[CONF_API_KEY]}_unique_check"
-                            )
-                    
-                    else:
-                        self._abort_if_unique_id_configured()
-                        
-                    reason = "reconfigure_successful"
-                else:
-                    reason = "reconfigure_successful_no_change"
-
+                # If we got there then there's no unique ID conflict
                 if self.source == SOURCE_RECONFIGURE:
                     config_entry = self._get_reconfigure_entry()
 
@@ -147,14 +139,13 @@ class TransportNSWConfigFlowHandler(ConfigFlow, domain=DOMAIN):
                         config_entry,
                         data=user_input,
                         reload_even_if_entry_is_unchanged=False,
-                        reason = reason
+                        reason = f"reconfigure_successful_api_change_{str(user_input[CONF_API_KEY] != self._previous_key).lower()}"
                     )
 
                 else:
-                    # Validation was successful, so create a unique id for this instance
-                    # and create the config entry.
-
+                    # Create the config entry.
                     # Set our title variable here for use later
+
                     self._title = f"Transport NSW Mk II ({user_input[CONF_API_KEY][-4:]})"
 
                     if self.source == SOURCE_IMPORT:
@@ -165,7 +156,7 @@ class TransportNSWConfigFlowHandler(ConfigFlow, domain=DOMAIN):
                         
                         persistent_notification.create(
                             self.hass,
-                            f"Successfully imported legacy configuration.yaml entries for API key {user_input[CONF_API_KEY]}.  Please remove those entries from configuration.yaml.  Note that support for migrating legacy entries will be removed with HA release 2026.6." ,
+                            f"Successfully imported legacy configuration.yaml entries for API key ending `{user_input[CONF_API_KEY][-4:]}` - please remove those entries from configuration.yaml.",
                             title='Transport NSW Mk II',
                             notification_id=f"{DOMAIN}_{user_input[CONF_API_KEY]}"
                             )
@@ -180,12 +171,6 @@ class TransportNSWConfigFlowHandler(ConfigFlow, domain=DOMAIN):
                         data=self._input_data,
                         subentries = subentry_data
                         )
-            else:
-                if self.source == SOURCE_IMPORT:
-                    # We need to fail gracefully and quietly!
-                    return self.async_abort(
-                        reason = errors['base']
-                        )
 
         if user_input is None:
             if self.source == SOURCE_RECONFIGURE:
@@ -197,33 +182,31 @@ class TransportNSWConfigFlowHandler(ConfigFlow, domain=DOMAIN):
                 user_input = {}
                 self._previous_key = ''
 
-            USER_DATA_SCHEMA = vol.Schema(
-                {
-                    vol.Required(CONF_API_KEY, default = user_input.get(CONF_API_KEY,'')): str,
-                    vol.Required(
-                        CONF_SCAN_INTERVAL,
-                        default=user_input.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),
-                    ): (vol.All(vol.Coerce(int), vol.Clamp(min=MIN_SCAN_INTERVAL))),
-                }
-            )
+        USER_DATA_SCHEMA = vol.Schema(
+            {
+                vol.Required(CONF_API_KEY, default = user_input.get(CONF_API_KEY,'')): str,
+                vol.Required(
+                    CONF_SCAN_INTERVAL,
+                    default=user_input.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),
+                ): (vol.All(vol.Coerce(int), vol.Clamp(min=MIN_SCAN_INTERVAL))),
+            }
+        )
 
-            # Show initial form
-            return self.async_show_form(
-                step_id="user", data_schema=USER_DATA_SCHEMA, errors=errors
-            )
+        # Show initial form
+        return self.async_show_form(
+            step_id="user", data_schema=USER_DATA_SCHEMA, errors=errors
+        )
 
     async def async_step_import(self, user_input: dict[str, Any]):
-        # Make sure this entry hasn't been imported already
-        self._async_abort_entries_match(user_input)
+#        # Make sure this entry hasn't been imported already
+#        self._async_abort_entries_match(user_input)
 
-        # We're here so the config entry for this import hasn't been created already
+#        # We're here so the config entry for this import hasn't been created already
         # We've been passed a complete subentry data-set, plus what we need to set up the initial config entry as well
         return await self.async_step_user(user_input = user_input)
 
 
     async def async_step_reconfigure(self, user_input: dict[str, Any] | None = None):
-        """Re-authenticate API."""
-
         return await self.async_step_user()
 
 class CannotConnect(HomeAssistantError):

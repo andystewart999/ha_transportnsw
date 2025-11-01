@@ -5,8 +5,11 @@
 	},
     "abort": {
       "already_configured": "That API key has already been registered.  Please use 'add new journey' to add one or more journeys instead.",
+      "already_configured_disabled": "That API key has already been registered, although the entry has been disabled.  Please re-enable it and use 'add new journey' to add one or more journeys instead.",
       "reconfigure_successful": "New API key registered.",
-      "reconfigure_successful_no_change": "No changes made."
+      "reconfigure_successful_no_change": "No changes made.",
+      "reconfigure_successful_api_change_false": "No changes made.",
+      "reconfigure_successful_api_change_true": "New API key registered."
     },
     "error": {
       "apiratelimitexceeded": "API rate limit exceeded - wait a moment and try again.",

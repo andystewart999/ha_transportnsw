@@ -7,5 +7,5 @@
   "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/andystewart999/ha_transportnsw",
   "requirements": ["PyTransportNSWv2==2.0.9"],
-  "version": "2.0.5"
+  "version": "2.0.6"
 }

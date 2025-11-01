@@ -20,6 +20,9 @@ from homeassistant.const import (
     CONF_API_KEY,
     CONF_SCAN_INTERVAL
 )
+from homeassistant.components import persistent_notification
+
+from TransportNSWv2 import InvalidAPIKey, StopError
 
 from .helpers import check_stops, set_optional_sensors
 from .coordinator import TransportNSWCoordinator
@@ -106,11 +109,13 @@ async def get_migration_data(hass, yaml_entry):
              api_key,
              [origin_id, destination_id]
              )
-        
+
         if stop_data['all_stops_valid']:
             # Get the origin and destination stop names
             origin_name = stop_data['stop_list'][0]['stop_detail']['disassembledName']
             destination_name = stop_data['stop_list'][1]['stop_detail']['disassembledName']
+        else:
+            raise StopError
 
         # Now put it all together
         subentry_data = {
@@ -133,10 +138,18 @@ async def get_migration_data(hass, yaml_entry):
 
         subentry_data.update(sensor_options)
 
-        return api_key, ConfigSubentryData(data = subentry_data, subentry_type = SUBENTRY_TYPE_JOURNEY, title = f"{origin_name} to {destination_name}", unique_id = f"{origin_id}_{destination_id}")
+        return api_key, ConfigSubentryData(data = subentry_data, subentry_type = SUBENTRY_TYPE_JOURNEY, title = f"{origin_name} to {destination_name}", unique_id = f"{origin_id}_{destination_id}"), ''
+
+    except InvalidAPIKey as ex:
+        error = 'Invalid API key'
+
+    except StopError as ex:
+        error = 'Invalid stop ID'
 
     except Exception as ex:
-        return api_key, None
+        error = 'unknown'
+
+    return api_key, None, error
         
 async def async_setup(hass: HomeAssistant, config):
 
@@ -148,9 +161,17 @@ async def async_setup(hass: HomeAssistant, config):
     if 'sensor' in config:
         for sensor in config['sensor']:
             if sensor['platform'] == DOMAIN:
-                api_key, subentry_data = await get_migration_data(hass, sensor)
+                api_key, subentry_data, error = await get_migration_data(hass, sensor)
                 if subentry_data is not None:
                     yaml_data[api_key].append(subentry_data)
+                else:
+                    persistent_notification.create(
+                        hass,
+                        f"Failed to import legacy configuration.yaml entries for API key ending `{api_key[-4:]}` with error `{error}`.  Please review those entries, or recreate them manually via 'Devices & Services'.\n\nNote that support for migrating legacy entries will be removed with HA release 2026.6.",
+                        title='Transport NSW Mk II',
+                        notification_id=f"{DOMAIN}_{api_key}"
+                        )
+
 
     if yaml_data is not None:
         # We've got a list of unique API keys (probably just the one, TBH), so let's create the entries for them
