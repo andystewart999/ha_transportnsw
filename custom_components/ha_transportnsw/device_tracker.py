@@ -102,7 +102,7 @@ class TransportNSWDeviceTracker(CoordinatorEntity, TrackerEntity):
         self.leg_suffix = leg_suffix
 
         # Cater for migrated entries with a different naming convention
-        if subentry.data[CONF_NAME] == '':
+        if CONF_NAME not in subentry.data or subentry.data[CONF_NAME] == '':
             # Use the new naming convention
             self._attr_unique_id = f"{subentry.subentry_id}_{description.key}_{index}"
             self._attr_name = f"{subentry.data[CONF_ORIGIN_NAME]} to {subentry.data[CONF_DESTINATION_NAME]}{device_suffix} {leg_suffix}location"
@@ -206,4 +206,5 @@ class TransportNSWDeviceTracker(CoordinatorEntity, TrackerEntity):
 
         finally:
             return attrs
+
 
