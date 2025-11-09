@@ -1,0 +1,25 @@
+    name: Delete old workflow runs
+    on:
+      workflow_dispatch: # Allows manual triggering
+        inputs:
+          days:
+            description: 'Days-worth of runs to keep for each workflow'
+            required: true
+            default: '7'
+          # ... other input options for filtering ...
+
+    jobs:
+      del_runs:
+        runs-on: ubuntu-latest
+        permissions:
+          actions: write
+          contents: read
+        steps:
+          - name: Delete workflow runs
+            uses: Mattraks/delete-workflow-runs@v2
+            with:
+              token: ${{ github.token }}
+              repository: ${{ github.repository }}
+              retain_days: ${{ github.event.inputs.days }}
+              # ... other input parameters ...
+              dry_run: false # Set to true for a dry run before actual deletion
