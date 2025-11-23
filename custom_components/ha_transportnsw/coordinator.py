@@ -13,6 +13,7 @@ from homeassistant.const import (
 )
 from homeassistant.core import DOMAIN, HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+from homeassistant.helpers.location import find_coordinates
 from .const import *
 from .helpers import get_trips, get_api_calls, set_api_calls
 
@@ -68,11 +69,24 @@ class TransportNSWCoordinator(DataUpdateCoordinator):
         for subentry in self.config_entry.subentries.values():
             if subentry.subentry_type == SUBENTRY_TYPE_JOURNEY:
                 # Call the trip API
+                # If the origin is a device tracker, we need to get the latest location
+                if CONF_ORIGIN_TYPE in subentry.data and subentry.data[CONF_ORIGIN_TYPE] == 'device_tracker':
+                    try:
+                        origin_coordinates = find_coordinates(self.hass, subentry.data[CONF_ORIGIN_ID])
+
+                        # Create the coordinate string in the format required by the API
+                        origin = f"{origin_coordinates.split(',')[1]}:{origin_coordinates.split(',')[0]}:EPSG:4326"
+
+                    except Exception as ex:
+                        raise UpdateFailed(f"Error {ex} retrieving coordinates from {subentry.data[CONF_ORIGIN_ID]}") from ex
+                else:
+                    origin = subentry.data[CONF_ORIGIN_ID]
+                    
                 try:
                     journey_data = await self.hass.async_add_executor_job(
                         get_trips,
                         self.config_entry.data[CONF_API_KEY],
-                        subentry.data[CONF_ORIGIN_ID],
+                        origin,
                         subentry.data[CONF_DESTINATION_ID],
                         subentry.data[CONF_TRIP_WAIT_TIME],
                         subentry.data[CONF_ORIGIN_TRANSPORT_TYPE],
@@ -86,7 +100,8 @@ class TransportNSWCoordinator(DataUpdateCoordinator):
                         subentry.data[CONF_ALERT_TYPES]
                         )
 
-                    if journey_data is not None and journey_data['journeys_with_data'] > 0:
+                    _LOGGER.error(f"journey_data = {journey_data}")
+                    if journey_data is not None and 'journeys_with_data' in journey_data and journey_data['journeys_with_data'] > 0:
                         if 'journeys' in journey_data:
                             returned_data[subentry.subentry_id] = journey_data['journeys']
 
@@ -100,6 +115,7 @@ class TransportNSWCoordinator(DataUpdateCoordinator):
                         returned_data[self.config_entry.entry_id] = {API_CALLS: self.api_calls}
 
                     else:
+                        # No journeys were returned, but the API call itself didn't fail
                         # Offer a slightly different warning message if it's a forced train journey
                         if subentry.data[CONF_ORIGIN_TRANSPORT_TYPE]  == [1]:
                             _LOGGER.warning (f"No data returned for train-only journey {subentry.title} - there may be a bus replacement service active at the moment.")

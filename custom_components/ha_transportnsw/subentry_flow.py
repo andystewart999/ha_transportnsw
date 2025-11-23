@@ -29,23 +29,17 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
 
 from .const import *
-from .helpers import get_trips, check_stops, set_optional_sensors
+from .helpers import (
+    get_trips,
+    check_stops,
+    set_optional_sensors,
+    get_device_trackers
+)
 
 _LOGGER = logging.getLogger(__name__)
 
-def convert_transport_types_friendly_to_numeric(transport_type_list: dict[str]) -> dict[int]:
-    # Convert the text-based transport types to their numeric equivalents
-    # If empty, just use 0 'all transport types'
-    if not transport_type_list:
-        return [0]
-
-    temp_list = []
-    for transport_type in transport_type_list:
-        temp_list.append(TRANSPORT_TYPE.get(transport_type, 0))
-    
-    return temp_list
-
-def convert_transport_types_numeric_to_friendly(transport_type_list: dict[str]) -> dict[str]:
+def convert_transport_types_numeric_to_friendly(transport_type_list: dict[str]) -> dict[int]:
+    _LOGGER.error(f"in c_t_t_n_t_f: transport_type_list = {transport_type_list}")
     # Convert the text-based transport types to their numeric equivalents
     # If empty, just use 0 'all transport types'
     if not transport_type_list:
@@ -53,10 +47,25 @@ def convert_transport_types_numeric_to_friendly(transport_type_list: dict[str]) 
 
     temp_list = []
     for transport_type in transport_type_list:
+        temp_list.append(TRANSPORT_TYPE_NEW.get(transport_type, 0))
+
+    _LOGGER.error(f"in c_t_t_n_t_f: temp_list = {temp_list}")
+    return temp_list
+
+def convert_transport_types_friendly_to_numeric(transport_type_list: dict[str]) -> dict[str]:
+    _LOGGER.error(f"in c_t_t_f_t_n: transport_type_list = {transport_type_list}")
+    # Convert the text-based transport types to their numeric equivalents
+    # If empty, just use 0 'all transport types'
+    if not transport_type_list:
+        return [0]
+
+    temp_list = []
+    for transport_type in transport_type_list:
         # Find the key that suits this value
-        keys = [key for key, value in TRANSPORT_TYPE.items() if value == transport_type]
+        keys = [key for key, value in TRANSPORT_TYPE_NEW.items() if value == transport_type]
         temp_list.append(keys[0])
-    
+
+    _LOGGER.error(f"in c_t_t_f_t_n: temp_list = {temp_list}")
     return temp_list
 
 def create_subentries(self, config_entry, input_data):
@@ -89,7 +98,8 @@ def create_subentries(self, config_entry, input_data):
         )
 
     del input_data[CONF_CREATE_REVERSE_TRIP]
-    
+
+    _LOGGER.error(f"in create_subentries: input_data = {input_data}")
     self.hass.config_entries.async_add_subentry(
         config_entry,
         ConfigSubentry(
@@ -110,35 +120,58 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
     async def _validate_input(self, hass: HomeAssistant, data: dict[str, Any]) -> dict[str, Any]:
         """ Check that the provided stops are valid.  We'll also use this call to get the stop names
             This tests the API key as well.  Exceptions will be caught upstream """
-        config_entry = self._get_entry() 
 
+        errors: dict[str, str] = {}
+        config_entry = self._get_entry()
+
+        # Is the origin a device tracker?  If so we don't need to check that it's a valid stop
+        if CONF_ORIGIN_TYPE in data and data[CONF_ORIGIN_TYPE] == 'device_tracker':
+            # Do a quick 'fail-fast' check
+            if data[CONF_CREATE_REVERSE_TRIP]:
+                # We can't create the reverse trip with a device tracker as the origin
+                errors['base'] = "return_journey_error"
+                return "", errors
+
+            entity_info = get_device_trackers(hass, data[CONF_ORIGIN_ID])
+            stop_list = [data[CONF_DESTINATION_ID]]
+
+        else:
+            stop_list = [data[CONF_ORIGIN_ID], data[CONF_DESTINATION_ID]]
+            
         try:
             stop_data = await hass.async_add_executor_job (
                  check_stops,
                  config_entry.data[CONF_API_KEY],
-                 [data[CONF_ORIGIN_ID], data[CONF_DESTINATION_ID]]
+                 stop_list
                  )
-            
+
             if 'all_stops_valid' in stop_data and stop_data['all_stops_valid'] == True:
                 # Get the origin and destination stop names, we'll need them to name the subentry
-                origin_name = stop_data['stop_list'][0]['stop_detail']['disassembledName']
-                destination_name = stop_data['stop_list'][1]['stop_detail']['disassembledName']
-            
-                data[CONF_ORIGIN_NAME] = origin_name
-                data[CONF_DESTINATION_NAME] = destination_name
-                data[CONF_ORIGIN_ID] = stop_data['stop_list'][0]['stop_id']
-                data[CONF_DESTINATION_ID] = stop_data['stop_list'][1]['stop_id']
+                ##origin_name = stop_data['stop_list'][0]['stop_detail']['disassembledName']
+                ##destination_name = stop_data['stop_list'][1]['stop_detail']['disassembledName']
+
+                if data[CONF_ORIGIN_TYPE] == 'device_tracker':
+                    data[CONF_ORIGIN_NAME] = entity_info[0]['label']
+                    data[CONF_DESTINATION_NAME] = stop_data['stop_list'][0]['stop_detail']['disassembledName']
+                    data[CONF_DESTINATION_ID] = stop_data['stop_list'][0]['stop_id']
+                else:
+                    data[CONF_ORIGIN_NAME] = stop_data['stop_list'][0]['stop_detail']['disassembledName']
+                    data[CONF_DESTINATION_NAME] = stop_data['stop_list'][1]['stop_detail']['disassembledName']
+                    data[CONF_ORIGIN_ID] = stop_data['stop_list'][0]['stop_id']
+                    data[CONF_DESTINATION_ID] = stop_data['stop_list'][1]['stop_id']
                 
                 return {
-                    "title": f"{origin_name} to {destination_name}"
-                }
+                    "title": f"{data[CONF_ORIGIN_NAME]} to {data[CONF_DESTINATION_NAME]}"
+                }, errors
 
             else:
                 # Find out which stops were bad
                 if stop_data['stop_list'][0]['valid'] == False and stop_data['stop_list'][1]['valid'] == False:
                     raise StopError("Both stops are invalid", "stoperror_both")
+
                 elif stop_data['stop_list'][0]['valid'] == False and stop_data['stop_list'][1]['valid'] == True:
                     raise StopError("The origin stop ID is invalid", "stoperror_origin")
+
                 else:
                     raise StopError("The destination stop ID is invalid", "stoperror_destination")
 
@@ -166,11 +199,20 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
         errors: dict[str, str] = {}
 
         if user_input is not None:
+            if 'device_tracker.' in user_input[CONF_ORIGIN_ID]:
+                origin_type = 'device_tracker'
+            else:
+                origin_type = 'stop'
+
+            user_input.update(
+                {CONF_ORIGIN_TYPE: origin_type}
+                )
+
             # The form has been filled in and submitted, so process the data provided.
             try:
                 # Validate that the setup data is valid and if not handle errors.
-                info = await self._validate_input(self.hass, user_input)
-                
+                info, errors = await self._validate_input(self.hass, user_input)
+
             except InvalidAPIKey as ex:
                 errors["base"] = "invalidapikey"
         
@@ -211,10 +253,9 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
 
             # Check for errors again - duplicate journeys are an error
             if "base" not in errors:
-                # Validation was successful, so create a unique id for this instance 
-                # and create the config subentry/subentries
+                # Validation was successful, create the config subentry/subentries
                 
-                # Add an empty CONF_NAME field - it's only used for migrated journeys, journeys created this way will use the new naming convention
+                # Add an empty CONF_NAME field - it's only used for migrated journeys, journeys created via config flow way will use the new naming convention
                 user_input.update(
                     {CONF_NAME: ''}
                     )
@@ -244,14 +285,25 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
                 # Otherwise we'd have three distinct schema definition creation sections which seems... inelegent?
                 user_input = {}
 
+        options = get_device_trackers(self.hass, "")
+
         JOURNEY_DATA_SCHEMA = vol.Schema(
             {
-                vol.Required(CONF_ORIGIN_ID, default = user_input.get(CONF_ORIGIN_ID, "")): str,
+#                vol.Required(CONF_ORIGIN_ID, default = user_input.get(CONF_ORIGIN_ID, "")): str,
+                vol.Required(CONF_ORIGIN_ID, default = user_input.get(CONF_ORIGIN_ID, ""),): selector (
+                        {
+                            "select": {
+                                "options": options,
+                                "mode": 'dropdown',
+                                "custom_value": True
+                        }
+                    }
+                ),
                 vol.Required(CONF_DESTINATION_ID, default = user_input.get(CONF_DESTINATION_ID, "")): str,
                 vol.Required(CONF_CREATE_REVERSE_TRIP, default = user_input.get(CONF_CREATE_REVERSE_TRIP, DEFAULT_CREATE_REVERSE_TRIP)): bool,
-            }
+             }
         )
-            
+
         # Show initial form.
         return self.async_show_form(
             step_id="user", data_schema=JOURNEY_DATA_SCHEMA, errors=errors, last_step = False
@@ -263,10 +315,14 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
 
         errors: dict[str, str] = {}
         if user_input is not None:
+            _LOGGER.error(f"conf_origin_transport_type 1 = {user_input[CONF_ORIGIN_TRANSPORT_TYPE]}")
             # Convert the selected transport types to their numerical equivalents for the API
             user_input[CONF_ORIGIN_TRANSPORT_TYPE] = convert_transport_types_friendly_to_numeric(user_input[CONF_ORIGIN_TRANSPORT_TYPE])
             user_input[CONF_DESTINATION_TRANSPORT_TYPE] = convert_transport_types_friendly_to_numeric(user_input[CONF_DESTINATION_TRANSPORT_TYPE])
+            _LOGGER.error(f"conf_origin_transport_type 2 = {user_input[CONF_ORIGIN_TRANSPORT_TYPE]}")
+
             self._input_data.update(user_input)
+            _LOGGER.error(f"conf_origin_transport_type 3 = {self._input_data[CONF_ORIGIN_TRANSPORT_TYPE]}")
 
             return await self.async_step_sensors()     
 
@@ -275,19 +331,33 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
             if self.source == SOURCE_RECONFIGURE:
                 config_subentry = self._get_reconfigure_subentry()
                 user_input = dict(config_subentry.data)
+                _LOGGER.error(f"AA config_subentry.data = {config_subentry.data}")
                 self._input_data = user_input
+                _LOGGER.error(f"AA conf_origin_transport_type 4 = {self._input_data[CONF_ORIGIN_TRANSPORT_TYPE]}")
                 
+                _LOGGER.error(f"AA reconfigure: user_input = {user_input}")
                 default_origin_type = convert_transport_types_numeric_to_friendly(user_input[CONF_ORIGIN_TRANSPORT_TYPE])
-                default_destination_type = convert_transport_types_numeric_to_friendly(user_input[CONF_DESTINATION_TRANSPORT_TYPE])
+                _LOGGER.error(f"AA conf_origin_transport_type 4a = {default_origin_type}")
 
-                description_placeholders = {"journey_name": f"{user_input[CONF_ORIGIN_NAME]} to {user_input[CONF_DESTINATION_NAME]}"}
+                default_destination_type = convert_transport_types_numeric_to_friendly(user_input[CONF_DESTINATION_TRANSPORT_TYPE])
 
             else:
                 user_input = {}
                 default_origin_type = DEFAULT_TRANSPORT_TYPE_SELECTOR
                 default_destination_type = DEFAULT_TRANSPORT_TYPE_SELECTOR
                 description_placeholders = {"journey_name": self.context['title_placeholders']['journey_name']}
-        
+
+            if CONF_ORIGIN_TYPE in self._input_data and self._input_data[CONF_ORIGIN_TYPE] == 'device_tracker':
+                description_placeholders = {
+                    "journey_name": f"{self._input_data[CONF_ORIGIN_NAME]} to {self._input_data[CONF_DESTINATION_NAME]}",
+                    "journey_description": "As this journey starts with your location the assumption is that the first leg will be a walk - so any transport type filters will apply from the second leg."
+                }
+            else:
+                description_placeholders = {
+                    "journey_name": f"{self._input_data[CONF_ORIGIN_NAME]} to {self._input_data[CONF_DESTINATION_NAME]}",
+                    "journey_description": "Only journeys with origin and destination legs that start and end with your selected transport types will be considered valid, so if you don't mind a little bit of a walk at either end (getting off at Gadigal Station and walking to Town Hall Station for example), make sure you select 'Walk' as an option."
+                }
+
             STEP_SETTINGS_DATA_SCHEMA = vol.Schema(
                 {
                     vol.Required(CONF_ORIGIN_TRANSPORT_TYPE, default=default_origin_type): cv.multi_select(ORIGIN_TRANSPORT_TYPE_LIST),
@@ -296,6 +366,7 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
                     vol.Required(CONF_TRIP_WAIT_TIME, default = user_input.get(CONF_TRIP_WAIT_TIME, DEFAULT_TRIP_WAIT_TIME)): vol.All(vol.Coerce(int), vol.Range(min=1, max=MAX_TRIP_WAIT_TIME)),
                 }
             )
+            _LOGGER.error(f"in subentry_flow - default_origin_type = {default_origin_type}, ORIGIN_TRANSPORT_TYPE_LIST = {ORIGIN_TRANSPORT_TYPE_LIST}")
 
             return self.async_show_form(
                 step_id="settings",
@@ -311,6 +382,7 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
         """Handle options flow."""
         errors: dict[str, str] = {}
         if user_input is not None:
+            _LOGGER.error(f"conf_origin_transport_type 5 = {self._input_data[CONF_ORIGIN_TRANSPORT_TYPE]}")
             self._input_data.update(user_input)
                  
             if self._input_data[CONF_SENSOR_CREATION] != 'custom':
@@ -340,6 +412,8 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
 
             # No more flows to process so we can create/update the subentries as required
             if self.source == SOURCE_RECONFIGURE:
+                _LOGGER.error(f"conf_origin_transport_type 6 = {self._input_data[CONF_ORIGIN_TRANSPORT_TYPE]}")
+                _LOGGER.error(f"self._input_data = {self._input_data}")
                 # We don't need to recreate the subentry, just refresh and reload the one we're reconfiguring
                 return self.async_update_reload_and_abort(
                     self._get_entry(),
@@ -350,6 +424,7 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
                 )
 
             else:
+                _LOGGER.error(f"430 conf_origin_transport_type 7 = {self._input_data[CONF_ORIGIN_TRANSPORT_TYPE]}")
                 description_placeholders = create_subentries(self, self._get_entry(), self._input_data)
 
                 # We don't have an update listener in place, it causes issues if adding multiple subentries in one go, so we force an update here
@@ -401,6 +476,7 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
 
         if user_input is not None:
             self._input_data.update(user_input)
+            _LOGGER.error(f"conf_origin_transport_type 8 = {self._input_data[CONF_ORIGIN_TRANSPORT_TYPE]}")
 
             if self._input_data[CONF_SENSOR_CREATION] == 'custom':
                 # Show the 'custom sensors' options page, it will be responsible for updating the entry at the end
@@ -416,6 +492,7 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
                         title=f"{self._input_data[CONF_ORIGIN_NAME]} to {self._input_data[CONF_DESTINATION_NAME]}"
                     )
                 else:
+                    _LOGGER.error(f"498 _input_data = {self._input_data[CONF_ORIGIN_TRANSPORT_TYPE]}")
                     description_placeholders = create_subentries(self, self._get_entry(), self._input_data)
 
                     await self.hass.config_entries.async_reload(self._get_entry().entry_id)
@@ -476,12 +553,13 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
         # Handle customer sensors if requested
 
         if user_input is not None:
-            if (user_input['origin_sensors'][CONF_FIRST_LEG_DEVICE_TRACKER]) or (user_input['destination_sensors'][CONF_LAST_LEG_DEVICE_TRACKER] in ['if_not_duplicated', 'always']):
+            if (user_input['device_trackers'][CONF_FIRST_LEG_DEVICE_TRACKER]) or (user_input['device_trackers'][CONF_LAST_LEG_DEVICE_TRACKER] in ['if_not_duplicated', 'always']):
                 user_input[CONF_INCLUDE_REALTIME_LOCATION] = True
             else:
                 user_input[CONF_INCLUDE_REALTIME_LOCATION] = False
             
             self._input_data.update(user_input)
+            _LOGGER.error(f"conf_origin_transport_type 9 = {self._input_data[CONF_ORIGIN_TRANSPORT_TYPE]}")
 
             # This is the last step so create the subentries, unless we're reconfiguring in which case just update, reload and abort
             if self.source == SOURCE_RECONFIGURE:
@@ -493,6 +571,7 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
                     title=f"{self._input_data[CONF_ORIGIN_NAME]} to {self._input_data[CONF_DESTINATION_NAME]}"
                 )
             else:
+                _LOGGER.error(f"577 _input_data = {self._input_data}")
                 description_placeholders = create_subentries(self, self._get_entry(), self._input_data)
                 
                 await self.hass.config_entries.async_reload(self._get_entry().entry_id)
@@ -527,8 +606,7 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
                     vol.Required(CONF_ORIGIN_DETAIL_SENSOR, default = user_input['origin_sensors'].get(CONF_ORIGIN_DETAIL_SENSOR, DEFAULT_ORIGIN_DETAIL_SENSOR)): bool,
                     vol.Required(CONF_FIRST_LEG_LINE_NAME_SENSOR, default = user_input['origin_sensors'].get(CONF_FIRST_LEG_LINE_NAME_SENSOR, DEFAULT_FIRST_LEG_LINE_NAME_SENSOR)): bool,
                     vol.Required(CONF_FIRST_LEG_LINE_NAME_SHORT_SENSOR, default = user_input['origin_sensors'].get(CONF_FIRST_LEG_LINE_NAME_SHORT_SENSOR, DEFAULT_FIRST_LEG_LINE_NAME_SHORT_SENSOR)): bool,
-                    vol.Required(CONF_FIRST_LEG_OCCUPANCY_SENSOR, default = user_input['origin_sensors'].get(CONF_FIRST_LEG_OCCUPANCY_SENSOR, DEFAULT_FIRST_LEG_OCCUPANCY_SENSOR)): bool,
-                    vol.Required(CONF_FIRST_LEG_DEVICE_TRACKER, default = user_input['origin_sensors'].get(CONF_FIRST_LEG_DEVICE_TRACKER, DEFAULT_FIRST_LEG_DEVICE_TRACKER)): bool
+                    vol.Required(CONF_FIRST_LEG_OCCUPANCY_SENSOR, default = user_input['origin_sensors'].get(CONF_FIRST_LEG_OCCUPANCY_SENSOR, DEFAULT_FIRST_LEG_OCCUPANCY_SENSOR)): bool
                 }
             )
 
@@ -538,19 +616,51 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
                     vol.Required(CONF_DESTINATION_DETAIL_SENSOR, default = user_input['destination_sensors'].get(CONF_DESTINATION_DETAIL_SENSOR, DEFAULT_DESTINATION_DETAIL_SENSOR)): bool,
                     vol.Required(CONF_LAST_LEG_LINE_NAME_SENSOR, default = user_input['destination_sensors'].get(CONF_LAST_LEG_LINE_NAME_SENSOR, DEFAULT_LAST_LEG_LINE_NAME_SENSOR)): bool,
                     vol.Required(CONF_LAST_LEG_LINE_NAME_SHORT_SENSOR, default = user_input['destination_sensors'].get(CONF_LAST_LEG_LINE_NAME_SHORT_SENSOR, DEFAULT_LAST_LEG_LINE_NAME_SHORT_SENSOR)): bool,
-                    vol.Required(CONF_LAST_LEG_OCCUPANCY_SENSOR, default = user_input['destination_sensors'].get(CONF_LAST_LEG_OCCUPANCY_SENSOR, DEFAULT_LAST_LEG_OCCUPANCY_SENSOR)): bool,
-                    vol.Required(CONF_LAST_LEG_DEVICE_TRACKER, default=user_input['destination_sensors'].get(CONF_LAST_LEG_DEVICE_TRACKER, DEFAULT_LAST_LEG_DEVICE_TRACKER),): selector (
+                    vol.Required(CONF_LAST_LEG_OCCUPANCY_SENSOR, default = user_input['destination_sensors'].get(CONF_LAST_LEG_OCCUPANCY_SENSOR, DEFAULT_LAST_LEG_OCCUPANCY_SENSOR)): bool
+                }
+            )
+
+            DEVICE_TRACKER_SENSORS_SCHEMA = vol.Schema(
+                {
+                    vol.Required(CONF_FIRST_LEG_DEVICE_TRACKER, default = user_input['device_trackers'].get(CONF_FIRST_LEG_DEVICE_TRACKER, DEFAULT_FIRST_LEG_DEVICE_TRACKER)): selector (
+                            {
+                                "select": {
+                                    "options": ['never', 'always'],
+                                    "mode": 'dropdown',
+                                    "translation_key": 'transport_device_tracker_selector',
+                            }
+                        }
+                    ),
+                    vol.Required(CONF_LAST_LEG_DEVICE_TRACKER, default = user_input['device_trackers'].get(CONF_LAST_LEG_DEVICE_TRACKER, DEFAULT_LAST_LEG_DEVICE_TRACKER)): selector (
                             {
                                 "select": {
                                     "options": ['never', 'if_not_duplicated', 'always'],
                                     "mode": 'dropdown',
-                                    "translation_key": 'device_tracker_selector',
+                                    "translation_key": 'transport_device_tracker_selector',
+                            }
+                        }
+                    ),
+                    vol.Required(CONF_ORIGIN_DEVICE_TRACKER, default = user_input['device_trackers'].get(CONF_ORIGIN_DEVICE_TRACKER, DEFAULT_ORIGIN_DEVICE_TRACKER)): selector (
+                            {
+                                "select": {
+                                    "options": ['never', 'if_device_tracker_journey', 'always'],
+                                    "mode": 'dropdown',
+                                    "translation_key": 'stops_device_tracker_selector',
+                            }
+                        }
+                    ),
+                    vol.Required(CONF_DESTINATION_DEVICE_TRACKER, default = user_input['device_trackers'].get(CONF_DESTINATION_DEVICE_TRACKER, DEFAULT_DESTINATION_DEVICE_TRACKER)): selector (
+                            {
+                                "select": {
+                                    "options": ['never', 'if_device_tracker_journey', 'always'],
+                                    "mode": 'dropdown',
+                                    "translation_key": 'stops_device_tracker_selector',
                             }
                         }
                     )
                 }
             )
-            
+
             custom_schema = {
                     vol.Required("time_and_change_sensors"): section(
                         ADDITIONAL_SENSORS_SCHEMA,
@@ -562,6 +672,10 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
                     ),
                     vol.Required("destination_sensors"): section(
                         DESTINATION_SENSORS_SCHEMA,
+                        {"collapsed": True},
+                    ),
+                    vol.Required("device_trackers"): section(
+                        DEVICE_TRACKER_SENSORS_SCHEMA,
                         {"collapsed": True},
                     )
                 }

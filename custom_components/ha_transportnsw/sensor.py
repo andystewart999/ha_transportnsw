@@ -260,11 +260,12 @@ async def async_setup_entry(
                 if trip_index >= trips_to_create:
                     # We've finished creating sensors, now we need to start trying to delete sensors and devices
                     # that may have been created previously but that aren't needed any more
-                    for sensor_group in [DEFAULT_SUBENTRY_SENSORS, TIME_AND_CHANGE_SENSORS, ORIGIN_SENSORS, DESTINATION_SENSORS, ALERT_SENSORS]:
-                        for sensor in sensor_group:
-                            remove_entity (entity_reg, config_entry.entry_id, subentry.subentry_id, trip_index, sensor.key)
+#                    for sensor_group in [DEFAULT_SUBENTRY_SENSORS, TIME_AND_CHANGE_SENSORS, ORIGIN_SENSORS, DESTINATION_SENSORS, ALERT_SENSORS]:
+#                        for sensor in sensor_group:
+#                            remove_entity (entity_reg, config_entry.entry_id, subentry.subentry_id, trip_index, sensor.key)
 
-                    remove_device (device_reg, subentry.subentry_id, subentry.data[CONF_ORIGIN_ID], subentry.data[CONF_DESTINATION_ID], device_identifier)
+                    # Removing the device will also remove the associated sensors
+                    remove_device (device_reg, config_entry.entry_id, subentry.subentry_id, subentry.data[CONF_ORIGIN_ID], subentry.data[CONF_DESTINATION_ID], device_identifier)
                 else:
                     # Define the default sensors for this trip
                     sensors = [
