@@ -1,4 +1,12 @@
 # Transport NSW MkII
+[![Last release version](https://img.shields.io/github/v/release/andystewart999/ha_transportnsw)](https://github.com/andystewartiii/ha_transportnsw/releases)
+[![Last release date](https://img.shields.io/github/release-date/andystewart999/ha_transportnsw)](https://github.com/andystewart999/ha_transportnsw/releases)
+[![Project license](https://img.shields.io/github/license/andystewart999/ha_transportnsw)](https://github.com/andystewart999/ha_transportnsw/blob/master/LICENSE)
+![hacs](https://img.shields.io/badge/hacs-standard_installation-darkorange.svg)
+![type](https://img.shields.io/badge/type-custom_component-forestgreen.svg)
+
+
+
 A Home Assistant custom component to provide real-time Transport NSW journey information
 
 ## History
