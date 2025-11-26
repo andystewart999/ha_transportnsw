@@ -175,8 +175,7 @@ def get_specific_platform(journey_detail, key):
         transport_type_key = CONF_LAST_LEG_TRANSPORT_TYPE_SENSOR
         origin_name_key = CONF_DESTINATION_NAME_SENSOR
 
-    if True:
-    #try:
+    try:
         transport_type = journey_detail[transport_type_key]
         origin_name = journey_detail[origin_name_key]
 
@@ -210,8 +209,8 @@ def get_specific_platform(journey_detail, key):
         else:
             return origin_name
 
-#    except:
-#        return origin_name
+    except:
+        return origin_name
 
 
 def convert_date(utc_string) -> datetime:
@@ -230,7 +229,7 @@ async def async_setup_entry(
     async_add_entities: AddConfigEntryEntitiesCallback,
 ):
     """Set up the Sensors."""
-    # This gets the data update coordinator from the config entry runtime data as specified in your __init__.py
+    # This gets the data update coordinator from the config entry runtime data as specified __init__.py
     coordinator: TransportNSWCoordinator = config_entry.runtime_data.coordinator
 
     # Be ready to remove devices and sensors if required
@@ -260,11 +259,12 @@ async def async_setup_entry(
                 if trip_index >= trips_to_create:
                     # We've finished creating sensors, now we need to start trying to delete sensors and devices
                     # that may have been created previously but that aren't needed any more
-                    for sensor_group in [DEFAULT_SUBENTRY_SENSORS, TIME_AND_CHANGE_SENSORS, ORIGIN_SENSORS, DESTINATION_SENSORS, ALERT_SENSORS]:
-                        for sensor in sensor_group:
-                            remove_entity (entity_reg, config_entry.entry_id, subentry.subentry_id, trip_index, sensor.key)
+#                    for sensor_group in [DEFAULT_SUBENTRY_SENSORS, TIME_AND_CHANGE_SENSORS, ORIGIN_SENSORS, DESTINATION_SENSORS, ALERT_SENSORS]:
+#                        for sensor in sensor_group:
+#                            remove_entity (entity_reg, config_entry.entry_id, subentry.subentry_id, trip_index, sensor.key)
 
-                    remove_device (device_reg, subentry.subentry_id, subentry.data[CONF_ORIGIN_ID], subentry.data[CONF_DESTINATION_ID], device_identifier)
+                    # Removing the device will also remove the associated sensors!
+                    remove_device (device_reg, config_entry.entry_id, subentry.subentry_id, subentry.data[CONF_ORIGIN_ID], subentry.data[CONF_DESTINATION_ID], device_identifier)
                 else:
                     # Define the default sensors for this trip
                     sensors = [
@@ -506,8 +506,9 @@ class TransportNSWSubentrySensor(CoordinatorEntity, SensorEntity):
                 if self.coordinator.data is not None and self.subentry.subentry_id in self.coordinator.data:
                     if self.entity_description.key == CONF_CHANGES_SENSOR:
                         # A list of changes in this journey
-                        attrs['Changes list'] =  "|".join(self.coordinator.data[self.subentry.subentry_id][self.journey_index][CHANGES_LIST])
-    
+                        attrs['Changes list'] =  "|".join(self.coordinator.data[self.subentry.subentry_id][self.journey_index][ATTR_CHANGES_LIST])
+                        attrs['Locations list'] =  self.coordinator.data[self.subentry.subentry_id][self.journey_index][ATTR_LOCATIONS_LIST]
+
                     if self.entity_description.key in ['alerts']:
                         # Alerts can be long so they need to go into attributes
                         attrs["Alerts"] = self.coordinator.data[self.subentry.subentry_id][self.journey_index][self.entity_description.key]

@@ -26,28 +26,7 @@ from TransportNSWv2 import InvalidAPIKey, StopError
 
 from .helpers import check_stops, set_optional_sensors
 from .coordinator import TransportNSWCoordinator
-from .const import (
-    DOMAIN, 
-    CONF_ORIGIN_ID,
-    CONF_DESTINATION_ID,
-    CONF_ORIGIN_NAME,
-    CONF_DESTINATION_NAME,
-    CONF_ORIGIN_TRANSPORT_TYPE,
-    CONF_DESTINATION_TRANSPORT_TYPE,
-    CONF_TRIP_WAIT_TIME,
-    CONF_TRIPS_TO_CREATE,
-    CONF_INCLUDE_REALTIME_LOCATION,
-    CONF_FIRST_LEG_DEVICE_TRACKER,
-    CONF_LAST_LEG_DEVICE_TRACKER,
-    CONF_ALERTS_SENSOR,
-    CONF_ALERT_SEVERITY,
-    CONF_ALERT_TYPES,
-    CONF_RETURN_INFO,
-    CONF_ROUTE_FILTER,
-    CONF_SENSOR_CREATION,
-    DEFAULT_SCAN_INTERVAL,
-    SUBENTRY_TYPE_JOURNEY
-)
+from .const import *
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -63,7 +42,7 @@ class RuntimeData:
 
     coordinator: DataUpdateCoordinator
 
-async def get_migration_data(hass, yaml_entry):
+async def get_migration_data(hass: HomeAssistant, yaml_entry):
      # Convert a migrated YAML entry into ConfigSubentryData data and return it along with the api key
 
     try:
@@ -150,16 +129,71 @@ async def get_migration_data(hass, yaml_entry):
         error = 'unknown'
 
     return api_key, None, error
-        
-async def async_setup(hass: HomeAssistant, config):
+
+# Schema migration
+async def async_migrate_entry(hass: HomeAssistant, config_entry: MyConfigEntry):
+
+    if config_entry.version > 2:
+        # This means the user has downgraded from a future version
+        return False
+
+    if config_entry.version == 1:
+        # Migrate old entry
+        _LOGGER.info(f"Migrating configuration from version {config_entry.version}")
+
+        # Migrate all subentries to the version 2 data schema
+        for subentry in config_entry.subentries.values():
+            if subentry.subentry_type == SUBENTRY_TYPE_JOURNEY:
+                new_data = {**subentry.data}
+
+                # We need to move a few entries around and create a whole new 'device_trackers' section
+                # Cater for missing options by using .get() although theoretically that's impossible
+                first_leg_device_tracker = new_data['origin_sensors'].get(CONF_FIRST_LEG_DEVICE_TRACKER, DEFAULT_FIRST_LEG_DEVICE_TRACKER)
+                last_leg_device_tracker = new_data['destination_sensors'].get(CONF_LAST_LEG_DEVICE_TRACKER, DEFAULT_LAST_LEG_DEVICE_TRACKER)
+
+                # Create the new sensor dictionary
+                new_options = {'device_trackers':{
+                        CONF_FIRST_LEG_DEVICE_TRACKER: first_leg_device_tracker,
+                        CONF_LAST_LEG_DEVICE_TRACKER: last_leg_device_tracker,
+                        CONF_ORIGIN_DEVICE_TRACKER: DEFAULT_ORIGIN_DEVICE_TRACKER,
+                        CONF_DESTINATION_DEVICE_TRACKER: DEFAULT_DESTINATION_DEVICE_TRACKER,
+                        CONF_CHANGES_DEVICE_TRACKER: DEFAULT_CHANGES_DEVICE_TRACKER
+                        }
+                    }
+
+                new_data.update(new_options)
+                
+                # Tidy up the old data a bit
+                if CONF_FIRST_LEG_DEVICE_TRACKER in new_data['origin_sensors']:
+                    del new_data['origin_sensors'][CONF_FIRST_LEG_DEVICE_TRACKER]
+
+                if CONF_LAST_LEG_DEVICE_TRACKER in new_data['destination_sensors']:
+                    del new_data['destination_sensors'][CONF_LAST_LEG_DEVICE_TRACKER]
+
+                # Update the subentry
+                # Do we need to do this?  The integration is still loading
+                hass.config_entries.async_update_subentry(
+                     config_entry,
+                     subentry,
+                     data = new_data
+                     )
+
+        # Finally, update the config entry itself - just the schema version number
+        hass.config_entries.async_update_entry(config_entry, minor_version=0, version=2)
+        _LOGGER.info(f"Migration to configuration version {config_entry.version} successful")
+
+    return True
+
+
+async def async_setup(hass: HomeAssistant, config_entry: MyConfigEntry):
 
     # Check if there's an old YAML config to import...
     yaml_data = defaultdict(list)
 
     # Iterate through and capture the data for each existing entry, grouped by API key
     # These will be converted to a single entry per API key, with multiple subentries
-    if 'sensor' in config:
-        for sensor in config['sensor']:
+    if 'sensor' in config_entry:
+        for sensor in config_entry['sensor']:
             if sensor['platform'] == DOMAIN:
                 api_key, subentry_data, error = await get_migration_data(hass, sensor)
                 if subentry_data is not None:

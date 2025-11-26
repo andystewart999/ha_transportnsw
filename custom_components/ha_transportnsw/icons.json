@@ -1,0 +1,34 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "sections": {
+          "time_and_change_sensors": "mdi:lock",
+          "ADDITIONAL_SENSORS_SCHEMA": "mdi:lock",
+          "blah_1": "mdi:lock",
+          "blah_2": "mdi:lock"
+        }
+      }
+    }
+  },
+  "config_subentries": {
+    "step": {
+      "custom_sensors": {
+        "sections": {
+          "device_trackers": "mdi:lock"
+        }
+      }
+    }
+  },
+  "config_subentries": {
+    "subentry_journey": {
+      "step": {
+        "custom_sensors": {
+          "sections": {
+            "device_trackers": "mdi:lock"
+          }
+        }
+      }
+    }
+  }
+}

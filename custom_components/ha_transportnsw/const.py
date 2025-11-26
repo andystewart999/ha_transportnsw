@@ -7,6 +7,7 @@ MIN_SCAN_INTERVAL = 30
 MAX_TRIP_WAIT_TIME = 60
 
 # Mandatory data
+CONF_ORIGIN_TYPE = 'origin_type'  # New
 CONF_ORIGIN_ID = 'origin_id'
 CONF_ORIGIN_NAME = 'origin_name'
 CONF_DESTINATION_ID = 'destination_id'
@@ -27,7 +28,6 @@ CONF_TRIPS_TO_CREATE = 'trips_to_create'
 # Sensor key names
 CONF_DUE_SENSOR = 'due'
 CONF_CHANGES_SENSOR = 'changes'
-CHANGES_LIST = 'changes_list'
 CONF_DELAY_SENSOR = 'delay'
 CONF_ALERTS_SENSOR = 'alerts'
 CONF_FIRST_LEG_DEPARTURE_TIME_SENSOR = 'departure_time'
@@ -39,7 +39,6 @@ CONF_FIRST_LEG_LINE_NAME_SHORT_SENSOR = 'origin_line_name_short'
 CONF_FIRST_LEG_TRANSPORT_TYPE_SENSOR = 'origin_transport_type'
 CONF_FIRST_LEG_TRANSPORT_NAME_SENSOR = 'origin_transport_name'
 CONF_FIRST_LEG_OCCUPANCY_SENSOR = 'origin_occupancy'
-CONF_FIRST_LEG_DEVICE_TRACKER = 'first_leg_device_tracker'
 CONF_DESTINATION_NAME_SENSOR = 'destination_name'
 CONF_DESTINATION_DETAIL_SENSOR = 'destination_detail'
 CONF_LAST_LEG_LINE_NAME_SENSOR = 'destination_line_name'
@@ -47,7 +46,6 @@ CONF_LAST_LEG_LINE_NAME_SHORT_SENSOR = 'destination_line_name_short'
 CONF_LAST_LEG_TRANSPORT_TYPE_SENSOR = 'destination_transport_type'
 CONF_LAST_LEG_TRANSPORT_NAME_SENSOR = 'destination_transport_name'
 CONF_LAST_LEG_OCCUPANCY_SENSOR = 'destination_occupancy'
-CONF_LAST_LEG_DEVICE_TRACKER = 'last_leg_device_tracker'
 CONF_SENSOR_CREATION = 'sensor_creation'
 
 # Sensor friendly names
@@ -73,8 +71,24 @@ CONF_LAST_LEG_TRANSPORT_TYPE_FRIENDLY = 'last leg transport type'
 CONF_LAST_LEG_TRANSPORT_NAME_FRIENDLY = 'last leg transport name'
 CONF_INCLUDE_REALTIME_LOCATION = 'include_realtime_location'
 
+# Device tracker options
+CONF_FIRST_LEG_DEVICE_TRACKER = 'first_leg_device_tracker'
+CONF_LAST_LEG_DEVICE_TRACKER = 'last_leg_device_tracker'
+CONF_ORIGIN_DEVICE_TRACKER = 'origin_device_tracker'
+CONF_DESTINATION_DEVICE_TRACKER = 'destination_device_tracker'
+
+DEFAULT_FIRST_LEG_DEVICE_TRACKER = 'never'
+DEFAULT_LAST_LEG_DEVICE_TRACKER = 'never'
+DEFAULT_ORIGIN_DEVICE_TRACKER = 'if_device_tracker_journey'
+DEFAULT_DESTINATION_DEVICE_TRACKER = 'never'
+
 ORIGIN_TRANSPORT_TYPE_LIST = ['Train', 'Metro', 'Light rail', 'Bus', 'Coach', 'Ferry', 'School bus', 'Walk']
 DESTINATION_TRANSPORT_TYPE_LIST = ['Train', 'Metro', 'Light rail', 'Bus', 'Coach', 'Ferry', 'School bus', 'Walk']
+
+# Changes info
+ATTR_CHANGES_LIST = 'changes_list'
+ATTR_LOCATIONS_LIST = 'locations_list'
+
 
 # Defaults
 DEFAULT_TRIP_WAIT_TIME = 10
@@ -95,13 +109,11 @@ DEFAULT_ORIGIN_DETAIL_SENSOR = False
 DEFAULT_FIRST_LEG_LINE_NAME_SENSOR = False
 DEFAULT_FIRST_LEG_LINE_NAME_SHORT_SENSOR = False
 DEFAULT_FIRST_LEG_OCCUPANCY_SENSOR = False
-DEFAULT_FIRST_LEG_DEVICE_TRACKER = True
 DEFAULT_DESTINATION_NAME_SENSOR = False
 DEFAULT_DESTINATION_DETAIL_SENSOR = False
 DEFAULT_LAST_LEG_LINE_NAME_SENSOR = False
 DEFAULT_LAST_LEG_LINE_NAME_SHORT_SENSOR = False
 DEFAULT_LAST_LEG_OCCUPANCY_SENSOR = False
-DEFAULT_LAST_LEG_DEVICE_TRACKER = 'if_not_duplicated'
 
 # Misc
 ORIGIN_LATITUDE = 'origin_latitude'
@@ -133,6 +145,13 @@ JOURNEY_ICONS = {
     None: "mdi:train"
 }
 
+DEVICE_TRACKER_LOOKUPS = {
+    CONF_FIRST_LEG_DEVICE_TRACKER : 'first leg vehicle',
+    CONF_LAST_LEG_DEVICE_TRACKER: 'last leg vehicle',
+    CONF_ORIGIN_DEVICE_TRACKER: 'first stop',
+    CONF_DESTINATION_DEVICE_TRACKER: 'last stop'
+}
+
 OCCUPANCY_ICONS = {
     "MANY_SEATS": ["mdi:account", "Many seats"],
     "FEW_SEATS": ["mdi:account-multiple", "Few seats"],
@@ -143,15 +162,16 @@ OCCUPANCY_ICONS = {
 }
 
 TRANSPORT_TYPE = {
-    "All": 0,
-    "Train": 1,
-    "Metro": 2,
-    "Light rail": 4,
-    "Bus": 5,
-    "Coach": 7,
-    "Ferry": 9,
-    "School bus": 11,
-    "Walk": 99
+    0:   "All",
+    1:   "Train",
+    2:   "Metro",
+    4:   "Light rail",
+    5:   "Bus",
+    7:   "Coach",
+    9:   "Ferry",
+    11:  "School bus",
+    99:  "Walk",
+    100: "Walk"
 }
 
 ALERT_PRIORITIES = {

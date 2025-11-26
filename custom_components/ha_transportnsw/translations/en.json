@@ -56,6 +56,7 @@
             "stoperror_origin": "The origin has an invalid stop ID, please check and retry.",
             "stoperror_destination": "The destination has an invalid stop ID, please check and retry.",
             "stoperror_both": "Both stop IDs are invalid, please check and retry.",
+            "return_journey_error": "You can't select 'create return journey' when the origin is a device tracker.",
             "triperror": "No valid journeys were returned.  Check your filters and retry.",
             "already_configured": "You have already added that journey.",
             "outbound_already_configured": "You have already added the outbound journey.",
@@ -69,11 +70,11 @@
 		  "step": {
 			  "user": {
 				  "data": {
-					  "origin_id": "The stop ID or name of your start point.",
-                      "destination_id": "The stop ID or name of your destination.",
-                      "create_reverse_trip": "Also create the return journey."
+					  "origin_id": "The stop ID/name of your start point, or a Mobile App device tracker",
+                      "destination_id": "The stop ID/name of your destination",
+                      "create_reverse_trip": "Also create the return journey"
 				  },
-				  "description": "Provide the details of the journey you want to monitor - you can either provide the Stop ID or type in the stop names directly.  If entering a stop name, such as 'Central station' the more specific you are the more likely that the API will find the right stop!\n\nYou can also have the return journey created in addition to the outbound journey if required.\n\nStop IDs can be looked up [here](https://transportnsw.info/routes/train#/).",
+				  "description": "Provide the details of the journey you want to monitor - specific Stop IDs or general stop names can be used.  If entering a stop name, such as 'Central station' the more specific you are the more likely that the API will find the right stop.\n\nFor the origin you can also choose a Mobile App-sourced Device Tracker so your current location becomes the origin.\n\nStop IDs can be looked up [here](https://transportnsw.info/routes/train#/).",
 				  "title": "Transport NSW Mk II"
 			  },
 			  "settings": {
@@ -87,7 +88,7 @@
                       "trip_wait_time": "The minimum time from now to wait before the journey starts (minutes)",
                       "trips_to_create": "Trips to create"
 				  },
-				  "description": "Select the appropriate transport types, the minimum departure time from now and an optional route filter.\n\nOnly journeys with origin and destination legs that start and end with your selected transport types will be considered valid, so if you don't mind a little bit of a walk at either end (getting off at Gadigal Station and walking to Town Hall Station for example), make sure you select 'Walk' as an option.\n\nIf you specify a route filter, only journeys with that text in the line name (eg T9 Northern Line) or short line name (eg T9) will be shown.",
+				  "description": "Select the appropriate transport types, the minimum departure time from now and an optional route filter.\n\n{journey_description}\n\nIf you specify a route filter, only journeys with that text in the line name (eg T9 Northern Line) or short line name (eg T9) will be shown.",
 				  "title": "{journey_name}"
 			  },
 			  "sensors": {
@@ -127,8 +128,7 @@
 						  "origin_line_name_short": "Short version of first leg line name (eg T1)",
 						  "origin_detail": "The specific origin platform, stop, wharf etc (eg Platform 4)",
 						  "origin_occupancy": "First leg vehicle occupancy (eg Many seats, few seats etc)",
-						  "origin_name": "Origin name (eg Gordon Station, Platform 1, Gordon)",
-						  "first_leg_device_tracker": "Device tracker based on first leg vehicle location (if provided)"
+						  "origin_name": "Origin name (eg Gordon Station, Platform 1, Gordon)"
 						}
 					},
 					"destination_sensors": {
@@ -139,8 +139,18 @@
 						  "destination_line_name_short": "Short version of last leg line name (eg T9)",
 						  "destination_detail": "The specific destination platform, stop, wharf etc (eg Platform 4)",
 						  "destination_name": "Destination name (eg Gadigal Station, Platform 1, Sydney)",
-						  "destination_occupancy": "Last leg vehicle occupancy (eg Many seats, few seats etc)",
-						  "last_leg_device_tracker": "Device tracker based on last leg vehicle location (if provided)"
+						  "destination_occupancy": "Last leg vehicle occupancy (eg Many seats, few seats etc)"
+						}
+					},
+					"device_trackers": {
+						"name": "Device trackers",
+						"description": "Select when device tracker entities should be created",
+						"data": {
+						  "first_leg_device_tracker": "First leg vehicle location (if provided)",
+						  "last_leg_device_tracker": "Last leg vehicle location (if provided)",
+						  "origin_device_tracker": "The journey origin, i.e. where the journey starts",
+						  "destination_device_tracker": "The journey destination, i.e. where the journey ends",
+						  "changes_device_tracker": "All journey changes, i.e. anywhere you have to change transport"
 						}
 					}
 				},
@@ -182,10 +192,17 @@
 			  "99": "Walk"
           }
       },
-       "device_tracker_selector": {
+       "transport_device_tracker_selector": {
           "options": {
               "never": "Never",
-              "if_not_duplicated": "Only if different to the origin",
+              "if_not_duplicated": "Only if different to the first leg",
+              "always": "Always"
+          }
+      },
+       "stops_device_tracker_selector": {
+          "options": {
+              "never": "Never",
+              "if_device_tracker_journey": "Only if journey origin is a device tracker",
               "always": "Always"
           }
       },

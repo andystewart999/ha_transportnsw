@@ -9,7 +9,7 @@ from typing import Any
 import voluptuous as vol
 #from homeassistant.helpers.selector import selector, BooleanSelector, BooleanSelectorConfig
 import homeassistant.helpers.config_validation as cv
-#from homeassistant.data_entry_flow import section
+from homeassistant.data_entry_flow import section
 from homeassistant.config_entries import (
     ConfigEntry,
     ConfigFlow,
@@ -59,7 +59,9 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> None:
 class TransportNSWConfigFlowHandler(ConfigFlow, domain=DOMAIN):
     """Handle a config flow for Transport NSW Mk II"""
 
-    VERSION = 1
+    VERSION = 2
+    MINOR_VERSION = 0
+
     _input_data: dict[str, Any]
 
     @classmethod
