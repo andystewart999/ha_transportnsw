@@ -46,6 +46,7 @@
 		  }
 	  },
 	  "subentry_journey": {
+		  "entry_type": "subentry_journey/entry_type placeholder",
 		  "abort": {
 			  "already_configured": "You have already added that journey.",
 			  "outbound_already_configured": "You have already added the outbound journey.",
@@ -225,6 +226,7 @@
       }
   }
 }
+
 
 
 
