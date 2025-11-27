@@ -18,6 +18,7 @@
       "triperror": "No valid journeys were returned.  Check your filters and retry.",
       "unknown": "Unexpected error."
     },
+    "entry_type": "Test label",
     "step": {
       "user": {
         "data": {
@@ -31,6 +32,10 @@
   },
   "config_subentries": {
 	  "create_entry": {
+		  "initiate_flow": {
+			  "user": "xAdd new journey",
+			  "reconfigure": "xChange journey options"
+		  },
 		  "title": "Transport NSW Mk II",
 		  "step": {
 			  "user" : {
@@ -66,6 +71,10 @@
 		  "initiate_flow": {
 			  "user": "Add new journey",
 			  "reconfigure": "Change journey options"
+		  },
+		  "create_entry": {
+			  "default": "create_entry default placeholder",
+			  "custom": "creat_entry customer placeholder"
 		  },
 		  "step": {
 			  "user": {
