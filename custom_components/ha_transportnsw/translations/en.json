@@ -1,5 +1,6 @@
 {
   "config": {
+    "entry_type": "config entry_type placeholder",
 	"create_entry": {
 	  "default": "API key registered.  Now add your journeys!"
 	},
@@ -226,7 +227,6 @@
       }
   }
 }
-
 
 
 
