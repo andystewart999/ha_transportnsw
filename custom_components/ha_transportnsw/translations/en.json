@@ -1,6 +1,5 @@
 {
   "config": {
-    "entry_type": "config entry_type placeholder",
 	"create_entry": {
 	  "default": "API key registered.  Now add your journeys!"
 	},
@@ -47,7 +46,7 @@
 		  }
 	  },
 	  "subentry_journey": {
-		  "entry_type": "subentry_journey/entry_type placeholder",
+		  "entry_type": "",
 		  "abort": {
 			  "already_configured": "You have already added that journey.",
 			  "outbound_already_configured": "You have already added the outbound journey.",
@@ -227,7 +226,4 @@
       }
   }
 }
-
-
-
 
