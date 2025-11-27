@@ -18,7 +18,6 @@
       "triperror": "No valid journeys were returned.  Check your filters and retry.",
       "unknown": "Unexpected error."
     },
-    "entry_type": "Test label",
     "step": {
       "user": {
         "data": {
@@ -225,5 +224,6 @@
       }
   }
 }
+
 
 
