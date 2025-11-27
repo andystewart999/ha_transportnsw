@@ -15,17 +15,16 @@ This integration was initially inspired by Home Assistant's built-in [Transport 
 ## Use
 You need a Transport NSW API key, available for free [here](https://opendata.transport.nsw.gov.au/data/user/register) - once registered, create an API token.
 
-![Alt text of the image](https://github.com/andystewart999/ha_integration_resources/blob/main/documentation/ha_transportnsw/0%20-%20api%20key.png)
+![Alt text of the image](https://github.com/andystewart999/ha_integration_resources/blob/main/documentation/ha_transportnsw/0_apikey.png)
 
 ### Add the config entry
 From the devices page, click 'Add integration', search for 'Transport NSW Mk II' and add it.
 
-![Alt text of the image](https://github.com/andystewart999/ha_integration_resources/blob/main/documentation/ha_transportnsw/0%20-%20new%20integration.png)
+![Alt text of the image](https://github.com/andystewart999/ha_integration_resources/blob/main/documentation/ha_transportnsw/0_newintegration.png)
 
 Enter the API token and how often you want the sensors to update and you're done!  At this stage there's only one sensor which logs how many API calls the integration has made across all subentries.  There's a limit of 60,000 calls per day and each journey, on average, requires 3 API calls - in the unlikely event that you're going to run out a future enhancement may be to auto-throttle sensor updates.
 
-![Alt text of the image](https://github.com/andystewart999/ha_integration_resources/blob/main/documentation/ha_transportnsw/1%20-%20config%20entry.png
-)
+![Alt text of the image](https://github.com/andystewart999/ha_integration_resources/blob/main/documentation/ha_transportnsw/1_configentry.png)
 
 ### Journey subentries
 Each journey is a subentry and has its own journey-specific set of options.  Journey-specific options can be chosen at the time of creation or at any time afterwards.  Each config flow page has a detailed explanation of the options it provides, including filtering based on your preferred transport types (train, bus, etc).
@@ -35,17 +34,17 @@ You can specify the origin and destination either by stop ID or the full name of
 
 You can also select an existing Device Tracker sensor as the origin, which obviously means that the origin will change as you move around.
 
-![Alt text of the image](https://github.com/andystewart999/ha_integration_resources/blob/main/documentation/ha_transportnsw/2%20-%20subentry%20origin%20and%20destination.png)
+![Alt text of the image](https://github.com/andystewart999/ha_integration_resources/blob/main/documentation/ha_transportnsw/2_subentryoriginanddestination.png)
 
 ### Journey filters
 On a per-journey basis you can specify the transport type options that are applicable, and, to give you time to get to the origin, how far in the future a journey departure time must be to be considered valid.
 
-![Alt text of the image](https://github.com/andystewart999/ha_integration_resources/blob/main/documentation/ha_transportnsw/3%20-%20subentry%20filters.png)
+![Alt text of the image](https://github.com/andystewart999/ha_integration_resources/blob/main/documentation/ha_transportnsw/3_subentryfilters.png)
 
 ### Multiple trips
 Up to 3 trips per journey can be created, which are basically the next 3 departures from the origin.  Note that depending on your 'transport type' choices the trips may be quite different, and may also have some duplicated legs - it's entirely up to the Transport NSW API what to return.
 
-![Alt text of the image](https://github.com/andystewart999/ha_integration_resources/blob/main/documentation/ha_transportnsw/4%20-%20subentry%20alerts%20and%20trips.png)
+![Alt text of the image](https://github.com/andystewart999/ha_integration_resources/blob/main/documentation/ha_transportnsw/4_subentryalertsandtrips.png)
 
 ### Default sensors
 To keep things simple the default sensors comprise only of the 'due' sensor, showing minutes until departure time, and device tracker sensors for the origin and destination vehicles (assuming the API returns that information).  If the origin is itself a device tracker an additional device tracker sensor showing the location of the first leg is also shown by default.
@@ -53,12 +52,12 @@ To keep things simple the default sensors comprise only of the 'due' sensor, sho
 ### Alerts
 You can choose to include an alerts sensor based on various filters.  If the journey has any alerts that meet your filter, the highest alert is shown.
 
-![Alt text of the image](https://github.com/andystewart999/ha_integration_resources/blob/main/documentation/ha_transportnsw/5%20-%20subentry%20alert%20detail.png)
+![Alt text of the image](https://github.com/andystewart999/ha_integration_resources/blob/main/documentation/ha_transportnsw/5_subentryalertdetail.png)
 
 ### Additional sensors
 There are many additional sensors that are available if required, which can be selected when you create a new journey or at any time afterwards.  Origin/destination names, exact stops or platforms, the number of changes, the vehicle type - pretty much everything that the API returns can be included.
 
-![Alt text of the image](https://github.com/andystewart999/ha_integration_resources/blob/main/documentation/ha_transportnsw/6%20-%20subentry%20sensor%20detail.png)
+![Alt text of the image](https://github.com/andystewart999/ha_integration_resources/blob/main/documentation/ha_transportnsw/6_subentrysensordetail.png)
 
 ### Attributes 
 Some of the sensors have their own additional attributes:
