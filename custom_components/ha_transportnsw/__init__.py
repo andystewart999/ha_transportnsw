@@ -156,8 +156,7 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: MyConfigEntry):
                         CONF_FIRST_LEG_DEVICE_TRACKER: first_leg_device_tracker,
                         CONF_LAST_LEG_DEVICE_TRACKER: last_leg_device_tracker,
                         CONF_ORIGIN_DEVICE_TRACKER: DEFAULT_ORIGIN_DEVICE_TRACKER,
-                        CONF_DESTINATION_DEVICE_TRACKER: DEFAULT_DESTINATION_DEVICE_TRACKER,
-                        CONF_CHANGES_DEVICE_TRACKER: DEFAULT_CHANGES_DEVICE_TRACKER
+                        CONF_DESTINATION_DEVICE_TRACKER: DEFAULT_DESTINATION_DEVICE_TRACKER
                         }
                     }
 
