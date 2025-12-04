@@ -83,25 +83,27 @@ def create_subentries(self, config_entry, input_data):
         return_data[CONF_DESTINATION_TRANSPORT_TYPE] = input_data[CONF_ORIGIN_TRANSPORT_TYPE]
         del return_data[CONF_CREATE_REVERSE_TRIP]
         
+        unique_id_destination = '_'.join(return_data[CONF_DESTINATION_ID])
         self.hass.config_entries.async_add_subentry(
             config_entry,
             ConfigSubentry(
                 data=return_data,
                 subentry_type=SUBENTRY_TYPE_JOURNEY,
                 title=f"{return_data[CONF_ORIGIN_NAME]} to {return_data[CONF_DESTINATION_NAME]}",
-                unique_id=f"{return_data[CONF_ORIGIN_ID]}_{return_data[CONF_DESTINATION_ID]}"
+                unique_id=f"{return_data[CONF_ORIGIN_ID]}_{unique_id_destination}"
             ),
         )
 
     del input_data[CONF_CREATE_REVERSE_TRIP]
 
+    unique_id_destination = '_'.join(input_data[CONF_DESTINATION_ID])
     self.hass.config_entries.async_add_subentry(
         config_entry,
         ConfigSubentry(
             data=input_data,
             subentry_type=SUBENTRY_TYPE_JOURNEY,
             title=f"{input_data[CONF_ORIGIN_NAME]} to {input_data[CONF_DESTINATION_NAME]}",
-            unique_id=f"{input_data[CONF_ORIGIN_ID]}_{input_data[CONF_DESTINATION_ID]}"
+            unique_id=f"{input_data[CONF_ORIGIN_ID]}_{unique_id_destination}"
         ),
     )
 
@@ -124,15 +126,23 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
             # Do a quick 'fail-fast' check
             if data[CONF_CREATE_REVERSE_TRIP]:
                 # We can't create the reverse trip with a device tracker as the origin
-                errors['base'] = "return_journey_error"
+                errors['base'] = "return_journey_device_tracker_error"
                 return "", errors
 
             entity_info = get_device_trackers(hass, data[CONF_ORIGIN_ID])
-            stop_list = [data[CONF_DESTINATION_ID]]
+            stop_list = data[CONF_DESTINATION_ID]
 
+        # CONF_DESTINATION_ID is always going to be a list, but if there's more than one then we can't create a reverse trip also
         else:
-            stop_list = [data[CONF_ORIGIN_ID], data[CONF_DESTINATION_ID]]
-            
+            if len(data[CONF_DESTINATION_ID]) > 1:
+                if data[CONF_CREATE_REVERSE_TRIP]:
+                    # We can't create the reverse trip 
+                    errors['base'] = "return_journey_multiple_destination_error"
+                    return "", errors
+
+            stop_list = data[CONF_DESTINATION_ID]
+            stop_list.insert (0, data[CONF_ORIGIN_ID])
+
         try:
             stop_data = await hass.async_add_executor_job (
                  check_stops,
@@ -149,10 +159,29 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
                     data[CONF_DESTINATION_ID] = stop_data['stop_list'][0]['stop_id']
                 else:
                     data[CONF_ORIGIN_NAME] = stop_data['stop_list'][0]['stop_detail']['disassembledName']
-                    data[CONF_DESTINATION_NAME] = stop_data['stop_list'][1]['stop_detail']['disassembledName']
                     data[CONF_ORIGIN_ID] = stop_data['stop_list'][0]['stop_id']
-                    data[CONF_DESTINATION_ID] = stop_data['stop_list'][1]['stop_id']
-                
+
+                    # Strip out the destination ID(s)
+                    destination_stops = stop_data['stop_list'][1:]
+                    if len(destination_stops) == 1:
+                        data[CONF_DESTINATION_NAME] = destination_stops[0]['stop_detail']['disassembledName']
+                        data[CONF_DESTINATION_ID] = [destination_stops[0]['stop_id']]
+                    else:
+                        # Multiple destinations were provided, so create an appropriate destination name and list of IDs
+                        data[CONF_DESTINATION_NAME] = ""
+                        data[CONF_DESTINATION_ID] = []
+
+                        for index, value in enumerate(destination_stops):
+                            data[CONF_DESTINATION_ID].append(destination_stops[index]['stop_id'])
+                            if index == 0:
+                                separator = ""
+                            elif (index + 1) == len(destination_stops):
+                                separator = " or "
+                            else:
+                                separator = ", "
+                            
+                            data[CONF_DESTINATION_NAME] += f"{separator}{destination_stops[index]['stop_detail']['disassembledName']}"
+
                 return {
                     "title": f"{data[CONF_ORIGIN_NAME]} to {data[CONF_DESTINATION_NAME]}"
                 }, errors
@@ -230,15 +259,17 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
                 # The actual unique ID will be set during subentry creation later
 
                 # It's possible that the stop validation function returned better stop IDs, so use them
-                unique_id = f"{user_input[CONF_ORIGIN_ID]}_{user_input[CONF_DESTINATION_ID]}"
-    
+                unique_id_destination = '_'.join(user_input[CONF_DESTINATION_ID])
+                unique_id = f"{user_input[CONF_ORIGIN_ID]}_{unique_id_destination}"
+
                 if self.source != SOURCE_RECONFIGURE:
                     for existing_subentry in self._get_entry().subentries.values():
                         if existing_subentry.unique_id == unique_id:
                             errors["base"] = "outbound_already_configured"
     
                     if user_input[CONF_CREATE_REVERSE_TRIP]:
-                        unique_id = f"{user_input[CONF_DESTINATION_ID]}_{user_input[CONF_ORIGIN_ID]}"
+                        unique_id_destination = '_'.join(input_data[CONF_DESTINATION_ID])
+                        unique_id = f"{unique_id_destination}_{user_input[CONF_ORIGIN_ID]}"
     
                         for existing_subentry in self._get_entry().subentries.values():
                             if existing_subentry.unique_id == unique_id:
@@ -292,7 +323,17 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
                         }
                     }
                 ),
-                vol.Required(CONF_DESTINATION_ID, default = user_input.get(CONF_DESTINATION_ID, "")): str,
+#                vol.Required(CONF_DESTINATION_ID, default = user_input.get(CONF_DESTINATION_ID, "")): str,
+                vol.Required(CONF_DESTINATION_ID, default = user_input.get(CONF_DESTINATION_ID, ""),): selector (
+                        {
+                            "select": {
+                                "mode": 'dropdown',
+                                "custom_value": True,
+                                "multiple": True,
+                                "options": []
+                        }
+                    }
+                ),
                 vol.Required(CONF_CREATE_REVERSE_TRIP, default = user_input.get(CONF_CREATE_REVERSE_TRIP, DEFAULT_CREATE_REVERSE_TRIP)): bool,
              }
         )
@@ -397,10 +438,11 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
             # No more flows to process so we can create/update the subentries as required
             if self.source == SOURCE_RECONFIGURE:
                 # We don't need to recreate the subentry, just refresh and reload the one we're reconfiguring
+                unique_id_destination = '_'.join(self._input_data[CONF_DESTINATION_ID])
                 return self.async_update_reload_and_abort(
                     self._get_entry(),
                     self._get_reconfigure_subentry(),
-                    unique_id = f"{self._input_data[CONF_ORIGIN_ID]}_{self._input_data[CONF_DESTINATION_ID]}",
+                    unique_id = f"{self._input_data[CONF_ORIGIN_ID]}_{unique_id_destination}",
                     data = self._input_data,
                     title=f"{self._input_data[CONF_ORIGIN_NAME]} to {self._input_data[CONF_DESTINATION_NAME]}"
                 )
@@ -464,10 +506,11 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
             else:
                 # No more flows to process so we can create/update the subentries as required
                 if self.source == SOURCE_RECONFIGURE:
+                    unique_id_destination = '_'.join(self._input_data[CONF_DESTINATION_ID])
                     return self.async_update_reload_and_abort(
                         self._get_entry(),
                         self._get_reconfigure_subentry(),
-                        unique_id = f"{self._input_data[CONF_ORIGIN_ID]}_{self._input_data[CONF_DESTINATION_ID]}",
+                        unique_id = f"{self._input_data[CONF_ORIGIN_ID]}_{unique_id_destination}",
                         data = self._input_data,
                         title=f"{self._input_data[CONF_ORIGIN_NAME]} to {self._input_data[CONF_DESTINATION_NAME]}"
                     )
@@ -567,6 +610,7 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
                 user_input['time_and_change_sensors'] = {}
                 user_input['origin_sensors'] = {}
                 user_input['destination_sensors'] = {}
+                user_input['device_trackers'] = {}
         
             ADDITIONAL_SENSORS_SCHEMA = vol.Schema(
                 {
