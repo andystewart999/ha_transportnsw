@@ -8,7 +8,6 @@
       "already_configured_disabled": "That API key has already been registered, although the entry has been disabled.  Please re-enable it and use 'add new journey' to add one or more journeys instead.",
       "reconfigure_successful": "New API key registered.",
       "reconfigure_successful_no_change": "No changes made.",
-      "reconfigure_successful_api_change_false": "No changes made.",
       "reconfigure_successful_api_change_true": "New API key registered."
     },
     "error": {
@@ -85,7 +84,7 @@
                       "destination_id": "The stop ID/name of your destination",
                       "create_reverse_trip": "Also create the return journey"
 				  },
-				  "description": "Provide the details of the journey you want to monitor - specific Stop IDs or general stop names can be used.  If entering a stop name, such as 'Central station' the more specific you are the more likely that the API will find the right stop.\n\nFor the origin you can also choose a Mobile App-sourced Device Tracker so your current location becomes the origin.\n\nStop IDs can be looked up [here](https://transportnsw.info/routes/train#/).",
+				  "description": "Provide the details of the journey you want to monitor - specific Stop IDs or general stop names can be used.  If entering a stop name, such as 'Central station' the more specific you are the more likely that the API will find the right stop.\n\nFor the origin you can also choose a Mobile App-sourced Device Tracker so your current location becomes the origin.\n\nIf you enter multiple destinations the journey with the earliest arrival time across ALL destinations will be shown.\n\nStop IDs can be looked up [here](https://transportnsw.info/routes/train#/).",
 				  "title": "Transport NSW Mk II"
 			  },
 			  "settings": {

@@ -195,7 +195,7 @@ def set_api_calls (file_path: str, api_calls: int) -> int:
 
     return api_calls
 
-def remove_entity(entity_reg, configentry_id, subentry_id,trip_index, key):
+def remove_entity(entity_reg, configentry_id, subentry_id, trip_index, key):
     # Search for and remove a sensor that's no longer needed
     unique_id = f"{subentry_id}_{key}_{trip_index}"
 
