@@ -8,6 +8,11 @@
             default: '7'
           # ... other input options for filtering ...
 
+      workflow_run:
+        workflows: ["Validate with hassfest"]
+        types:
+          - completed
+
     jobs:
       del_runs:
         runs-on: ubuntu-latest
