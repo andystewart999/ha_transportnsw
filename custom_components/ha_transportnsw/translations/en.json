@@ -138,7 +138,8 @@
 						  "origin_line_name_short": "Short version of first leg line name (eg T1)",
 						  "origin_detail": "The specific origin platform, stop, wharf etc (eg Platform 4)",
 						  "origin_occupancy": "First leg vehicle occupancy (eg Many seats, few seats etc)",
-						  "origin_name": "Origin name (eg Gordon Station, Platform 1, Gordon)"
+						  "origin_name": "Origin name (eg Gordon Station, Platform 1, Gordon)",
+						  "origin_train_set": "Origin train set type (eg Tangara, Waratah etc)"
 						}
 					},
 					"destination_sensors": {
@@ -149,7 +150,8 @@
 						  "destination_line_name_short": "Short version of last leg line name (eg T9)",
 						  "destination_detail": "The specific destination platform, stop, wharf etc (eg Platform 4)",
 						  "destination_name": "Destination name (eg Gadigal Station, Platform 1, Sydney)",
-						  "destination_occupancy": "Last leg vehicle occupancy (eg Many seats, few seats etc)"
+						  "destination_occupancy": "Last leg vehicle occupancy (eg Many seats, few seats etc)",
+						  "destination_train_set": "Destination train set type (eg Tangara, Waratah etc)"
 						}
 					},
 					"device_trackers": {

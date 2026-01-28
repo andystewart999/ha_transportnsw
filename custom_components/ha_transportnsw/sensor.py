@@ -109,6 +109,10 @@ ORIGIN_SENSORS: tuple[SensorEntityDescription, ...] = (
     SensorEntityDescription(
         key=CONF_FIRST_LEG_OCCUPANCY_SENSOR,
         name=CONF_FIRST_LEG_OCCUPANCY_FRIENDLY,
+    ),
+    SensorEntityDescription(
+        key=CONF_FIRST_LEG_TRAIN_SET_SENSOR,
+        name=CONF_FIRST_LEG_TRAIN_SET_FRIENDLY,
     )
 )
 
@@ -140,6 +144,10 @@ DESTINATION_SENSORS: tuple[SensorEntityDescription, ...] = (
     SensorEntityDescription(
         key=CONF_LAST_LEG_OCCUPANCY_SENSOR,
         name=CONF_LAST_LEG_OCCUPANCY_FRIENDLY,
+    ),
+    SensorEntityDescription(
+        key=CONF_LAST_LEG_TRAIN_SET_SENSOR,
+        name=CONF_LAST_LEG_TRAIN_SET_FRIENDLY,
     )
 )
 
@@ -211,6 +219,30 @@ def get_specific_platform(journey_detail, key):
 
     except:
         return origin_name
+
+
+def get_train_set(journey_detail, key):
+    # Extract the specific train set(s) for this journey
+    if key == CONF_FIRST_LEG_TRAIN_SET_SENSOR:
+        trip_id_key = 'origin_real_time_trip_id'
+    else:
+        trip_id_key = 'destination_real_time_trip_id'
+
+    try:
+        trip_id = journey_detail[trip_id_key].split('.')
+        _LOGGER.warning(f'trip_id = {trip_id}')
+
+        if len(trip_id) < 7:
+            return 'n/a'
+        else:
+            # We're interested in 4 and 5
+            train_set = TRAIN_SETS.get(trip_id[4], 'Unknown')
+            train_carriages = trip_id[5]
+
+            return f'{train_carriages} car {train_set}'
+
+    except:
+        return 'Unknown'
 
 
 def convert_date(utc_string) -> datetime:
@@ -416,21 +448,24 @@ class TransportNSWSubentrySensor(CoordinatorEntity, SensorEntity):
                 elif self.entity_description.key in [CONF_ORIGIN_DETAIL_SENSOR, CONF_DESTINATION_DETAIL_SENSOR]:
                     return get_specific_platform(self.coordinator.data[self.subentry.subentry_id][self.journey_index], self.entity_description.key)
 
+                elif self.entity_description.key in [CONF_FIRST_LEG_TRAIN_SET_SENSOR, CONF_LAST_LEG_TRAIN_SET_SENSOR]:
+                    return get_train_set(self.coordinator.data[self.subentry.subentry_id][self.journey_index], self.entity_description.key)
+
                 else:
                     return self.coordinator.data[self.subentry.subentry_id][self.journey_index][self.entity_description.key]
             except:
                 pass
-           
+
     @property
     def icon(self) -> str:
         try:
             if self.entity_description.key in [CONF_FIRST_LEG_OCCUPANCY_SENSOR, CONF_LAST_LEG_OCCUPANCY_SENSOR]:
                 return OCCUPANCY_ICONS.get(self.coordinator.data[self.subentry.subentry_id][self.journey_index][self.entity_description.key], ["mdi:account-question", "Unknown"])[0]
                 
-            elif self.entity_description.key in [CONF_DUE_SENSOR, CONF_FIRST_LEG_LINE_NAME_SENSOR, CONF_FIRST_LEG_LINE_NAME_SHORT_SENSOR, CONF_FIRST_LEG_TRANSPORT_TYPE_SENSOR, CONF_FIRST_LEG_TRANSPORT_NAME_SENSOR, CONF_ORIGIN_NAME_SENSOR, CONF_ORIGIN_DETAIL_SENSOR]:
+            elif self.entity_description.key in [CONF_DUE_SENSOR, CONF_FIRST_LEG_LINE_NAME_SENSOR, CONF_FIRST_LEG_LINE_NAME_SHORT_SENSOR, CONF_FIRST_LEG_TRANSPORT_TYPE_SENSOR, CONF_FIRST_LEG_TRANSPORT_NAME_SENSOR, CONF_ORIGIN_NAME_SENSOR, CONF_ORIGIN_DETAIL_SENSOR, CONF_FIRST_LEG_TRAIN_SET_SENSOR]:
                return JOURNEY_ICONS.get(self.coordinator.data[self.subentry.subentry_id][self.journey_index][CONF_FIRST_LEG_TRANSPORT_TYPE_SENSOR], "mdi:train")
 
-            elif self.entity_description.key in [CONF_LAST_LEG_LINE_NAME_SENSOR, CONF_LAST_LEG_LINE_NAME_SHORT_SENSOR, CONF_LAST_LEG_TRANSPORT_TYPE_SENSOR, CONF_LAST_LEG_TRANSPORT_NAME_SENSOR, CONF_DESTINATION_NAME_SENSOR, CONF_DESTINATION_DETAIL_SENSOR]:
+            elif self.entity_description.key in [CONF_LAST_LEG_LINE_NAME_SENSOR, CONF_LAST_LEG_LINE_NAME_SHORT_SENSOR, CONF_LAST_LEG_TRANSPORT_TYPE_SENSOR, CONF_LAST_LEG_TRANSPORT_NAME_SENSOR, CONF_DESTINATION_NAME_SENSOR, CONF_DESTINATION_DETAIL_SENSOR, CONF_LAST_LEG_TRAIN_SET_SENSOR]:
                return JOURNEY_ICONS.get(self.coordinator.data[self.subentry.subentry_id][self.journey_index][CONF_LAST_LEG_TRANSPORT_TYPE_SENSOR], "mdi:train")
 
             elif self.entity_description.key in [CONF_DELAY_SENSOR, CONF_ALERTS_SENSOR]:
@@ -441,6 +476,7 @@ class TransportNSWSubentrySensor(CoordinatorEntity, SensorEntity):
 
             elif 'time' in self.entity_description.key:
                 return 'mdi:clock-outline'
+
             else:
                 return 'mdi:train'
 
@@ -451,8 +487,8 @@ class TransportNSWSubentrySensor(CoordinatorEntity, SensorEntity):
     def available(self) -> bool:
         """Return if entity is available - basically check to see if there's data where it should be"""
         try:
-            if self.entity_description.key in [CONF_ORIGIN_DETAIL_SENSOR, CONF_DESTINATION_DETAIL_SENSOR]:
-                # This is a computed sensor so get the general availabilty from the 'due' sensor
+            if self.entity_description.key in [CONF_ORIGIN_DETAIL_SENSOR, CONF_DESTINATION_DETAIL_SENSOR, CONF_FIRST_LEG_TRAIN_SET_SENSOR, CONF_LAST_LEG_TRAIN_SET_SENSOR]:
+                # These are computed sensors so get the general availabilty from the 'due' sensor
                 key_check = CONF_DUE_SENSOR
             else:
                 # Check this sensor's data as normal
@@ -460,6 +496,7 @@ class TransportNSWSubentrySensor(CoordinatorEntity, SensorEntity):
 
             if self.coordinator.data[self.subentry.subentry_id][self.journey_index][key_check] is None:
                 return False
+
             else:
                 return True
 

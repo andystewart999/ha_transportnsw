@@ -99,7 +99,7 @@ async def async_setup_entry(
                         # We've finished creating sensors, now delete sensors that may have been created previously but that aren't needed any more
                         remove_entity (entity_reg, config_entry.entry_id, subentry.subentry_id, trip_index, tracker)
                     else:
-                        if is_tracker_enabled(tracker, subentry.data['device_trackers'], subentry.data[CONF_ORIGIN_TYPE]):
+                        if is_tracker_enabled(tracker, subentry.data['device_trackers'], subentry.data.get(CONF_ORIGIN_TYPE, 'stop')):
 
                             new_device_tracker = TrackerEntityDescription(
                                 key = tracker,
@@ -221,5 +221,6 @@ class TransportNSWDeviceTracker(CoordinatorEntity, TrackerEntity):
 
         finally:
             return attrs
+
 
 
