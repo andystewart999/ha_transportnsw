@@ -211,7 +211,7 @@ class TransportNSWConfigFlowHandler(ConfigFlow, domain=DOMAIN):
         )
 
         description_placeholders = {
-            "tfnsw_registration": TFNSW_REGISTRATION
+            "tfnsw_registration": "https://opendata.transport.nsw.gov.au/data/user/register"
         }
 
         # Show initial form
@@ -224,10 +224,7 @@ class TransportNSWConfigFlowHandler(ConfigFlow, domain=DOMAIN):
         )
 
     async def async_step_import(self, user_input: dict[str, Any]):
-#        # Make sure this entry hasn't been imported already
-#        self._async_abort_entries_match(user_input)
-
-#        # We're here so the config entry for this import hasn't been created already
+        # We're here so the config entry for this import hasn't been created already
         # We've been passed a complete subentry data-set, plus what we need to set up the initial config entry as well
         return await self.async_step_user(user_input = user_input)
 
@@ -240,7 +237,3 @@ class CannotConnect(HomeAssistantError):
 
 class InvalidAuth(HomeAssistantError):
     """Error to indicate there is invalid auth."""
-
-
-
-
