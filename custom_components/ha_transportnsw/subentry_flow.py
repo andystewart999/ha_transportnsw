@@ -343,9 +343,17 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
              }
         )
 
+        description_placeholders = {
+            "tfnsw_stopfinder": TFNSW_STOPFINDER
+        }
+
         # Show initial form.
         return self.async_show_form(
-            step_id="user", data_schema=JOURNEY_DATA_SCHEMA, errors=errors, last_step = False
+            step_id="user",
+            data_schema=JOURNEY_DATA_SCHEMA,
+            description_placeholders=description_placeholders,
+            errors=errors,
+            last_step = False
         )
 
     async def async_step_settings(

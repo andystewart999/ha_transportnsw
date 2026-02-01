@@ -128,8 +128,11 @@ ORIGIN_LATITUDE = 'origin_latitude'
 ORIGIN_LONGITUDE = 'origin_longitude'
 DESTINATION_LATITUDE = 'destination_latitude'
 DESTINATION_LONGITUDE = 'destination_longitude'
-      
-ATTRIBUTION = "Data provided by Transport NSW"
+
+#Transport for NSW constants
+TFNSW_ATTRIBUTION = "Data provided by Transport NSW"
+TFNSW_REGISTRATION = "https://opendata.transport.nsw.gov.au/data/user/register"
+TFNSW_STOPFINDER = "https://transportnsw.info/routes/"
 
 SUBENTRY_TYPE_JOURNEY = 'subentry_journey'
 API_CALLS = 'api_calls'

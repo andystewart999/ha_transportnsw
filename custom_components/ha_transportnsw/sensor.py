@@ -534,7 +534,7 @@ class TransportNSWSubentrySensor(CoordinatorEntity, SensorEntity):
 
             else:
                 # Attributes for all sensors
-                attrs['Attribution'] = ATTRIBUTION
+                attrs['Attribution'] = TFNSW_ATTRIBUTION
                 attrs["Origin ID"] = self.subentry.data[CONF_ORIGIN_ID]
                 attrs["Destination ID"] = self.subentry.data[CONF_DESTINATION_ID]
     

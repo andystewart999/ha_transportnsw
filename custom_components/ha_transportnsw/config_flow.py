@@ -211,7 +211,7 @@ class TransportNSWConfigFlowHandler(ConfigFlow, domain=DOMAIN):
         )
 
         description_placeholders = {
-            "tfnsw_registration": "https://opendata.transport.nsw.gov.au/data/user/register"
+            "tfnsw_registration": TFNSW_REGISTRATION
         }
 
         # Show initial form
