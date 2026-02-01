@@ -47,7 +47,6 @@ def get_trips (api_key: str, name_origin: str, name_destination: str, journey_wa
     # Use the Transport NSW API to request trip information
     # Exceptions will be caught by the calling function
 
-    # Handle a painful 'byref' issue caused by the function we're calling  #TODO - fix this on the PyTransportNSWV2 side!
     try:
         if not include_alerts:
             alert_severity = 'none'
@@ -101,6 +100,19 @@ def get_stop_detail (stop_data, stop_id: str, property: str):
     except Exception as ex:
         return "n/a"
 
+
+def get_optional_sensors (subentry_data: str):
+    # Return the current subentry options in the same format as 'set_optional_sensors' for comparison
+    optional_sensors = {}
+
+    try:
+        for option_group in ['time_and_change_sensors', 'origin_sensors', 'destination_sensors', 'device_trackers']:
+            optional_sensors[option_group] = subentry_data[option_group]
+
+        return optional_sensors
+
+    except:
+        return None
 
 def set_optional_sensors (sensor_creation: str):
     # Determine which optional sensors to create

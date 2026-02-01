@@ -230,7 +230,6 @@ def get_train_set(journey_detail, key):
 
     try:
         trip_id = journey_detail[trip_id_key].split('.')
-        _LOGGER.warning(f'trip_id = {trip_id}')
 
         if len(trip_id) < 7:
             return 'n/a'
@@ -543,7 +542,6 @@ class TransportNSWSubentrySensor(CoordinatorEntity, SensorEntity):
                 if self.coordinator.data is not None and self.subentry.subentry_id in self.coordinator.data:
                     if self.entity_description.key == CONF_CHANGES_SENSOR:
                         # A list of changes in this journey
-                        attrs['Changes list'] =  "|".join(self.coordinator.data[self.subentry.subentry_id][self.journey_index][ATTR_CHANGES_LIST])
                         attrs['Locations list'] =  self.coordinator.data[self.subentry.subentry_id][self.journey_index][ATTR_LOCATIONS_LIST]
 
                     if self.entity_description.key in ['alerts']:

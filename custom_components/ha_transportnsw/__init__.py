@@ -24,7 +24,7 @@ from homeassistant.components import persistent_notification
 
 from TransportNSWv2 import InvalidAPIKey, StopError
 
-from .helpers import check_stops, set_optional_sensors
+from .helpers import check_stops, set_optional_sensors, get_optional_sensors
 from .coordinator import TransportNSWCoordinator
 from .const import *
 
@@ -222,6 +222,22 @@ async def async_setup(hass: HomeAssistant, config_entry: MyConfigEntry):
 
 async def async_setup_entry(hass: HomeAssistant, config_entry: MyConfigEntry) -> bool:
     """Set up Example Integration from a config entry."""
+
+    # Force a quick check and update of the selected sensors if 'verbose', this catches all future sensors that are created
+    for subentry in config_entry.subentries.values():
+        if subentry.subentry_type == SUBENTRY_TYPE_JOURNEY:
+            sensor_creation_option = subentry.data.get(CONF_SENSOR_CREATION, 'none')
+            if sensor_creation_option == 'verbose':
+                # Make a copy of the data, update it and then re-save it
+                current_sensor_options = get_optional_sensors(subentry.data.copy())
+                new_sensor_options = set_optional_sensors(sensor_creation_option)
+
+                if new_sensor_options != current_sensor_options:
+                    # Only update if the options are different
+                    new_data = subentry.data.copy()
+                    new_data.update(new_sensor_options)
+
+                    hass.config_entries.async_update_subentry(config_entry, subentry, data = new_data)
 
     # Initialise the coordinator that manages data updates
     coordinator = TransportNSWCoordinator(hass, config_entry)

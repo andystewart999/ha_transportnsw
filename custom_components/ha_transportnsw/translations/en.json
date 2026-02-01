@@ -8,7 +8,8 @@
       "already_configured_disabled": "That API key has already been registered, although the entry has been disabled.  Please re-enable it and use 'add new journey' to add one or more journeys instead.",
       "reconfigure_successful": "New API key registered.",
       "reconfigure_successful_no_change": "No changes made.",
-      "reconfigure_successful_api_change_true": "New API key registered."
+      "reconfigure_successful_api_change_true": "Reconfiguration to a new API key was successful.",
+      "reconfigure_successful_api_change_false": "Reconfiguration successful using the existing API key."
     },
     "error": {
       "apiratelimitexceeded": "API rate limit exceeded - wait a moment and try again.",
@@ -23,7 +24,7 @@
           "api_key": "Your Transport NSW API key",
 		  "scan_interval": "Sensor update interval (seconds)"
         },
-        "description": "Enter your Transport NSW API key.  If you don't have one you can register [here](https://opendata.transport.nsw.gov.au/data/user/register).",
+        "description": "Enter your Transport NSW API key.  If you don't have one you can register [here]({tfnsw_registration}).",
         "title": "Transport NSW Mk II"
       }
     }
@@ -84,7 +85,7 @@
                       "destination_id": "The stop ID/name of your destination",
                       "create_reverse_trip": "Also create the return journey"
 				  },
-				  "description": "Provide the details of the journey you want to monitor - specific Stop IDs or general stop names can be used.  If entering a stop name, such as 'Central station' the more specific you are the more likely that the API will find the right stop.\n\nFor the origin you can also choose a Mobile App-sourced Device Tracker so your current location becomes the origin.\n\nIf you enter multiple destinations the journey with the earliest arrival time across ALL destinations will be shown.\n\nStop IDs can be looked up [here](https://transportnsw.info/routes/train#/).",
+				  "description": "Provide the details of the journey you want to monitor - specific Stop IDs or general stop names can be used.  If entering a stop name, such as 'Central station' the more specific you are the more likely that the API will find the right stop.\n\nFor the origin you can also choose a Mobile App-sourced Device Tracker so your current location becomes the origin.\n\nIf you enter multiple destinations the journey with the earliest arrival time across ALL destinations will be shown.\n\nStop IDs can be looked up [here]({tfnsw_stopfinder}) ",
 				  "title": "Transport NSW Mk II"
 			  },
 			  "settings": {
