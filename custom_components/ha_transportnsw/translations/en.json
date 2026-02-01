@@ -84,7 +84,11 @@
                       "create_reverse_trip": "Also create the return journey"
 				  },
 <<<<<<< HEAD
+<<<<<<< HEAD
 				  "description": "Provide the details of the journey you want to monitor - specific Stop IDs or general stop names can be used.  If entering a stop name, such as 'Central station' the more specific you are the more likely that the API will find the right stop.\n\nFor the origin you can also choose a Mobile App-sourced Device Tracker so your current location becomes the origin.\n\nIf you enter multiple destinations the journey with the earliest arrival time across ALL destinations will be shown.\n\nStop IDs can be looked up [here]({tfnsw_stopfinder})."
+=======
+				  "description": "Provide the details of the journey you want to monitor - specific Stop IDs or general stop names can be used.  If entering a stop name, such as 'Central station' the more specific you are the more likely that the API will find the right stop.\n\nFor the origin you can also choose a Mobile App-sourced Device Tracker so your current location becomes the origin.\n\nIf you enter multiple destinations the journey with the earliest arrival time across ALL destinations will be shown.\n\nStop IDs can be looked up [here]({tfnsw_stopfinder})"
+>>>>>>> d3638de7d85bd4700812a0b655fbe8d9d80ef3e9
 =======
 				  "description": "Provide the details of the journey you want to monitor - specific Stop IDs or general stop names can be used.  If entering a stop name, such as 'Central station' the more specific you are the more likely that the API will find the right stop.\n\nFor the origin you can also choose a Mobile App-sourced Device Tracker so your current location becomes the origin.\n\nIf you enter multiple destinations the journey with the earliest arrival time across ALL destinations will be shown.\n\nStop IDs can be looked up [here]({tfnsw_stopfinder})"
 >>>>>>> d3638de7d85bd4700812a0b655fbe8d9d80ef3e9
