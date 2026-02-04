@@ -93,10 +93,11 @@
 					  "origin_transport_type": "Origin transport types",
                       "destination_transport_type": "Destination transport types",
 					  "route_filter": "Route filter",
-                      "trip_wait_time": "The minimum time from now to wait before the journey starts (minutes)",
+					  "max_changes": "Maximum trip changes (0-5)",
+                      "trip_wait_time": "The minimum time from now to wait before the journey starts (0-60 minutes)",
                       "trips_to_create": "Trips to create"
 				  },
-				  "description": "Select the appropriate transport types, the minimum departure time from now and an optional route filter.\n\n{journey_description}\n\nIf you specify a route filter, only journeys with that text in the line name (eg T9 Northern Line) or short line name (eg T9) will be shown.",
+				  "description": "Select the appropriate transport types, the minimum departure time from now and optional route/max changes filters.\n\n{journey_description}\n\nIf you specify a route filter, only journeys with that text in the line name (eg T9 Northern Line) or short line name (eg T9) will be shown.",
 				  "title": "{journey_name}"
 			  },
 			  "sensors": {

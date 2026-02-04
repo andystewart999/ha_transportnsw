@@ -5,6 +5,7 @@ DOMAIN = "ha_transportnsw"
 DEFAULT_SCAN_INTERVAL = 120
 MIN_SCAN_INTERVAL = 30
 MAX_TRIP_WAIT_TIME = 60
+MAX_MAX_CHANGES = 5
 
 # Mandatory data
 CONF_ORIGIN_TYPE = 'origin_type'  # New
@@ -21,6 +22,7 @@ CONF_RETURN_INFO = 'return_info'
 CONF_ORIGIN_TRANSPORT_TYPE = 'origin_transport_type'
 CONF_DESTINATION_TRANSPORT_TYPE = 'destination_transport_type'
 CONF_ROUTE_FILTER = 'route_filter'
+CONF_MAX_CHANGES = 'max_changes'
 CONF_ALERT_SEVERITY = 'alert_severity'
 CONF_ALERT_TYPES = 'alert_types'
 CONF_TRIPS_TO_CREATE = 'trips_to_create'
@@ -100,6 +102,7 @@ DEFAULT_TRANSPORT_TYPE_SELECTOR = ['Train', 'Metro', 'Light rail', 'Bus', 'Ferry
 DEFAULT_TRANSPORT_TYPE_NUMERIC = [1, 2, 4, 5, 9]
 ALL_TRANSPORT_TYPE_NUMERIC = [1, 2, 4, 5, 7, 9, 11, 99]
 DEFAULT_ROUTE_FILTER = ''
+DEFAULT_MAX_CHANGES = 2
 DEFAULT_ALERT_TYPES = ['lineinfo', 'stopinfo', 'routeinfo', 'stopblocking', 'bannerinfo']
 DEFAULT_ALERT_SEVERITY = 'high'
 DEFAULT_TRIPS_TO_CREATE = 1

@@ -55,6 +55,7 @@ async def get_migration_data(hass: HomeAssistant, yaml_entry):
         return_info  = yaml_entry[CONF_RETURN_INFO]
         trips_to_create = yaml_entry.get(CONF_TRIPS_TO_CREATE, 1)
         route_filter = yaml_entry.get(CONF_ROUTE_FILTER, '')
+        max_changes = 5
         include_realtime_location = yaml_entry.get(CONF_INCLUDE_REALTIME_LOCATION, True)
         alert_severity = yaml_entry.get(CONF_ALERT_SEVERITY, 'none')
         alert_types = yaml_entry.get(CONF_ALERT_TYPES, ["lineinfo", "routeinfo", "stopinfo", "stopblocking", "bannerinfo"])
@@ -109,6 +110,7 @@ async def get_migration_data(hass: HomeAssistant, yaml_entry):
             CONF_TRIPS_TO_CREATE: trips_to_create,
             CONF_INCLUDE_REALTIME_LOCATION: include_realtime_location,
             CONF_ROUTE_FILTER: route_filter,
+            CONF_MAX_CHANGES: max_changes,
             CONF_SENSOR_CREATION: 'custom',
             CONF_ALERTS_SENSOR: include_alerts,
             CONF_ALERT_SEVERITY: alert_severity,

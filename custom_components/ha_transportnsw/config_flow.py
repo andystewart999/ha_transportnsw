@@ -112,16 +112,12 @@ class TransportNSWConfigFlowHandler(ConfigFlow, domain=DOMAIN):
             if not errors:
                 # The API key is confirmed to be valid so set the entry unique ID based on the API key - we'll check for uniqueness shortly
                 existing_entry = await self.async_set_unique_id(user_input[CONF_API_KEY])
-                _LOGGER.error(f"existing_entry = {existing_entry}")
-                #_LOGGER.error(f"existing_entry = {existing_entry}")
 
                 if self.source == SOURCE_RECONFIGURE:
                     if user_input[CONF_API_KEY] != self._previous_key:
                         # We're reconfiguring and the API key is changing.  Make sure there isn't already an entry with the same key
-                        _LOGGER.error(f"about to call _abort_if_unique_id_configured")
                         self._abort_if_unique_id_configured()
-                        _LOGGER.error(f"still here after _abort_if_unique_id_configured")
-                        
+
                         # Still here?  There's no existing integration with the new API key
                         reason = "reconfigure_successful"
                     else:

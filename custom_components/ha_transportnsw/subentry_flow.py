@@ -405,7 +405,8 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
                     vol.Required(CONF_ORIGIN_TRANSPORT_TYPE, default=default_origin_type): cv.multi_select(ORIGIN_TRANSPORT_TYPE_LIST),
                     vol.Required(CONF_DESTINATION_TRANSPORT_TYPE, default=default_destination_type): cv.multi_select(DESTINATION_TRANSPORT_TYPE_LIST),
                     vol.Optional(CONF_ROUTE_FILTER, default = user_input.get(CONF_ROUTE_FILTER, DEFAULT_ROUTE_FILTER)): str,
-                    vol.Required(CONF_TRIP_WAIT_TIME, default = user_input.get(CONF_TRIP_WAIT_TIME, DEFAULT_TRIP_WAIT_TIME)): vol.All(vol.Coerce(int), vol.Range(min=1, max=MAX_TRIP_WAIT_TIME)),
+                    vol.Required(CONF_MAX_CHANGES, default = user_input.get(CONF_MAX_CHANGES, DEFAULT_MAX_CHANGES)): vol.All(vol.Coerce(int), vol.Range(min=0, max=MAX_MAX_CHANGES)),
+                    vol.Required(CONF_TRIP_WAIT_TIME, default = user_input.get(CONF_TRIP_WAIT_TIME, DEFAULT_TRIP_WAIT_TIME)): vol.All(vol.Coerce(int), vol.Range(min=0, max=MAX_TRIP_WAIT_TIME)),
                 }
             )
 
