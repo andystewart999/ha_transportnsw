@@ -31,9 +31,9 @@ Enter the API token and how often you want the sensors to update and you're done
 Each journey is a subentry and has its own journey-specific set of options.  Journey-specific options can be chosen at the time of creation or at any time afterwards.  Each config flow page has a detailed explanation of the options it provides, including filtering based on your preferred transport types (train, bus, etc).
 
 ### Origin and destination
-You can specify the origin and destination either by stop ID or the full name of the location.  If you enter the full (or partial) name, for example 'Central Station', the `stop_finder` API call will be called and whatever comes back as the 'best' (as determined by the API) will be used.  Using known stop IDs are obviously less likely to result in the integration choosing the wrong location, but in most cases you'll get what you want the first time.
+You can specify the origin and destination(s) either by stop ID or the full name of the location.  If you enter the full (or partial) name, for example 'Central Station', the `stop_finder` API call will be called and whatever comes back as the 'best' (as determined by the API) will be used.  Using known stop IDs are obviously less likely to result in the integration choosing the wrong location, but in most cases you'll get what you want the first time.
 
-You can also select an existing Device Tracker sensor as the origin, which obviously means that the origin will change as you move around.
+If you provide multiple destinations for a journey you will get the earliest journey that stops at _either_ of them.  You can also select an existing Device Tracker sensor as the origin, which obviously means that the origin will change as you move around.
 
 ![Alt text of the image](https://github.com/andystewart999/ha_integration_resources/blob/main/documentation/ha_transportnsw/2b_subentryoriginanddestination.png)
 
@@ -43,7 +43,7 @@ On a per-journey basis you can specify the transport type options that are appli
 ![Alt text of the image](https://github.com/andystewart999/ha_integration_resources/blob/main/documentation/ha_transportnsw/3b_subentryfilters.png)
 
 ### Multiple trips
-Up to 3 trips per journey can be created, which are basically the next 3 departures from the origin.  Note that depending on your 'transport type' choices the trips may be quite different, and may also have some duplicated legs - it's entirely up to the Transport NSW API what to return.
+Up to 3 trips per journey can be created, which are basically the next 3 departures from the origin sorted by the arrival time at the destination(s).  Note that depending on your 'transport type' choices the trips may be quite different, and may also have some duplicated legs - it's entirely up to the Transport NSW API what to return.
 
 ![Alt text of the image](https://github.com/andystewart999/ha_integration_resources/blob/main/documentation/ha_transportnsw/4_subentryalertsandtrips.png)
 
