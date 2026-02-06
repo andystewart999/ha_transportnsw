@@ -23,7 +23,7 @@ From the devices page, click 'Add integration', search for 'Transport NSW Mk II'
 
 ![Alt text of the image](https://github.com/andystewart999/ha_integration_resources/blob/main/documentation/ha_transportnsw/0_newintegration.png)
 
-Enter the API token and how often you want the sensors to update and you're done!  At this stage there's only one sensor which logs how many API calls the integration has made across all subentries.  There's a limit of 60,000 calls per day and each journey, on average, requires 3 API calls - in the unlikely event that you're going to run out a future enhancement may be to auto-throttle sensor updates.
+Enter the API token and how often you want the sensors to update and you're done!  At this level there's only one sensor that logs how many API calls the integration has made across all subentries.  There's a limit of 60,000 calls per day and each journey, on average, requires 3 API calls - in the unlikely event that you're going to run out a future enhancement may be to auto-throttle sensor updates.
 
 ![Alt text of the image](https://github.com/andystewart999/ha_integration_resources/blob/main/documentation/ha_transportnsw/1_configentry.png)
 
