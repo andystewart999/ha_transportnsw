@@ -35,12 +35,12 @@ You can specify the origin and destination either by stop ID or the full name of
 
 You can also select an existing Device Tracker sensor as the origin, which obviously means that the origin will change as you move around.
 
-![Alt text of the image](https://github.com/andystewart999/ha_integration_resources/blob/main/documentation/ha_transportnsw/2_subentryoriginanddestination.png)
+![Alt text of the image](https://github.com/andystewart999/ha_integration_resources/blob/main/documentation/ha_transportnsw/2b_subentryoriginanddestination.png)
 
 ### Journey filters
 On a per-journey basis you can specify the transport type options that are applicable, and, to give you time to get to the origin, how far in the future a journey departure time must be to be considered valid.
 
-![Alt text of the image](https://github.com/andystewart999/ha_integration_resources/blob/main/documentation/ha_transportnsw/3_subentryfilters.png)
+![Alt text of the image](https://github.com/andystewart999/ha_integration_resources/blob/main/documentation/ha_transportnsw/3b_subentryfilters.png)
 
 ### Multiple trips
 Up to 3 trips per journey can be created, which are basically the next 3 departures from the origin.  Note that depending on your 'transport type' choices the trips may be quite different, and may also have some duplicated legs - it's entirely up to the Transport NSW API what to return.
@@ -58,11 +58,11 @@ You can choose to include an alerts sensor based on various filters.  If the jou
 ### Additional sensors
 There are many additional sensors that are available if required, which can be selected when you create a new journey or at any time afterwards.  Origin/destination names, exact stops or platforms, the number of changes, the vehicle type - pretty much everything that the API returns can be included.
 
-![Alt text of the image](https://github.com/andystewart999/ha_integration_resources/blob/main/documentation/ha_transportnsw/6_subentrysensordetail.png)
+![Alt text of the image](https://github.com/andystewart999/ha_integration_resources/blob/main/documentation/ha_transportnsw/6b_subentrysensordetail.png)
 
 ### Attributes 
 Some of the sensors have their own additional attributes:
 
-- Changes: The state of this sensor is the number of changes within the journey.  The ```changes``` attribute is a pipe-separate list of each platform that you'll traverse as part of the journey.  It doesn't include the origin or destination platforms as they're available as individual sensors.  There's also a ```locations_list``` attribute that includes every stop on the journey as JSON
+- Changes: The state of this sensor is the number of changes within the journey.  The ```locations_list``` attribute includes every stop on the journey, plus the locations of the origin and destination vehicles (if available) in JSON.
 - Alerts: The state of this sensor is the highest alert returned by the API.  The attributes are the full JSON dump of the alert details, which can be processed by your automations or template sensors as required.
 - Device tracker: The stop name and ID are included.
