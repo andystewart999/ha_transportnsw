@@ -106,7 +106,7 @@
                   "trips_to_create": "How many trips should be shown (1 to 3)",
 				  "sensor_creation": "Sensors to create"
 				},
-				"description": "Here you can choose if an alerts sensor should be created, how many consecutive journeys should be created and what types of sensors each journey should include - by default only the 'due' sensor and origin/destination device trackers will be created.",
+				"description": "Here you can choose if an alerts sensor should be created, how many consecutive journeys should be created and what types of sensors each journey should include - by default only the 'due' sensor and origin/destination device trackers will be created.{multi_destination_suggestion}",
 				  "title": "{journey_name}"
 			  },
 			  "alerts": {
