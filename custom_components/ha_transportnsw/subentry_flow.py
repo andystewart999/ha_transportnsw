@@ -500,12 +500,17 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
                 }
             )
 
+            multi_destination_suggestion = "\n\nAs this journey has multiple potential destinations you may want to include one of the 'destination name' sensors, otherwise it won't be obvious which destination each journey is using" if len(self._input_data[CONF_DESTINATION_ID]) > 1 else ""
+                
             return self.async_show_form(
                 step_id="sensors",
                 data_schema=STEP_SENSORS_SCHEMA,
                 errors=errors,
                 last_step=False,
-                description_placeholders = {"journey_name": f"{self._input_data[CONF_ORIGIN_NAME]} to {self._input_data[CONF_DESTINATION_NAME]}"}
+                description_placeholders = {
+                    "journey_name": f"{self._input_data[CONF_ORIGIN_NAME]} to {self._input_data[CONF_DESTINATION_NAME]}",
+                    "multi_destination_suggestion": multi_destination_suggestion
+                }
             )
 
     async def async_step_alerts(self, user_input=None):
