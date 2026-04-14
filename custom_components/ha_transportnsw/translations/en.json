@@ -126,7 +126,8 @@
 						  "arrival_time": "Arrival time at destination",
 						  "departure_time": "Departure time from origin (including delays)",
 						  "changes": "Journey changes",
-						  "delay": "Delay leaving origin (based on timetable)"
+						  "delay": "Delay leaving origin (based on timetable)",
+						  "duration": "Total journey duration in minutes (based on timetable)"
 						}
 					},
 					"origin_sensors": {
