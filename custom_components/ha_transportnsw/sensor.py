@@ -74,6 +74,11 @@ TIME_AND_CHANGE_SENSORS: tuple[SensorEntityDescription, ...] = (
         native_unit_of_measurement=UnitOfTime.MINUTES
     ),
     SensorEntityDescription(
+        key=CONF_DURATION_SENSOR,
+        name=CONF_DURATION_FRIENDLY,
+        native_unit_of_measurement=UnitOfTime.MINUTES
+    ),
+    SensorEntityDescription(
         key=CONF_CHANGES_SENSOR,
         name=CONF_CHANGES_FRIENDLY,
         native_unit_of_measurement = 'changes',
@@ -467,7 +472,7 @@ class TransportNSWSubentrySensor(CoordinatorEntity, SensorEntity):
             elif self.entity_description.key in [CONF_LAST_LEG_LINE_NAME_SENSOR, CONF_LAST_LEG_LINE_NAME_SHORT_SENSOR, CONF_LAST_LEG_TRANSPORT_TYPE_SENSOR, CONF_LAST_LEG_TRANSPORT_NAME_SENSOR, CONF_DESTINATION_NAME_SENSOR, CONF_DESTINATION_DETAIL_SENSOR, CONF_LAST_LEG_TRAIN_SET_SENSOR]:
                return JOURNEY_ICONS.get(self.coordinator.data[self.subentry.subentry_id][self.journey_index][CONF_LAST_LEG_TRANSPORT_TYPE_SENSOR], "mdi:train")
 
-            elif self.entity_description.key in [CONF_DELAY_SENSOR, CONF_ALERTS_SENSOR]:
+            elif self.entity_description.key in [CONF_DELAY_SENSOR, CONF_DURATION_SENSOR, CONF_ALERTS_SENSOR]:
                 return 'mdi:clock-alert-outline'
 
             elif self.entity_description.key == CONF_CHANGES_SENSOR:
@@ -515,6 +520,7 @@ class TransportNSWSubentrySensor(CoordinatorEntity, SensorEntity):
                 attrs = {
                     'due': self.coordinator.data[self.subentry.subentry_id][self.journey_index][CONF_DUE_SENSOR],
                     'delay': self.coordinator.data[self.subentry.subentry_id][self.journey_index][CONF_DELAY_SENSOR],
+                    'duration': self.coordinator.data[self.subentry.subentry_id][self.journey_index][CONF_DURATION_SENSOR],
                     'arrival_time': self.coordinator.data[self.subentry.subentry_id][self.journey_index][CONF_LAST_LEG_ARRIVAL_TIME_SENSOR],
                     'changes': self.coordinator.data[self.subentry.subentry_id][self.journey_index][CONF_CHANGES_SENSOR],
                     'origin_name': self.coordinator.data[self.subentry.subentry_id][self.journey_index][CONF_ORIGIN_NAME_SENSOR],
