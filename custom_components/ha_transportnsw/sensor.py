@@ -54,35 +54,37 @@ DEFAULT_SUBENTRY_SENSORS: tuple[SensorEntityDescription, ...] = (
     ),
 )
 
-# Optional sensor definitions
+# Optional sensor definitions - not sure why icons specified here don't get applied though?
 TIME_AND_CHANGE_SENSORS: tuple[SensorEntityDescription, ...] = (
     SensorEntityDescription(
         key=CONF_FIRST_LEG_DEPARTURE_TIME_SENSOR,
         name=CONF_FIRST_LEG_DEPARTURE_TIME_FRIENDLY,
-        icon = 'mdi:clock-outline',
+        icon='mdi:clock-outline',
         device_class = SensorDeviceClass.TIMESTAMP
     ),
     SensorEntityDescription(
         key=CONF_LAST_LEG_ARRIVAL_TIME_SENSOR,
         name=CONF_LAST_LEG_ARRIVAL_TIME_FRIENDLY,
-        icon = 'mdi:clock-outline',
+        icon='mdi:clock-outline',
         device_class = SensorDeviceClass.TIMESTAMP
     ),
     SensorEntityDescription(
         key=CONF_DELAY_SENSOR,
         name=CONF_DELAY_FRIENDLY,
+        icon='mdi:clock-alert-outline',
         native_unit_of_measurement=UnitOfTime.MINUTES
     ),
     SensorEntityDescription(
         key=CONF_DURATION_SENSOR,
         name=CONF_DURATION_FRIENDLY,
+        icon='mdi:clock-outline',
         native_unit_of_measurement=UnitOfTime.MINUTES
     ),
     SensorEntityDescription(
         key=CONF_CHANGES_SENSOR,
         name=CONF_CHANGES_FRIENDLY,
-        native_unit_of_measurement = 'changes',
-        icon = 'mdi:map-marker-path'
+        icon='mdi:map-marker-path',
+        native_unit_of_measurement = 'changes'
     )
 )
 
@@ -160,7 +162,7 @@ ALERT_SENSORS: tuple[SensorEntityDescription, ...] = (
     SensorEntityDescription(
         key=CONF_ALERTS_SENSOR,
         name=CONF_ALERTS_FRIENDLY,
-        icon="mdi:alert-outline"
+        icon='mdi:alert-outline'
     ),
 )
 
@@ -176,7 +178,9 @@ def get_highest_alert(alerts):
                 highest_alert_text = alert['priority']
     
     finally:
-        return highest_alert_text
+        pass
+
+    return highest_alert_text
 
 
 def get_specific_platform(journey_detail, key):
@@ -295,9 +299,6 @@ async def async_setup_entry(
                 if trip_index >= trips_to_create:
                     # We've finished creating sensors, now we need to start trying to delete sensors and devices
                     # that may have been created previously but that aren't needed any more
-#                    for sensor_group in [DEFAULT_SUBENTRY_SENSORS, TIME_AND_CHANGE_SENSORS, ORIGIN_SENSORS, DESTINATION_SENSORS, ALERT_SENSORS]:
-#                        for sensor in sensor_group:
-#                            remove_entity (entity_reg, config_entry.entry_id, subentry.subentry_id, trip_index, sensor.key)
 
                     # Removing the device will also remove the associated sensors!
                     remove_device (device_reg, config_entry.entry_id, subentry.subentry_id, subentry.data[CONF_ORIGIN_ID], subentry.data[CONF_DESTINATION_ID], device_identifier)
@@ -446,6 +447,11 @@ class TransportNSWSubentrySensor(CoordinatorEntity, SensorEntity):
                     # Store the highest alert value as the state - the specific alerts will go into attributes
                     return get_highest_alert(self.coordinator.data[self.subentry.subentry_id][self.journey_index][self.entity_description.key])
 
+                elif self.entity_description.key == CONF_DURATION_SENSOR:
+                    # Work out the trip duration from the departure and arrival times
+                    duration = convert_date(self.coordinator.data[self.subentry.subentry_id][self.journey_index][CONF_LAST_LEG_ARRIVAL_TIME_SENSOR]) - convert_date(self.coordinator.data[self.subentry.subentry_id][self.journey_index][CONF_FIRST_LEG_DEPARTURE_TIME_SENSOR])
+                    return int(duration.seconds/60)
+
                 elif self.entity_description.key in [CONF_FIRST_LEG_OCCUPANCY_SENSOR, CONF_LAST_LEG_OCCUPANCY_SENSOR]:
                     return OCCUPANCY_ICONS.get(self.coordinator.data[self.subentry.subentry_id][self.journey_index][self.entity_description.key], ["mdi:account-question", "Unknown"])[1]
 
@@ -457,6 +463,7 @@ class TransportNSWSubentrySensor(CoordinatorEntity, SensorEntity):
 
                 else:
                     return self.coordinator.data[self.subentry.subentry_id][self.journey_index][self.entity_description.key]
+
             except:
                 pass
 
@@ -466,23 +473,24 @@ class TransportNSWSubentrySensor(CoordinatorEntity, SensorEntity):
             if self.entity_description.key in [CONF_FIRST_LEG_OCCUPANCY_SENSOR, CONF_LAST_LEG_OCCUPANCY_SENSOR]:
                 return OCCUPANCY_ICONS.get(self.coordinator.data[self.subentry.subentry_id][self.journey_index][self.entity_description.key], ["mdi:account-question", "Unknown"])[0]
                 
-            elif self.entity_description.key in [CONF_DUE_SENSOR, CONF_FIRST_LEG_LINE_NAME_SENSOR, CONF_FIRST_LEG_LINE_NAME_SHORT_SENSOR, CONF_FIRST_LEG_TRANSPORT_TYPE_SENSOR, CONF_FIRST_LEG_TRANSPORT_NAME_SENSOR, CONF_ORIGIN_NAME_SENSOR, CONF_ORIGIN_DETAIL_SENSOR, CONF_FIRST_LEG_TRAIN_SET_SENSOR]:
-               return JOURNEY_ICONS.get(self.coordinator.data[self.subentry.subentry_id][self.journey_index][CONF_FIRST_LEG_TRANSPORT_TYPE_SENSOR], "mdi:train")
+#            elif self.entity_description.key in [CONF_DUE_SENSOR, CONF_FIRST_LEG_LINE_NAME_SENSOR, CONF_FIRST_LEG_LINE_NAME_SHORT_SENSOR, CONF_FIRST_LEG_TRANSPORT_TYPE_SENSOR, CONF_FIRST_LEG_TRANSPORT_NAME_SENSOR, CONF_ORIGIN_NAME_SENSOR, CONF_ORIGIN_DETAIL_SENSOR, CONF_FIRST_LEG_TRAIN_SET_SENSOR]:
+#               return JOURNEY_ICONS.get(self.coordinator.data[self.subentry.subentry_id][self.journey_index][CONF_FIRST_LEG_TRANSPORT_TYPE_SENSOR], "mdi:train")
 
             elif self.entity_description.key in [CONF_LAST_LEG_LINE_NAME_SENSOR, CONF_LAST_LEG_LINE_NAME_SHORT_SENSOR, CONF_LAST_LEG_TRANSPORT_TYPE_SENSOR, CONF_LAST_LEG_TRANSPORT_NAME_SENSOR, CONF_DESTINATION_NAME_SENSOR, CONF_DESTINATION_DETAIL_SENSOR, CONF_LAST_LEG_TRAIN_SET_SENSOR]:
                return JOURNEY_ICONS.get(self.coordinator.data[self.subentry.subentry_id][self.journey_index][CONF_LAST_LEG_TRANSPORT_TYPE_SENSOR], "mdi:train")
 
-            elif self.entity_description.key in [CONF_DELAY_SENSOR, CONF_DURATION_SENSOR, CONF_ALERTS_SENSOR]:
+            elif self.entity_description.key in [CONF_DELAY_SENSOR, CONF_ALERTS_SENSOR]:
                 return 'mdi:clock-alert-outline'
+
+            elif ('time' in self.entity_description.key) or (self.entity_description.key in [CONF_DURATION_SENSOR]):
+                return 'mdi:clock-outline'
 
             elif self.entity_description.key == CONF_CHANGES_SENSOR:
                 return 'mdi:map-marker-path'
 
-            elif 'time' in self.entity_description.key:
-                return 'mdi:clock-outline'
-
             else:
-                return 'mdi:train'
+                #return 'mdi:train'
+                return JOURNEY_ICONS.get(self.coordinator.data[self.subentry.subentry_id][self.journey_index][CONF_FIRST_LEG_TRANSPORT_TYPE_SENSOR], "mdi:train")
 
         except:
             return 'mdi:train'
@@ -491,7 +499,7 @@ class TransportNSWSubentrySensor(CoordinatorEntity, SensorEntity):
     def available(self) -> bool:
         """Return if entity is available - basically check to see if there's data where it should be"""
         try:
-            if self.entity_description.key in [CONF_ORIGIN_DETAIL_SENSOR, CONF_DESTINATION_DETAIL_SENSOR, CONF_FIRST_LEG_TRAIN_SET_SENSOR, CONF_LAST_LEG_TRAIN_SET_SENSOR]:
+            if self.entity_description.key in [CONF_ORIGIN_DETAIL_SENSOR, CONF_DESTINATION_DETAIL_SENSOR, CONF_FIRST_LEG_TRAIN_SET_SENSOR, CONF_LAST_LEG_TRAIN_SET_SENSOR, CONF_DURATION_SENSOR]:
                 # These are computed sensors so get the general availabilty from the 'due' sensor
                 key_check = CONF_DUE_SENSOR
             else:
@@ -555,4 +563,6 @@ class TransportNSWSubentrySensor(CoordinatorEntity, SensorEntity):
                         attrs["Alerts"] = self.coordinator.data[self.subentry.subentry_id][self.journey_index][self.entity_description.key]
 
         finally:
-            return attrs
+            pass
+        
+        return attrs
