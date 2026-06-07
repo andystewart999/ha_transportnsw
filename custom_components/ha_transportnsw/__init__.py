@@ -231,6 +231,8 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: MyConfigEntry) ->
             sensor_creation_option = subentry.data.get(CONF_SENSOR_CREATION, 'none')
             if sensor_creation_option == 'verbose':
                 # Make a copy of the data, update it and then re-save it
+                # This allows us to automatically enable the creation of new sensors since the user selected 'all sensors'
+                
                 current_sensor_options = get_optional_sensors(subentry.data.copy())
                 new_sensor_options = set_optional_sensors(sensor_creation_option)
 

@@ -42,6 +42,7 @@ CONF_FIRST_LEG_LINE_NAME_SHORT_SENSOR = 'origin_line_name_short'
 CONF_FIRST_LEG_TRANSPORT_TYPE_SENSOR = 'origin_transport_type'
 CONF_FIRST_LEG_TRANSPORT_NAME_SENSOR = 'origin_transport_name'
 CONF_FIRST_LEG_OCCUPANCY_SENSOR = 'origin_occupancy'
+CONF_FIRST_LEG_OCCUPANCY_DETAIL_SENSOR = 'origin_occupancy_detail'
 CONF_FIRST_LEG_TRAIN_SET_SENSOR = 'origin_train_set'
 CONF_DESTINATION_NAME_SENSOR = 'destination_name'
 CONF_DESTINATION_DETAIL_SENSOR = 'destination_detail'
@@ -50,8 +51,12 @@ CONF_LAST_LEG_LINE_NAME_SHORT_SENSOR = 'destination_line_name_short'
 CONF_LAST_LEG_TRANSPORT_TYPE_SENSOR = 'destination_transport_type'
 CONF_LAST_LEG_TRANSPORT_NAME_SENSOR = 'destination_transport_name'
 CONF_LAST_LEG_OCCUPANCY_SENSOR = 'destination_occupancy'
+CONF_LAST_LEG_OCCUPANCY_DETAIL_SENSOR = 'destination_occupancy_detail'
 CONF_LAST_LEG_TRAIN_SET_SENSOR = 'destination_train_set'
+CONF_INCLUDE_REALTIME_LOCATION = 'include_realtime_location'
 CONF_SENSOR_CREATION = 'sensor_creation'
+CONF_ORIGIN_END_OF_LINE = 'origin_end_of_line'
+CONF_DESTINATION_END_OF_LINE = 'destination_end_of_line'
 
 # Sensor friendly names
 CONF_DUE_FRIENDLY = 'due'
@@ -65,7 +70,8 @@ CONF_ORIGIN_NAME_FRIENDLY = 'origin name'
 CONF_ORIGIN_DETAIL_FRIENDLY = 'origin detail'
 CONF_FIRST_LEG_LINE_NAME_FRIENDLY = 'first leg line name'
 CONF_FIRST_LEG_LINE_NAME_SHORT_FRIENDLY = 'first leg line name (short)'
-CONF_FIRST_LEG_OCCUPANCY_FRIENDLY = 'first leg occupacy'
+CONF_FIRST_LEG_OCCUPANCY_FRIENDLY = 'first leg occupancy'
+CONF_FIRST_LEG_OCCUPANCY_DETAIL_FRIENDLY = 'first leg occupancy detail'
 CONF_FIRST_LEG_TRAIN_SET_FRIENDLY = 'first leg train set'
 CONF_FIRST_LEG_TRANSPORT_TYPE_FRIENDLY = 'first leg transport type'
 CONF_FIRST_LEG_TRANSPORT_NAME_FRIENDLY = 'first leg transport name'
@@ -74,10 +80,10 @@ CONF_DESTINATION_DETAIL_FRIENDLY = 'destination detail'
 CONF_LAST_LEG_LINE_NAME_FRIENDLY = 'last leg line name'
 CONF_LAST_LEG_LINE_NAME_SHORT_FRIENDLY = 'last leg line name (short)'
 CONF_LAST_LEG_OCCUPANCY_FRIENDLY = 'last leg occupancy'
+CONF_LAST_LEG_OCCUPANCY_DETAIL_FRIENDLY = 'last leg occupancy detail'
 CONF_LAST_LEG_TRAIN_SET_FRIENDLY = 'last leg train set'
 CONF_LAST_LEG_TRANSPORT_TYPE_FRIENDLY = 'last leg transport type'
 CONF_LAST_LEG_TRANSPORT_NAME_FRIENDLY = 'last leg transport name'
-CONF_INCLUDE_REALTIME_LOCATION = 'include_realtime_location'
 
 # Device tracker options
 CONF_FIRST_LEG_DEVICE_TRACKER = 'first_leg_device_tracker'
@@ -121,12 +127,14 @@ DEFAULT_ORIGIN_DETAIL_SENSOR = False
 DEFAULT_FIRST_LEG_LINE_NAME_SENSOR = False
 DEFAULT_FIRST_LEG_LINE_NAME_SHORT_SENSOR = False
 DEFAULT_FIRST_LEG_OCCUPANCY_SENSOR = False
+DEFAULT_FIRST_LEG_OCCUPANCY_DETAIL_SENSOR = False
 DEFAULT_FIRST_LEG_TRAIN_SET_SENSOR = False
 DEFAULT_DESTINATION_NAME_SENSOR = False
 DEFAULT_DESTINATION_DETAIL_SENSOR = False
 DEFAULT_LAST_LEG_LINE_NAME_SENSOR = False
 DEFAULT_LAST_LEG_LINE_NAME_SHORT_SENSOR = False
 DEFAULT_LAST_LEG_OCCUPANCY_SENSOR = False
+DEFAULT_LAST_LEG_OCCUPANCY_DETAIL_SENSOR = False
 DEFAULT_LAST_LEG_TRAIN_SET_SENSOR = False
 
 # Misc
@@ -170,13 +178,26 @@ DEVICE_TRACKER_LOOKUPS = {
     CONF_DESTINATION_DEVICE_TRACKER: 'last stop'
 }
 
+# Oh I wish TfNSW would be more consistent with their constants...
 OCCUPANCY_ICONS = {
     "MANY_SEATS": ["mdi:account", "Many seats"],
+    "MANY_SEATS_AVAILABLE": ["mdi:account", "Many seats"],
     "FEW_SEATS": ["mdi:account-multiple", "Few seats"],
-    "STANDING_ONLY": ["mdi:account-group","Standing only"],
+    "FEW_SEATS_AVAILABLE": ["mdi:account-multiple", "Few seats"],
+    "STANDING_ONLY": ["mdi:account-group","Standing room"],
+    "STANDING_ROOM_ONLY": ["mdi:account-group","Standing room"],
+    "CRUSHED_STANDING_ROOM_ONLY": ["mdi:account-group","Crushed standing room"],
+    "FULL": ["mdi:account-group","Full"],
     "Unknown": ["mdi:account-question", "Unknown"],
     "Unavailable": ["mdi:account-question", "Unavailable"],
     None: ["mdi:account-question", "Unknown"]
+}
+
+OCCUPANCY_DETAIL_GLYPHS = {
+    0: "⬜",
+    1: "🟩",
+    2: "🟨",
+    3: "🟥"
 }
 
 TRANSPORT_TYPE = {

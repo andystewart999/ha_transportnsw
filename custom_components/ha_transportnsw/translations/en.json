@@ -134,24 +134,26 @@
 						"name": "Origin sensors",
 						"description": "Select which origin/first leg-related sensors to create",
 						"data": {
-						  "origin_line_name": "Origin line name (eg T1 North Shore & Western Line)",
-						  "origin_line_name_short": "Short version of origin line name (eg T1)",
-						  "origin_detail": "The specific origin platform, stop, wharf etc (eg Platform 4)",
-						  "origin_occupancy": "Origin vehicle occupancy (eg Many seats, few seats etc)",
-						  "origin_name": "Origin name (eg Gordon Station, Platform 1, Gordon)",
-						  "origin_train_set": "Origin train set type (eg Tangara, Waratah etc)"
+						  "origin_line_name": "Line name (eg T1 North Shore & Western Line)",
+						  "origin_line_name_short": "Short version of line name (eg T1)",
+						  "origin_name": "Full stop name (eg Gordon Station, Platform 1, Gordon)",
+						  "origin_detail": "The specific platform, stop, wharf etc (eg Platform 4)",
+						  "origin_occupancy": "General vehicle occupancy (eg Many seats, few seats etc)",
+						  "origin_occupancy_detail": "Per-carriage vehicle occupancy",
+						  "origin_train_set": "Vehicle set type (eg Tangara, Waratah etc)"
 						}
 					},
 					"destination_sensors": {
 						"name": "Destination sensors",
 						"description": "Select which destination/last leg-related sensors to create",
 						"data": {
-						  "destination_line_name": "Destination line name (eg T9 Northern Line)",
-						  "destination_line_name_short": "Short version of destination line name (eg T9)",
-						  "destination_detail": "The specific destination platform, stop, wharf etc (eg Platform 4)",
-						  "destination_name": "Destination name (eg Gadigal Station, Platform 1, Sydney)",
-						  "destination_occupancy": "Destination vehicle occupancy (eg Many seats, few seats etc)",
-						  "destination_train_set": "Destination train set type (eg Tangara, Waratah etc)"
+						  "destination_line_name": "Line name (eg T9 Northern Line)",
+						  "destination_line_name_short": "Short version of line name (eg T9)",
+						  "destination_name": "Full stop name (eg Gadigal Station, Platform 1, Sydney)",
+						  "destination_detail": "The specific platform, stop, wharf etc (eg Platform 4)",
+						  "destination_occupancy": "General vehicle occupancy (eg Many seats, few seats etc)",
+						  "destination_occupancy_detail": "Per-carriage vehicle occupancy",
+						  "destination_train_set": "Vehicle set type (eg Tangara, Waratah etc)"
 						}
 					},
 					"device_trackers": {

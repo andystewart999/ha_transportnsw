@@ -12,13 +12,35 @@ from datetime import date, datetime
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import (
     entity_registry as er,
-    device_registry as dr,
+#    device_registry as dr,
     selector
 )
 
 _LOGGER = logging.getLogger(__name__)
 
 from .const import *
+
+
+def extract_from_hierarchy(obj, path, separator=".") -> str:
+    """Traverses a nested dict/list hierarchy using a path (e.g., 'users.0.name')."""
+    if obj is None or path is None:
+        return None
+    else:
+        keys = path.split(separator)
+        for key in keys:
+            if isinstance(obj, dict) and key in obj:
+                obj = obj[key]
+
+            elif isinstance(obj, list):
+                try:
+                    obj = obj[int(key)]
+
+                except (ValueError, IndexError):
+                    return None
+            else:
+                return None
+
+        return obj
 
 
 def get_device_trackers(hass: HomeAssistant, entity_filter: str):
@@ -133,16 +155,16 @@ def set_optional_sensors (sensor_creation: str):
     if sensor_creation == 'changes_and_times':
         sensor_options = {
             'time_and_change_sensors': {CONF_CHANGES_SENSOR: True, CONF_DELAY_SENSOR: True, CONF_FIRST_LEG_DEPARTURE_TIME_SENSOR: True, CONF_LAST_LEG_ARRIVAL_TIME_SENSOR: True, CONF_DURATION_SENSOR: True},
-            'origin_sensors': {CONF_ORIGIN_NAME_SENSOR: False, CONF_ORIGIN_DETAIL_SENSOR: False, CONF_FIRST_LEG_LINE_NAME_SENSOR: False, CONF_FIRST_LEG_LINE_NAME_SHORT_SENSOR: False, CONF_FIRST_LEG_TRANSPORT_TYPE_SENSOR: False, CONF_FIRST_LEG_TRANSPORT_NAME_SENSOR: False, CONF_FIRST_LEG_OCCUPANCY_SENSOR: False, CONF_FIRST_LEG_TRAIN_SET_SENSOR: False}, 
-            'destination_sensors': {CONF_DESTINATION_NAME_SENSOR: False, CONF_DESTINATION_DETAIL_SENSOR: False, CONF_LAST_LEG_LINE_NAME_SENSOR: False, CONF_LAST_LEG_LINE_NAME_SHORT_SENSOR: False, CONF_LAST_LEG_TRANSPORT_TYPE_SENSOR: False, CONF_LAST_LEG_TRANSPORT_NAME_SENSOR: False, CONF_LAST_LEG_OCCUPANCY_SENSOR: False, CONF_LAST_LEG_TRAIN_SET_SENSOR: False},
+            'origin_sensors': {CONF_ORIGIN_NAME_SENSOR: False, CONF_ORIGIN_DETAIL_SENSOR: False, CONF_FIRST_LEG_LINE_NAME_SENSOR: False, CONF_FIRST_LEG_LINE_NAME_SHORT_SENSOR: False, CONF_FIRST_LEG_TRANSPORT_TYPE_SENSOR: False, CONF_FIRST_LEG_TRANSPORT_NAME_SENSOR: False, CONF_FIRST_LEG_OCCUPANCY_SENSOR: False, CONF_FIRST_LEG_OCCUPANCY_DETAIL_SENSOR: False, CONF_FIRST_LEG_TRAIN_SET_SENSOR: False}, 
+            'destination_sensors': {CONF_DESTINATION_NAME_SENSOR: False, CONF_DESTINATION_DETAIL_SENSOR: False, CONF_LAST_LEG_LINE_NAME_SENSOR: False, CONF_LAST_LEG_LINE_NAME_SHORT_SENSOR: False, CONF_LAST_LEG_TRANSPORT_TYPE_SENSOR: False, CONF_LAST_LEG_TRANSPORT_NAME_SENSOR: False, CONF_LAST_LEG_OCCUPANCY_SENSOR: False, CONF_LAST_LEG_OCCUPANCY_DETAIL_SENSOR: False, CONF_LAST_LEG_TRAIN_SET_SENSOR: False},
             'device_trackers': {CONF_FIRST_LEG_DEVICE_TRACKER: DEFAULT_FIRST_LEG_DEVICE_TRACKER, CONF_LAST_LEG_DEVICE_TRACKER: DEFAULT_FIRST_LEG_DEVICE_TRACKER, CONF_ORIGIN_DEVICE_TRACKER: DEFAULT_ORIGIN_DEVICE_TRACKER, CONF_DESTINATION_DEVICE_TRACKER: DEFAULT_DESTINATION_DEVICE_TRACKER}
             }
 
     elif sensor_creation == 'verbose':
         sensor_options = {
             'time_and_change_sensors': {CONF_CHANGES_SENSOR: True, CONF_DELAY_SENSOR: True, CONF_FIRST_LEG_DEPARTURE_TIME_SENSOR: True, CONF_LAST_LEG_ARRIVAL_TIME_SENSOR: True, CONF_DURATION_SENSOR: True},
-            'origin_sensors': {CONF_ORIGIN_NAME_SENSOR: True, CONF_ORIGIN_DETAIL_SENSOR: True, CONF_FIRST_LEG_LINE_NAME_SENSOR: True, CONF_FIRST_LEG_LINE_NAME_SHORT_SENSOR: True, CONF_FIRST_LEG_TRANSPORT_TYPE_SENSOR: True, CONF_FIRST_LEG_TRANSPORT_NAME_SENSOR: True, CONF_FIRST_LEG_OCCUPANCY_SENSOR: True, CONF_FIRST_LEG_TRAIN_SET_SENSOR: True}, 
-            'destination_sensors': {CONF_DESTINATION_NAME_SENSOR: True, CONF_DESTINATION_DETAIL_SENSOR: True, CONF_LAST_LEG_LINE_NAME_SENSOR: True, CONF_LAST_LEG_LINE_NAME_SHORT_SENSOR: True, CONF_LAST_LEG_TRANSPORT_TYPE_SENSOR: True, CONF_LAST_LEG_TRANSPORT_NAME_SENSOR: True, CONF_LAST_LEG_OCCUPANCY_SENSOR: True, CONF_LAST_LEG_TRAIN_SET_SENSOR: True},
+            'origin_sensors': {CONF_ORIGIN_NAME_SENSOR: True, CONF_ORIGIN_DETAIL_SENSOR: True, CONF_FIRST_LEG_LINE_NAME_SENSOR: True, CONF_FIRST_LEG_LINE_NAME_SHORT_SENSOR: True, CONF_FIRST_LEG_TRANSPORT_TYPE_SENSOR: True, CONF_FIRST_LEG_TRANSPORT_NAME_SENSOR: True, CONF_FIRST_LEG_OCCUPANCY_SENSOR: True, CONF_FIRST_LEG_OCCUPANCY_DETAIL_SENSOR: True, CONF_FIRST_LEG_TRAIN_SET_SENSOR: True}, 
+            'destination_sensors': {CONF_DESTINATION_NAME_SENSOR: True, CONF_DESTINATION_DETAIL_SENSOR: True, CONF_LAST_LEG_LINE_NAME_SENSOR: True, CONF_LAST_LEG_LINE_NAME_SHORT_SENSOR: True, CONF_LAST_LEG_TRANSPORT_TYPE_SENSOR: True, CONF_LAST_LEG_TRANSPORT_NAME_SENSOR: True, CONF_LAST_LEG_OCCUPANCY_SENSOR: True, CONF_LAST_LEG_OCCUPANCY_DETAIL_SENSOR: True, CONF_LAST_LEG_TRAIN_SET_SENSOR: True},
             'device_trackers': {CONF_FIRST_LEG_DEVICE_TRACKER: 'always', CONF_LAST_LEG_DEVICE_TRACKER: 'always', CONF_ORIGIN_DEVICE_TRACKER: 'always', CONF_DESTINATION_DEVICE_TRACKER: 'always'}
             }
  
@@ -150,24 +172,24 @@ def set_optional_sensors (sensor_creation: str):
     elif sensor_creation == 'basic':
         sensor_options = {
             'time_and_change_sensors': {CONF_CHANGES_SENSOR: True, CONF_DELAY_SENSOR: False, CONF_FIRST_LEG_DEPARTURE_TIME_SENSOR: False, CONF_LAST_LEG_ARRIVAL_TIME_SENSOR: True, CONF_DURATION_SENSOR: False},
-            'origin_sensors': {CONF_ORIGIN_NAME_SENSOR: False, CONF_ORIGIN_DETAIL_SENSOR: False, CONF_FIRST_LEG_LINE_NAME_SENSOR: False, CONF_FIRST_LEG_LINE_NAME_SHORT_SENSOR: False, CONF_FIRST_LEG_TRANSPORT_TYPE_SENSOR: False, CONF_FIRST_LEG_TRANSPORT_NAME_SENSOR: False, CONF_FIRST_LEG_OCCUPANCY_SENSOR: False, CONF_FIRST_LEG_TRAIN_SET_SENSOR: False}, 
-            'destination_sensors': {CONF_DESTINATION_NAME_SENSOR: False, CONF_DESTINATION_DETAIL_SENSOR: False, CONF_LAST_LEG_LINE_NAME_SENSOR: False, CONF_LAST_LEG_LINE_NAME_SHORT_SENSOR: False, CONF_LAST_LEG_TRANSPORT_TYPE_SENSOR: False, CONF_LAST_LEG_TRANSPORT_NAME_SENSOR: False, CONF_LAST_LEG_OCCUPANCY_SENSOR: False, CONF_LAST_LEG_TRAIN_SET_SENSOR: False},
+            'origin_sensors': {CONF_ORIGIN_NAME_SENSOR: False, CONF_ORIGIN_DETAIL_SENSOR: False, CONF_FIRST_LEG_LINE_NAME_SENSOR: False, CONF_FIRST_LEG_LINE_NAME_SHORT_SENSOR: False, CONF_FIRST_LEG_TRANSPORT_TYPE_SENSOR: False, CONF_FIRST_LEG_TRANSPORT_NAME_SENSOR: False, CONF_FIRST_LEG_OCCUPANCY_SENSOR: False, CONF_FIRST_LEG_OCCUPANCY_DETAIL_SENSOR: False, CONF_FIRST_LEG_TRAIN_SET_SENSOR: False}, 
+            'destination_sensors': {CONF_DESTINATION_NAME_SENSOR: False, CONF_DESTINATION_DETAIL_SENSOR: False, CONF_LAST_LEG_LINE_NAME_SENSOR: False, CONF_LAST_LEG_LINE_NAME_SHORT_SENSOR: False, CONF_LAST_LEG_TRANSPORT_TYPE_SENSOR: False, CONF_LAST_LEG_TRANSPORT_NAME_SENSOR: False, CONF_LAST_LEG_OCCUPANCY_SENSOR: False, CONF_LAST_LEG_OCCUPANCY_DETAIL_SENSOR: False, CONF_LAST_LEG_TRAIN_SET_SENSOR: False},
             'device_trackers': {CONF_FIRST_LEG_DEVICE_TRACKER: DEFAULT_FIRST_LEG_DEVICE_TRACKER, CONF_LAST_LEG_DEVICE_TRACKER: DEFAULT_LAST_LEG_DEVICE_TRACKER, CONF_ORIGIN_DEVICE_TRACKER: DEFAULT_ORIGIN_DEVICE_TRACKER, CONF_DESTINATION_DEVICE_TRACKER: DEFAULT_DESTINATION_DEVICE_TRACKER}
             }
  
     elif sensor_creation == 'medium':
         sensor_options = {
             'time_and_change_sensors': {CONF_CHANGES_SENSOR: True, CONF_DELAY_SENSOR: False, CONF_FIRST_LEG_DEPARTURE_TIME_SENSOR: False, CONF_LAST_LEG_ARRIVAL_TIME_SENSOR: True, CONF_DURATION_SENSOR: True},
-            'origin_sensors': {CONF_ORIGIN_NAME_SENSOR: True, CONF_ORIGIN_DETAIL_SENSOR: True, CONF_FIRST_LEG_LINE_NAME_SENSOR: False, CONF_FIRST_LEG_LINE_NAME_SHORT_SENSOR: False, CONF_FIRST_LEG_TRANSPORT_TYPE_SENSOR: False, CONF_FIRST_LEG_TRANSPORT_NAME_SENSOR: False, CONF_FIRST_LEG_OCCUPANCY_SENSOR: False, CONF_FIRST_LEG_TRAIN_SET_SENSOR: False}, 
-            'destination_sensors': {CONF_DESTINATION_NAME_SENSOR: False, CONF_DESTINATION_DETAIL_SENSOR: True, CONF_LAST_LEG_LINE_NAME_SENSOR: False, CONF_LAST_LEG_LINE_NAME_SHORT_SENSOR: False, CONF_LAST_LEG_TRANSPORT_TYPE_SENSOR: False, CONF_LAST_LEG_TRANSPORT_NAME_SENSOR: False, CONF_LAST_LEG_OCCUPANCY_SENSOR: False, CONF_LAST_LEG_TRAIN_SET_SENSOR: False},
+            'origin_sensors': {CONF_ORIGIN_NAME_SENSOR: True, CONF_ORIGIN_DETAIL_SENSOR: True, CONF_FIRST_LEG_LINE_NAME_SENSOR: False, CONF_FIRST_LEG_LINE_NAME_SHORT_SENSOR: False, CONF_FIRST_LEG_TRANSPORT_TYPE_SENSOR: False, CONF_FIRST_LEG_TRANSPORT_NAME_SENSOR: False, CONF_FIRST_LEG_OCCUPANCY_SENSOR: False, CONF_FIRST_LEG_OCCUPANCY_DETAIL_SENSOR: False, CONF_FIRST_LEG_TRAIN_SET_SENSOR: False}, 
+            'destination_sensors': {CONF_DESTINATION_NAME_SENSOR: False, CONF_DESTINATION_DETAIL_SENSOR: True, CONF_LAST_LEG_LINE_NAME_SENSOR: False, CONF_LAST_LEG_LINE_NAME_SHORT_SENSOR: False, CONF_LAST_LEG_TRANSPORT_TYPE_SENSOR: False, CONF_LAST_LEG_TRANSPORT_NAME_SENSOR: False, CONF_LAST_LEG_OCCUPANCY_SENSOR: False, CONF_LAST_LEG_OCCUPANCY_DETAIL_SENSOR: False, CONF_LAST_LEG_TRAIN_SET_SENSOR: False},
             'device_trackers': {CONF_FIRST_LEG_DEVICE_TRACKER: DEFAULT_FIRST_LEG_DEVICE_TRACKER, CONF_LAST_LEG_DEVICE_TRACKER: DEFAULT_LAST_LEG_DEVICE_TRACKER, CONF_ORIGIN_DEVICE_TRACKER: DEFAULT_ORIGIN_DEVICE_TRACKER, CONF_DESTINATION_DEVICE_TRACKER: DEFAULT_DESTINATION_DEVICE_TRACKER}
             }
 
     else:
         sensor_options = {
             'time_and_change_sensors': {CONF_CHANGES_SENSOR: False, CONF_DELAY_SENSOR: False, CONF_FIRST_LEG_DEPARTURE_TIME_SENSOR: False, CONF_LAST_LEG_ARRIVAL_TIME_SENSOR: False, CONF_DURATION_SENSOR: False},
-            'origin_sensors': {CONF_ORIGIN_NAME_SENSOR: False, CONF_ORIGIN_DETAIL_SENSOR: False, CONF_FIRST_LEG_LINE_NAME_SENSOR: False, CONF_FIRST_LEG_LINE_NAME_SHORT_SENSOR: False, CONF_FIRST_LEG_TRANSPORT_TYPE_SENSOR: False, CONF_FIRST_LEG_TRANSPORT_NAME_SENSOR: False, CONF_FIRST_LEG_OCCUPANCY_SENSOR: False, CONF_FIRST_LEG_TRAIN_SET_SENSOR: False}, 
-            'destination_sensors': {CONF_DESTINATION_NAME_SENSOR: False, CONF_DESTINATION_DETAIL_SENSOR: False, CONF_LAST_LEG_LINE_NAME_SENSOR: False, CONF_LAST_LEG_LINE_NAME_SHORT_SENSOR: False, CONF_LAST_LEG_TRANSPORT_TYPE_SENSOR: False, CONF_LAST_LEG_TRANSPORT_NAME_SENSOR: False, CONF_LAST_LEG_OCCUPANCY_SENSOR: False, CONF_LAST_LEG_TRAIN_SET_SENSOR: False},
+            'origin_sensors': {CONF_ORIGIN_NAME_SENSOR: False, CONF_ORIGIN_DETAIL_SENSOR: False, CONF_FIRST_LEG_LINE_NAME_SENSOR: False, CONF_FIRST_LEG_LINE_NAME_SHORT_SENSOR: False, CONF_FIRST_LEG_TRANSPORT_TYPE_SENSOR: False, CONF_FIRST_LEG_TRANSPORT_NAME_SENSOR: False, CONF_FIRST_LEG_OCCUPANCY_SENSOR: False, CONF_FIRST_LEG_OCCUPANCY_DETAIL_SENSOR: False, CONF_FIRST_LEG_TRAIN_SET_SENSOR: False}, 
+            'destination_sensors': {CONF_DESTINATION_NAME_SENSOR: False, CONF_DESTINATION_DETAIL_SENSOR: False, CONF_LAST_LEG_LINE_NAME_SENSOR: False, CONF_LAST_LEG_LINE_NAME_SHORT_SENSOR: False, CONF_LAST_LEG_TRANSPORT_TYPE_SENSOR: False, CONF_LAST_LEG_TRANSPORT_NAME_SENSOR: False, CONF_LAST_LEG_OCCUPANCY_SENSOR: False, CONF_LAST_LEG_OCCUPANCY_DETAIL_SENSOR: False, CONF_LAST_LEG_TRAIN_SET_SENSOR: False},
             'device_trackers': {CONF_FIRST_LEG_DEVICE_TRACKER: DEFAULT_FIRST_LEG_DEVICE_TRACKER, CONF_LAST_LEG_DEVICE_TRACKER: DEFAULT_LAST_LEG_DEVICE_TRACKER, CONF_ORIGIN_DEVICE_TRACKER: DEFAULT_ORIGIN_DEVICE_TRACKER, CONF_DESTINATION_DEVICE_TRACKER: DEFAULT_DESTINATION_DEVICE_TRACKER}
             }
 
@@ -236,6 +258,34 @@ def remove_entity(entity_reg, configentry_id, subentry_id, trip_index, key):
     finally:
         # Don't log an error as it's possible the entity never existed in the first place
         pass
+
+# def get_device_id(hass: HomeAssistant, subentry_id, origin_id, destination_id, device_identifier) -> str:
+#     _LOGGER.error("in get_device_id")
+#     dev_reg = dr.async_get(hass)
+#     device = dev_reg.async_get_device(identifiers={(DOMAIN, f"{subentry_id}_{origin_id}_{destination_id}_{device_identifier}")})
+#     if device:
+#         return device.id
+#     else:
+#         return None
+    
+def rename_entity(entity_reg, configentry_id, subentry_id, trip_index, key, new_name):
+    # Search for and rename a device tracker entity
+    unique_id = f"{subentry_id}_{key}_{trip_index}"
+
+    try:
+        # Get all the entities for this config entry
+        entities = entity_reg.entities.get_entries_for_config_entry_id(configentry_id)
+
+        # Search for the one to remove
+        for entity in entities:
+            if entity.unique_id == unique_id:
+                entity_reg.async_remove(entity.entity_id)
+                break
+
+    finally:
+        # Don't log an error as it's possible the entity never existed in the first place
+        pass
+
 
 def remove_device(device_reg, entry_id, subentry_id, origin_id, destination_id, device_identifier):
     # Search for and remove a device that's no longer needed

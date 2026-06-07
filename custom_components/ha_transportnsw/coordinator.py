@@ -42,7 +42,6 @@ class TransportNSWCoordinator(DataUpdateCoordinator):
             update_interval=timedelta(seconds=self.poll_interval),
         )
 
-
     async def async_update_data(self):
         """Fetch data from API endpoint.
         """
@@ -72,7 +71,7 @@ class TransportNSWCoordinator(DataUpdateCoordinator):
                 # If the origin is a device tracker, we need to get the latest location first
                 if CONF_ORIGIN_TYPE in subentry.data and subentry.data[CONF_ORIGIN_TYPE] == 'device_tracker':
                     try:
-                        origin_coordinates = find_coordinates(self.hass, subentry.data[CONF_ORIGIN_ID])
+                        origin_coordinates = find_coordinates(self.hass, subentry.data[CONF_ORIGIN_ID])  #TODO - attempt to force a location update
 
                         # Create the coordinate string in the format required by the API
                         origin = f"{origin_coordinates.split(',')[1]}:{origin_coordinates.split(',')[0]}:EPSG:4326"
@@ -84,7 +83,8 @@ class TransportNSWCoordinator(DataUpdateCoordinator):
                     origin = subentry.data[CONF_ORIGIN_ID]
                     
                 try:
-                    _LOGGER.debug(f"Calling get_trips: origin = {origin}, destination_id = {subentry.data[CONF_DESTINATION_ID]}, trip_wait_time = {subentry.data[CONF_TRIP_WAIT_TIME]}, journeys_to_return = {subentry.data[CONF_TRIPS_TO_CREATE]}, origin_transport_type = {subentry.data[CONF_ORIGIN_TRANSPORT_TYPE]}, destination_transport_type = {subentry.data[CONF_DESTINATION_TRANSPORT_TYPE]}, route_filter = {subentry.data[CONF_ROUTE_FILTER]}, include_realtime_location = {subentry.data[CONF_INCLUDE_REALTIME_LOCATION]}, max_changes = {subentry.data.get(CONF_MAX_CHANGES, 9)}")
+                    _LOGGER.debug(f"Calling get_trips: origin = {origin}, destination_id = {subentry.data[CONF_DESTINATION_ID]}, trip_wait_time = {subentry.data[CONF_TRIP_WAIT_TIME]}, journeys_to_return = {subentry.data[CONF_TRIPS_TO_CREATE]}, origin_transport_type = {subentry.data[CONF_ORIGIN_TRANSPORT_TYPE]}, destination_transport_type = {subentry.data[CONF_DESTINATION_TRANSPORT_TYPE]}, route_filter = {subentry.data[CONF_ROUTE_FILTER]}, include_realtime_location = True, max_changes = {subentry.data.get(CONF_MAX_CHANGES, 9)}")
+                    #_LOGGER.debug(f"Calling get_trips: origin = {origin}, destination_id = {subentry.data[CONF_DESTINATION_ID]}, trip_wait_time = {subentry.data[CONF_TRIP_WAIT_TIME]}, journeys_to_return = {subentry.data[CONF_TRIPS_TO_CREATE]}, origin_transport_type = {subentry.data[CONF_ORIGIN_TRANSPORT_TYPE]}, destination_transport_type = {subentry.data[CONF_DESTINATION_TRANSPORT_TYPE]}, route_filter = {subentry.data[CONF_ROUTE_FILTER]}, include_realtime_location = {subentry.data[CONF_INCLUDE_REALTIME_LOCATION]}, max_changes = {subentry.data.get(CONF_MAX_CHANGES, 9)}")
                     journey_data = await self.hass.async_add_executor_job(
                         get_trips,
                         self.config_entry.data[CONF_API_KEY],
@@ -96,7 +96,8 @@ class TransportNSWCoordinator(DataUpdateCoordinator):
                         True,
                         subentry.data[CONF_ROUTE_FILTER],
                         subentry.data[CONF_TRIPS_TO_CREATE],
-                        subentry.data[CONF_INCLUDE_REALTIME_LOCATION],
+                        True,                                       # I need some of the info that's buried in this attribute, regardless of the users' requirements
+#                        subentry.data[CONF_INCLUDE_REALTIME_LOCATION],
                         subentry.data[CONF_ALERTS_SENSOR],
                         subentry.data[CONF_ALERT_SEVERITY],
                         subentry.data[CONF_ALERT_TYPES],

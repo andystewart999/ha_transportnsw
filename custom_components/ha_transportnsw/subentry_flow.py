@@ -650,6 +650,7 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
                     vol.Required(CONF_FIRST_LEG_LINE_NAME_SENSOR, default = user_input['origin_sensors'].get(CONF_FIRST_LEG_LINE_NAME_SENSOR, DEFAULT_FIRST_LEG_LINE_NAME_SENSOR)): bool,
                     vol.Required(CONF_FIRST_LEG_LINE_NAME_SHORT_SENSOR, default = user_input['origin_sensors'].get(CONF_FIRST_LEG_LINE_NAME_SHORT_SENSOR, DEFAULT_FIRST_LEG_LINE_NAME_SHORT_SENSOR)): bool,
                     vol.Required(CONF_FIRST_LEG_OCCUPANCY_SENSOR, default = user_input['origin_sensors'].get(CONF_FIRST_LEG_OCCUPANCY_SENSOR, DEFAULT_FIRST_LEG_OCCUPANCY_SENSOR)): bool,
+                    vol.Required(CONF_FIRST_LEG_OCCUPANCY_DETAIL_SENSOR, default = user_input['origin_sensors'].get(CONF_FIRST_LEG_OCCUPANCY_DETAIL_SENSOR, DEFAULT_FIRST_LEG_OCCUPANCY_DETAIL_SENSOR)): bool,
                     vol.Required(CONF_FIRST_LEG_TRAIN_SET_SENSOR, default = user_input['origin_sensors'].get(CONF_FIRST_LEG_TRAIN_SET_SENSOR, DEFAULT_FIRST_LEG_TRAIN_SET_SENSOR)): bool
                 }
             )
@@ -661,6 +662,7 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
                     vol.Required(CONF_LAST_LEG_LINE_NAME_SENSOR, default = user_input['destination_sensors'].get(CONF_LAST_LEG_LINE_NAME_SENSOR, DEFAULT_LAST_LEG_LINE_NAME_SENSOR)): bool,
                     vol.Required(CONF_LAST_LEG_LINE_NAME_SHORT_SENSOR, default = user_input['destination_sensors'].get(CONF_LAST_LEG_LINE_NAME_SHORT_SENSOR, DEFAULT_LAST_LEG_LINE_NAME_SHORT_SENSOR)): bool,
                     vol.Required(CONF_LAST_LEG_OCCUPANCY_SENSOR, default = user_input['destination_sensors'].get(CONF_LAST_LEG_OCCUPANCY_SENSOR, DEFAULT_LAST_LEG_OCCUPANCY_SENSOR)): bool,
+                    vol.Required(CONF_LAST_LEG_OCCUPANCY_DETAIL_SENSOR, default = user_input['destination_sensors'].get(CONF_LAST_LEG_OCCUPANCY_DETAIL_SENSOR, DEFAULT_LAST_LEG_OCCUPANCY_DETAIL_SENSOR)): bool,
                     vol.Required(CONF_LAST_LEG_TRAIN_SET_SENSOR, default = user_input['destination_sensors'].get(CONF_LAST_LEG_TRAIN_SET_SENSOR, DEFAULT_LAST_LEG_TRAIN_SET_SENSOR)): bool
                 }
             )
