@@ -74,7 +74,7 @@ def get_occupancy_detail(occupancy_detail) -> str:
                 occupancy_glyphs = f"{carriage_glyph}{occupancy_glyphs}"
 
             # Add the direction indicator if necessary
-            if len(carriage_glyph) > 1:
+            if len(occupancy_glyphs) > 1:
                 occupancy_glyphs += "➜"
 
     except:
