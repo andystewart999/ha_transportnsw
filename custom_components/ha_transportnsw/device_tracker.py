@@ -247,14 +247,14 @@ class TransportNSWDeviceTracker(CoordinatorEntity, TrackerEntity):
     def extra_state_attributes(self):
         """Return the extra state attributes."""
         attrs = {}
-        attrs['Attribution'] = TFNSW_ATTRIBUTION
+        attrs['attribution'] = TFNSW_ATTRIBUTION
 
         try:
             if self.coordinator.data is not None and self.subentry.subentry_id in self.coordinator.data:
                 journey_data = self.coordinator.data[self.subentry.subentry_id][self.journey_index]
 
-                attrs["Name"], available = get_location_value(journey_data, self.entity_description.key, 'name')
-                attrs["Stop ID"], available = get_location_value(journey_data, self.entity_description.key, 'id')
+                attrs["name"], available = get_location_value(journey_data, self.entity_description.key, 'name')
+                attrs["stop_id"], available = get_location_value(journey_data, self.entity_description.key, 'id')
 
         except:
             pass

@@ -168,7 +168,7 @@ TIME_AND_CHANGE_SENSORS: tuple[TransportNSWSensorEntityDescription, ...] = (
         native_unit_of_measurement = 'changes',
         state_path = 'changes',
         attrs_path = ['changes_simple', 'locations_list'],
-        attrs_friendly = ['Changes', 'Locations']
+        attrs_friendly = ['changes', 'locations']
     )
 )
 
@@ -215,7 +215,7 @@ ORIGIN_SENSORS: tuple[TransportNSWSensorEntityDescription, ...] = (
         state_fn = get_occupancy_detail,
         state_path = 'origin_transport_detail.carriage_detail',
         attrs_path = ['origin_transport_detail.carriage_detail'],
-        attrs_friendly = ['Occupancy detail']
+        attrs_friendly = ['occupancy_detail']
     ),
     TransportNSWSensorEntityDescription(
         key=CONF_FIRST_LEG_TRAIN_SET_SENSOR,
@@ -268,7 +268,7 @@ DESTINATION_SENSORS: tuple[TransportNSWSensorEntityDescription, ...] = (
         state_fn = get_occupancy_detail,
         state_path = 'destination_transport_detail.carriage_detail',
         attrs_path = ['destination_transport_detail.carriage_detail'],
-        attrs_friendly = ['Occupancy detail']
+        attrs_friendly = ['occupancy_detail']
     ),
     TransportNSWSensorEntityDescription(
         key=CONF_LAST_LEG_TRAIN_SET_SENSOR,
@@ -285,7 +285,7 @@ ALERT_SENSORS: tuple[TransportNSWSensorEntityDescription, ...] = (
         state_fn = get_highest_alert,
         state_path = 'alerts',
         attrs_path = 'alerts',
-        attrs_friendly = 'Alerts'
+        attrs_friendly = 'alerts'
     ),
 )
 
@@ -572,8 +572,8 @@ class TransportNSWSubentrySensor(CoordinatorEntity, SensorEntity):
     
                 else:
                     # Attributes for all sensors
-                    attrs["Origin ID"] = extract_from_hierarchy(journey_data, 'origin_detail.stop_id')
-                    attrs["Destination ID"] = extract_from_hierarchy(journey_data, 'destination_detail.stop_id')
+                    attrs["origin_id"] = extract_from_hierarchy(journey_data, 'origin_detail.stop_id')
+                    attrs["destination_id"] = extract_from_hierarchy(journey_data, 'destination_detail.stop_id')
         
                     # Key-specific attributes
                     if self.entity_description.attrs_path:
@@ -596,6 +596,6 @@ class TransportNSWSubentrySensor(CoordinatorEntity, SensorEntity):
                             attrs[attr_friendly] = attr_value
 
         finally:
-            attrs['Attribution'] = TFNSW_ATTRIBUTION
+            attrs['attribution'] = TFNSW_ATTRIBUTION
         
         return attrs
