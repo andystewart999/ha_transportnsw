@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from collections import defaultdict
-#from collections.abc import Callable
 from dataclasses import dataclass
 import logging
 
@@ -27,6 +26,11 @@ from TransportNSWv2 import InvalidAPIKey, StopError
 from .helpers import check_stops, set_optional_sensors, get_optional_sensors
 from .coordinator import TransportNSWCoordinator
 from .const import *
+
+# For the custom Lovelace card:
+from pathlib import Path
+from homeassistant.compoanents.frontend import add_extra_js_url
+from homeassistant.components.http import StaticPathConfig
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -249,6 +253,22 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: MyConfigEntry) ->
     # Add the coordinator and update listener to config runtime data to make
     # it accessible throughout the integration
     config_entry.runtime_data = RuntimeData(coordinator)
+
+    # Register the integration-specific Lovelace hard
+    card_path = Path(__file__).parent / "www" / "train-occupancy-card.js"
+
+    await hass.http.async_register_static_paths([
+        StaticPathConfig(
+            url_path=f"/{DOMAIN}/train-occupancy-card.js",
+            path=str(card_path),
+            cache_headers=False,
+        )
+    ])
+
+    add_extra_js_url(
+        hass,
+        f"/{DOMAIN}/train-occupancy-card.js",
+    )
 
     # Setup platforms
     await hass.config_entries.async_forward_entry_setups(config_entry, PLATFORMS)
