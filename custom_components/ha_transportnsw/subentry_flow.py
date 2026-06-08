@@ -304,6 +304,11 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
                 config_subentry = self._get_reconfigure_subentry()
                 user_input = dict(config_subentry.data)
 
+                # Capture the subentry title in case the user has renamed it
+                user_input.update(
+                    {"user_title": config_subentry.title}
+                    )
+
                 JOURNEY_DATA_SCHEMA = vol.Schema(
                     {
                         vol.Required(CONF_ORIGIN_ID, default = user_input.get(CONF_ORIGIN_ID, "")): str,
@@ -372,15 +377,20 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
 
             return await self.async_step_sensors()     
 
-        # Are we reconfiguring or is are we creating a new journey?
+        # Are we reconfiguring or are we creating a new journey?
         if user_input is None:
             if self.source == SOURCE_RECONFIGURE:
                 config_subentry = self._get_reconfigure_subentry()
                 user_input = dict(config_subentry.data)
+
+                # Capture the subentry title in case the user has renamed it
+                user_input.update(
+                    {"user_title": config_subentry.title}
+                    )
+
                 self._input_data = user_input
 
                 default_origin_type = convert_transport_types_numeric_to_friendly(user_input[CONF_ORIGIN_TRANSPORT_TYPE])
-
                 default_destination_type = convert_transport_types_numeric_to_friendly(user_input[CONF_DESTINATION_TRANSPORT_TYPE])
 
             else:
@@ -455,12 +465,14 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
             if self.source == SOURCE_RECONFIGURE:
                 # We don't need to recreate the subentry, just refresh and reload the one we're reconfiguring
                 unique_id_destination = '_'.join(self._input_data[CONF_DESTINATION_ID])
+                
+                # Continue to use the existing title, in case the user has renamed it
                 return self.async_update_reload_and_abort(
                     self._get_entry(),
                     self._get_reconfigure_subentry(),
                     unique_id = f"{self._input_data[CONF_ORIGIN_ID]}_{unique_id_destination}",
                     data = self._input_data,
-                    title=f"{self._input_data[CONF_ORIGIN_NAME]} to {self._input_data[CONF_DESTINATION_NAME]}"
+                    title = self._input_data["user_title"]
                 )
 
             else:
@@ -479,6 +491,11 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
             if self.source == SOURCE_RECONFIGURE:
                 config_subentry = self._get_reconfigure_subentry()
                 user_input = dict(config_subentry.data)
+
+                # Capture the subentry title in case the user has renamed it
+                user_input.update(
+                    {"user_title": config_subentry.title}
+                    )
             else:
                 user_input = {}
 
@@ -528,12 +545,14 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
                 # No more flows to process so we can create/update the subentries as required
                 if self.source == SOURCE_RECONFIGURE:
                     unique_id_destination = '_'.join(self._input_data[CONF_DESTINATION_ID])
+
+                    # Continue to use the existing title, in case the user has renamed it
                     return self.async_update_reload_and_abort(
                         self._get_entry(),
                         self._get_reconfigure_subentry(),
                         unique_id = f"{self._input_data[CONF_ORIGIN_ID]}_{unique_id_destination}",
                         data = self._input_data,
-                        title=f"{self._input_data[CONF_ORIGIN_NAME]} to {self._input_data[CONF_DESTINATION_NAME]}"
+                        title = self._input_data["user_title"]
                     )
                 else:
                     description_placeholders = create_subentries(self, self._get_entry(), self._input_data)
@@ -550,6 +569,11 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
             if self.source == SOURCE_RECONFIGURE:
                 config_subentry = self._get_reconfigure_subentry()
                 user_input = dict(config_subentry.data)
+
+                # Capture the subentry title in case the user has renamed it
+                user_input.update(
+                    {"user_title": config_subentry.title}
+                    )
             else:
                 user_input = {}
 
@@ -593,7 +617,7 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
 
 
     async def async_step_custom_sensors(self, user_input=None):
-        # Handle customer sensors if requested
+        # Handle custom sensors if requested
 
         if user_input is not None:
             if (user_input['device_trackers'][CONF_FIRST_LEG_DEVICE_TRACKER]) or (user_input['device_trackers'][CONF_LAST_LEG_DEVICE_TRACKER] in ['if_not_duplicated', 'always']):
@@ -605,12 +629,13 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
 
             # This is the last step so create the subentries, unless we're reconfiguring in which case just update, reload and abort
             if self.source == SOURCE_RECONFIGURE:
+                # Continue to use the existing title, in case the user has renamed it
                 return self.async_update_reload_and_abort(
                     self._get_entry(),
                     self._get_reconfigure_subentry(),
                     unique_id = f"{self._input_data[CONF_ORIGIN_ID]}_{self._input_data[CONF_DESTINATION_ID]}",
                     data = self._input_data,
-                    title=f"{self._input_data[CONF_ORIGIN_NAME]} to {self._input_data[CONF_DESTINATION_NAME]}"
+                    title = self._input_data["user_title"]
                 )
             else:
                 description_placeholders = create_subentries(self, self._get_entry(), self._input_data)
