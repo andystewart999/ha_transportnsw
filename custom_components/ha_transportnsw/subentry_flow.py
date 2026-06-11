@@ -137,7 +137,7 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
                 return "", errors
 
             entity_info = get_device_trackers(hass, data[CONF_ORIGIN_ID])
-            stop_list = data[CONF_DESTINATION_ID]
+            stop_list = data[CONF_DESTINATION_ID].copy()
 
         # CONF_DESTINATION_ID is always going to be a list, but if there's more than one then we can't create a reverse trip also
         else:
@@ -147,7 +147,7 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
                     errors['base'] = "return_journey_multiple_destination_error"
                     return "", errors
 
-            stop_list = data[CONF_DESTINATION_ID]
+            stop_list = data[CONF_DESTINATION_ID].copy()
             stop_list.insert (0, data[CONF_ORIGIN_ID])
 
         try:
