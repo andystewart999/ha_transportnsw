@@ -207,7 +207,9 @@ ORIGIN_SENSORS: tuple[TransportNSWSensorEntityDescription, ...] = (
         key=CONF_FIRST_LEG_OCCUPANCY_SENSOR,
         name=CONF_FIRST_LEG_OCCUPANCY_FRIENDLY,
         state_fn = get_occupancy_friendly,
-        state_path = 'origin_transport_detail.occupancy'
+        state_path = 'origin_transport_detail.occupancy',
+        attrs_path = ['origin_transport_detail.carriage_detail'],
+        attrs_friendly = ['occupancy_detail']
     ),
     TransportNSWSensorEntityDescription(
         key=CONF_FIRST_LEG_OCCUPANCY_DETAIL_SENSOR,
@@ -260,7 +262,9 @@ DESTINATION_SENSORS: tuple[TransportNSWSensorEntityDescription, ...] = (
         key=CONF_LAST_LEG_OCCUPANCY_SENSOR,
         name=CONF_LAST_LEG_OCCUPANCY_FRIENDLY,
         state_fn = get_occupancy_friendly,
-        state_path = 'destination_transport_detail.occupancy'
+        state_path = 'destination_transport_detail.occupancy',
+        attrs_path = ['destination_transport_detail.carriage_detail'],
+        attrs_friendly = ['occupancy_detail']
     ),
     TransportNSWSensorEntityDescription(
         key=CONF_LAST_LEG_OCCUPANCY_DETAIL_SENSOR,

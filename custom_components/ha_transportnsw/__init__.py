@@ -29,7 +29,7 @@ from .const import *
 
 # For the custom Lovelace card:
 from pathlib import Path
-from homeassistant.compoanents.frontend import add_extra_js_url
+from homeassistant.components.frontend import add_extra_js_url
 from homeassistant.components.http import StaticPathConfig
 
 _LOGGER = logging.getLogger(__name__)
@@ -229,46 +229,82 @@ async def async_setup(hass: HomeAssistant, config_entry: MyConfigEntry):
 async def async_setup_entry(hass: HomeAssistant, config_entry: MyConfigEntry) -> bool:
     """Set up Example Integration from a config entry."""
 
-    # Force a quick check and update of the selected sensors if 'verbose', this catches all future sensors that are created
-    for subentry in config_entry.subentries.values():
-        if subentry.subentry_type == SUBENTRY_TYPE_JOURNEY:
-            sensor_creation_option = subentry.data.get(CONF_SENSOR_CREATION, 'none')
-            if sensor_creation_option == 'verbose':
-                # Make a copy of the data, update it and then re-save it
-                # This allows us to automatically enable the creation of new sensors since the user selected 'all sensors'
-                
-                current_sensor_options = get_optional_sensors(subentry.data.copy())
-                new_sensor_options = set_optional_sensors(sensor_creation_option)
+    try:
+        # Force a quick check and update of the selected sensors if 'verbose', this catches all future sensors that are created
+        for subentry in config_entry.subentries.values():
+            if subentry.subentry_type == SUBENTRY_TYPE_JOURNEY:
+                sensor_creation_option = subentry.data.get(CONF_SENSOR_CREATION, 'none')
+                if sensor_creation_option == 'verbose':
+                    # Make a copy of the data, update it and then re-save it
+                    # This allows us to automatically enable the creation of new sensors since the user selected 'all sensors'
+                    
+                    current_sensor_options = get_optional_sensors(subentry.data.copy())
+                    new_sensor_options = set_optional_sensors(sensor_creation_option)
+    
+                    if new_sensor_options != current_sensor_options:
+                        # Only update if the options are different
+                        new_data = subentry.data.copy()
+                        new_data.update(new_sensor_options)
+    
+                        hass.config_entries.async_update_subentry(config_entry, subentry, data = new_data)
+                        _LOGGER.info (f"Updated sensor options")
+                    else:
+                        _LOGGER.debug (f"Sensors options unchanged")
 
-                if new_sensor_options != current_sensor_options:
-                    # Only update if the options are different
-                    new_data = subentry.data.copy()
-                    new_data.update(new_sensor_options)
+    except Exception as ex:
+        _LOGGER.error(f"Error {ex} checking optional sensors")
 
-                    hass.config_entries.async_update_subentry(config_entry, subentry, data = new_data)
 
-    # Initialise the coordinator that manages data updates
-    coordinator = TransportNSWCoordinator(hass, config_entry)
+    try:
+        # Initialise the coordinator that manages data updates
+        coordinator = TransportNSWCoordinator(hass, config_entry)
+    
+        # Add the coordinator and update listener to config runtime data to make
+        # it accessible throughout the integration
+        config_entry.runtime_data = RuntimeData(coordinator)
+        _LOGGER.debug (f"Initialised coordinator for {config_entry.title}")
 
-    # Add the coordinator and update listener to config runtime data to make
-    # it accessible throughout the integration
-    config_entry.runtime_data = RuntimeData(coordinator)
+    except Exception as ex:
+        _LOGGER.error(f"Error {ex} initialising coordinator")
 
-    # Register the integration-specific Lovelace hard
-    card_path = Path(__file__).parent / "www" / "train-occupancy-card.js"
 
-    await hass.http.async_register_static_paths([
-        StaticPathConfig(
-            url_path=f"/{DOMAIN}/train-occupancy-card.js",
-            path=str(card_path),
-            cache_headers=False,
-        )
-    ])
+    try:
+        # Register the integration-specific Lovelace hard
+        card_path = f"{Path(__file__).parent}/www/{CUSTOM_LOVELACE_CARD}"
+        url_path = f"/{DOMAIN}/{CUSTOM_LOVELACE_CARD}"
 
-    add_extra_js_url(
-        hass,
-        f"/{DOMAIN}/train-occupancy-card.js",
-    )
+        await hass.http.async_register_static_paths([
+            StaticPathConfig(
+                url_path=url_path,
+                path=str(card_path),
+                cache_headers=False,
+            )
+        ])
+
+        # Fetch the Lovelace dashboard configuration resource history
+        lovelace = hass.data.get("lovelace")
+        
+        # If the user is using YAML mode for Lovelace, resources are managed there.
+        # If using storage mode (UI), we can add it to the collection programmatically.
+        if lovelace and hasattr(lovelace, "resources"):
+            resources = lovelace.resources
+
+            # Prevent duplicate entries
+            if not any(res.get("url") == url_path for res in resources.async_items()):
+                await resources.async_create_item({
+                    "res_type": "module",
+                    "url": url_path
+                })
+
+#        add_extra_js_url(
+#            hass,
+#            url_path,
+#        )
+        _LOGGER.debug (f"Registered HTTP static path '{url_path}' to '{card_path}'")
+
+    except Exception as ex:
+        _LOGGER.error(f"Error {ex} registering Lovelace card '{CUSTOM_LOVELACE_CARD}'")
+
 
     # Setup platforms
     await hass.config_entries.async_forward_entry_setups(config_entry, PLATFORMS)
@@ -276,8 +312,27 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: MyConfigEntry) ->
     # Return true to denote a successful setup.
     return True
 
+
 async def async_unload_entry(hass: HomeAssistant, config_entry: MyConfigEntry) -> bool:
     """Unload a config entry."""
+    try:
+        """Handle removal of an entry, cleaning up UI resources."""
+        resource_url = f"/{DOMAIN}/{CUSTOM_LOVELACE_CARD}"
+        lovelace = hass.data.get("lovelace")
+        
+        if lovelace and hasattr(lovelace, "resources"):
+            # Find the specific registered resource item ID
+            item_id = next(
+                (res.get("id") for res in lovelace.resources.async_items() if res.get("url") == resource_url),
+                None
+            )
+            if item_id:
+                await lovelace.resources.async_delete_item(item_id)
+                _LOGGER.debug (f"De-registered Lovelace card '{resource_url}'")
+
+    except Exception as ex:
+        _LOGGER.error (f"Error {ex} de-registering Lovelace card '{resource_url}'")
+
 
     # Unload platforms and return result
     return await hass.config_entries.async_unload_platforms(config_entry, PLATFORMS)
