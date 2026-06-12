@@ -15,6 +15,7 @@ from homeassistant.config_entries import (
     ConfigFlow,
     ConfigFlowResult,
     ConfigSubentryFlow,
+    OptionsFlow,
     SOURCE_RECONFIGURE,
     SOURCE_IMPORT
 )
@@ -75,10 +76,7 @@ class TransportNSWConfigFlowHandler(ConfigFlow, domain=DOMAIN):
                 SUBENTRY_TYPE_JOURNEY: JourneySubEntryFlowHandler
             }
 
-
-    async def async_step_user(
-        self, user_input: dict[str, Any] | None = None
-    ) -> ConfigFlowResult:
+    async def async_step_user(self, user_input: dict[str, Any] | None = None ) -> ConfigFlowResult:
         """Handle the initial step."""
         errors: dict[str, str] = {}
 
@@ -207,7 +205,7 @@ class TransportNSWConfigFlowHandler(ConfigFlow, domain=DOMAIN):
         )
 
         description_placeholders = {
-            "tfnsw_registration": "https://opendata.transport.nsw.gov.au/data/user/register"
+            "tfnsw_registration": TFNSW_REGISTRATION
         }
 
         # Show initial form
@@ -227,6 +225,40 @@ class TransportNSWConfigFlowHandler(ConfigFlow, domain=DOMAIN):
 
     async def async_step_reconfigure(self, user_input: dict[str, Any] | None = None):
         return await self.async_step_user()
+
+
+    @staticmethod
+    @callback
+    def async_get_options_flow(config_entry):
+        return TransportNSWOptionsFlowHandler()
+
+OPTIONS_SCHEMA = vol.Schema(
+    {
+        vol.Required(CONF_REQUEST_LOCATION_UPDATE): bool,
+    }
+)
+
+class TransportNSWOptionsFlowHandler(OptionsFlow):
+    """TransportNSW config flow options handler"""
+
+    async def async_step_init(self, user_input=None) -> FlowResult:
+        """Handle the options flow"""
+
+        if user_input is not None:
+
+            # Save and exit the options flow without forcing a reload of the config entry
+            return self.async_create_entry(
+                data=user_input
+                )
+
+        # Show the options form
+        return self.async_show_form(
+            step_id="init",
+            data_schema=self.add_suggested_values_to_schema(
+                OPTIONS_SCHEMA,
+                self.config_entry.options
+                )
+            )
 
 class CannotConnect(HomeAssistantError):
     """Error to indicate we cannot connect."""

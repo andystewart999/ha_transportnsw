@@ -28,6 +28,17 @@
       }
     }
   },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Options",
+        "description": "These optional settings impact all of your journeys.",
+        "data": {
+          "request_location_update": "If the journey origin is a device tracker (e.g. a mobile phone), attempt to request a location update at each poll.  Note that this could impact the battery life of the device being polled."
+        }
+      }
+    }
+  },
   "config_subentries": {
 	  "create_entry": {
 		  "entry_type": "entry_type placeholder",

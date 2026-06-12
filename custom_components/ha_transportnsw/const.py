@@ -7,7 +7,10 @@ MIN_SCAN_INTERVAL = 30
 MAX_TRIP_WAIT_TIME = 60
 MAX_MAX_CHANGES = 5
 
-# Mandatory data
+# Optional config entry settings
+CONF_REQUEST_LOCATION_UPDATE = 'request_location_update'
+
+# Mandatory subentry data
 CONF_ORIGIN_TYPE = 'origin_type'  # New
 CONF_ORIGIN_ID = 'origin_id'
 CONF_ORIGIN_NAME = 'origin_name'
@@ -17,7 +20,7 @@ CONF_TRIP_WAIT_TIME = 'trip_wait_time'
 CONF_CREATE_REVERSE_TRIP = 'create_reverse_trip'
 DEFAULT_CREATE_REVERSE_TRIP = False
 
-# Optional settings
+# Optional subentry settings
 CONF_RETURN_INFO = 'return_info'
 CONF_ORIGIN_TRANSPORT_TYPE = 'origin_transport_type'
 CONF_DESTINATION_TRANSPORT_TYPE = 'destination_transport_type'
@@ -90,6 +93,9 @@ CONF_FIRST_LEG_DEVICE_TRACKER = 'first_leg_device_tracker'
 CONF_LAST_LEG_DEVICE_TRACKER = 'last_leg_device_tracker'
 CONF_ORIGIN_DEVICE_TRACKER = 'origin_device_tracker'
 CONF_DESTINATION_DEVICE_TRACKER = 'destination_device_tracker'
+
+# Defaults
+DEFAULT_REQUEST_LOCATION_UPDATE = False
 
 DEFAULT_FIRST_LEG_DEVICE_TRACKER = 'never'
 DEFAULT_LAST_LEG_DEVICE_TRACKER = 'never'

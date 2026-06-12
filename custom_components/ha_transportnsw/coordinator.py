@@ -67,11 +67,24 @@ class TransportNSWCoordinator(DataUpdateCoordinator):
                 
         for subentry in self.config_entry.subentries.values():
             if subentry.subentry_type == SUBENTRY_TYPE_JOURNEY:
-                # Call the trip API
-                # If the origin is a device tracker, we need to get the latest location first
+                # Call the trip API - if the origin is a device tracker, we need to get the location data 
                 if CONF_ORIGIN_TYPE in subentry.data and subentry.data[CONF_ORIGIN_TYPE] == 'device_tracker':
                     try:
-                        origin_coordinates = find_coordinates(self.hass, subentry.data[CONF_ORIGIN_ID])  #TODO - attempt to force a location update
+                        # Should we request a location update?  Obviously that's an asynchronous activity but as the polls are regular we should get the benefit the next time and so on
+                        if self.config_entry.options.get(CONF_REQUEST_LOCATION_UPDATE, False):
+                            _LOGGER.debug(f"Requesting location update from {subentry.data[CONF_ORIGIN_ID]}")
+                            
+                            notify_device = f'notify.{subentry.data[CONF_ORIGIN_ID].split(".")[1]}'
+
+                            await self.hass.services.async_call(
+                                domain = "notify",
+                                service = "send_message",
+                                service_data = {"message": "request_location_update"},
+                                target = {"entity_id": notify_device},
+                                blocking = True
+                            )
+
+                        origin_coordinates = find_coordinates(self.hass, subentry.data[CONF_ORIGIN_ID])
 
                         # Create the coordinate string in the format required by the API
                         origin = f"{origin_coordinates.split(',')[1]}:{origin_coordinates.split(',')[0]}:EPSG:4326"
