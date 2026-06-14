@@ -290,6 +290,7 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: MyConfigEntry) ->
             _LOGGER.debug (f"Registered HTTP static path '{url_path}' to '{card_path}'")
 
         # Now also register the associated .js file
+        # Include the version number in an attempt to force HA to reload when an updated version is released
         lovelace = hass.data.get("lovelace")
         
         # If the user is using YAML mode for Lovelace, resources are managed there.
@@ -301,7 +302,7 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: MyConfigEntry) ->
             if not any(res.get("url") == url_path for res in resources.async_items()):
                 await resources.async_create_item({
                     "res_type": "module",
-                    "url": url_path
+                    "url": f"{url_path}?v={CUSTOM_LOVELACE_CARD_VERSION}"
                 })
                 _LOGGER.debug (f"Registered module {url_path}")
             else:
@@ -322,21 +323,21 @@ async def async_unload_entry(hass: HomeAssistant, config_entry: MyConfigEntry) -
     """Unload a config entry."""
     try:
         """Handle removal of an entry, cleaning up UI resources."""
-        resource_url = f"/{DOMAIN}/{CUSTOM_LOVELACE_CARD}"
+        url_path = f"/{DOMAIN}/{CUSTOM_LOVELACE_CARD}"
         lovelace = hass.data.get("lovelace")
         
         if lovelace and hasattr(lovelace, "resources"):
             # Find the specific registered resource item ID
             item_id = next(
-                (res.get("id") for res in lovelace.resources.async_items() if res.get("url") == resource_url),
+                (res.get("id") for res in lovelace.resources.async_items() if res.get("url").startswith(url_path),
                 None
             )
             if item_id:
                 await lovelace.resources.async_delete_item(item_id)
-                _LOGGER.debug (f"Unregistered Lovelace card '{resource_url}'")
+                _LOGGER.debug (f"Unregistered Lovelace card '{url_path}'")
 
     except Exception as ex:
-        _LOGGER.error (f"Error unregistering Lovelace card '{resource_url}': {ex}")
+        _LOGGER.error (f"Error unregistering Lovelace card '{url_path}': {ex}")
 
 
     # Unload platforms and return result
