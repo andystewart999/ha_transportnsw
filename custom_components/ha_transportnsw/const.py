@@ -149,6 +149,7 @@ ORIGIN_LONGITUDE = 'origin_longitude'
 DESTINATION_LATITUDE = 'destination_latitude'
 DESTINATION_LONGITUDE = 'destination_longitude'
 CUSTOM_LOVELACE_CARD = 'vehicle-occupancy-card.js'
+CUSTOM_LOVELACE_CARD_VERSION = 2
 
 #Transport for NSW constants
 TFNSW_ATTRIBUTION = "Data provided by Transport NSW"
