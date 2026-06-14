@@ -12,13 +12,11 @@ from datetime import date, datetime
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import (
     entity_registry as er,
-#    device_registry as dr,
     selector
 )
+from .const import *
 
 _LOGGER = logging.getLogger(__name__)
-
-from .const import *
 
 
 def extract_from_hierarchy(obj, path, separator=".") -> str:
@@ -56,7 +54,6 @@ def get_device_trackers(hass: HomeAssistant, entity_filter: str):
             else:
                 entity_name = EntRegItem.name
 
-#            device_trackers.append(selector.SelectOptionDict(value=entity_id, label=f"{entity_id} ({entity_name})"))
             device_trackers.append(selector.SelectOptionDict(value=entity_id, label=entity_name))
 
     return device_trackers
@@ -196,7 +193,7 @@ def set_optional_sensors (sensor_creation: str):
     return sensor_options
 
 def get_api_calls (file_path: str) -> int:
-    # Get the current date first
+    # Get the current data first
     try:
         api_info = json.loads(
                 Path(file_path).read_text(encoding="utf8")
@@ -209,7 +206,7 @@ def get_api_calls (file_path: str) -> int:
 
 
 def set_api_calls (file_path: str, api_calls: int) -> int:
-    # Get the current date
+    # Get the current data
     try:
         api_info = json.loads(
                 Path(file_path).read_text(encoding="utf8")
@@ -259,15 +256,7 @@ def remove_entity(entity_reg, configentry_id, subentry_id, trip_index, key):
         # Don't log an error as it's possible the entity never existed in the first place
         pass
 
-# def get_device_id(hass: HomeAssistant, subentry_id, origin_id, destination_id, device_identifier) -> str:
-#     _LOGGER.error("in get_device_id")
-#     dev_reg = dr.async_get(hass)
-#     device = dev_reg.async_get_device(identifiers={(DOMAIN, f"{subentry_id}_{origin_id}_{destination_id}_{device_identifier}")})
-#     if device:
-#         return device.id
-#     else:
-#         return None
-    
+
 def rename_entity(entity_reg, configentry_id, subentry_id, trip_index, key, new_name):
     # Search for and rename a device tracker entity
     unique_id = f"{subentry_id}_{key}_{trip_index}"
@@ -292,7 +281,6 @@ def remove_device(device_reg, entry_id, subentry_id, origin_id, destination_id, 
     try:
         device = device_reg.async_get_device(identifiers={(DOMAIN, f"{subentry_id}_{origin_id}_{destination_id}_{device_identifier}")})
         if device is not None:
-#            device_reg.async_remove_device(device.id)
             device_reg.async_update_device(
                 device_id = device.id,
                 remove_config_entry_id = entry_id,

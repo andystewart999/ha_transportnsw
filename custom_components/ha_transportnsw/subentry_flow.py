@@ -115,7 +115,6 @@ def create_subentries(self, config_entry, input_data):
     )
 
     description_placeholders ['title'] = 'title placeholder'    
-
     return description_placeholders
 
 class JourneySubEntryFlowHandler(ConfigSubentryFlow):
@@ -325,7 +324,6 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
 
         JOURNEY_DATA_SCHEMA = vol.Schema(
             {
-#                vol.Required(CONF_ORIGIN_ID, default = user_input.get(CONF_ORIGIN_ID, "")): str,
                 vol.Required(CONF_ORIGIN_ID, default = user_input.get(CONF_ORIGIN_ID, ""),): selector (
                         {
                             "select": {
@@ -335,7 +333,6 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
                         }
                     }
                 ),
-#                vol.Required(CONF_DESTINATION_ID, default = user_input.get(CONF_DESTINATION_ID, "")): str,
                 vol.Required(CONF_DESTINATION_ID, default = user_input.get(CONF_DESTINATION_ID, ""),): selector (
                         {
                             "select": {
@@ -483,7 +480,7 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
 
                 return self.async_abort(
                     reason="subentries_created",
-                    description_placeholders=description_placeholders,
+                    description_placeholders=description_placeholders
                 )
                     
 
@@ -561,7 +558,7 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
 
                     return self.async_abort(
                         reason="subentries_created",
-                        description_placeholders=description_placeholders,
+                        description_placeholders=description_placeholders
                     )
 
 

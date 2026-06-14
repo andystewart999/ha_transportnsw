@@ -75,7 +75,7 @@ CONF_FIRST_LEG_LINE_NAME_FRIENDLY = 'first leg line name'
 CONF_FIRST_LEG_LINE_NAME_SHORT_FRIENDLY = 'first leg line name (short)'
 CONF_FIRST_LEG_OCCUPANCY_FRIENDLY = 'first leg occupancy'
 CONF_FIRST_LEG_OCCUPANCY_DETAIL_FRIENDLY = 'first leg occupancy detail'
-CONF_FIRST_LEG_TRAIN_SET_FRIENDLY = 'first leg train set'
+CONF_FIRST_LEG_TRAIN_SET_FRIENDLY = 'first leg vehicle set'
 CONF_FIRST_LEG_TRANSPORT_TYPE_FRIENDLY = 'first leg transport type'
 CONF_FIRST_LEG_TRANSPORT_NAME_FRIENDLY = 'first leg transport name'
 CONF_DESTINATION_NAME_FRIENDLY = 'destination name'
@@ -84,7 +84,7 @@ CONF_LAST_LEG_LINE_NAME_FRIENDLY = 'last leg line name'
 CONF_LAST_LEG_LINE_NAME_SHORT_FRIENDLY = 'last leg line name (short)'
 CONF_LAST_LEG_OCCUPANCY_FRIENDLY = 'last leg occupancy'
 CONF_LAST_LEG_OCCUPANCY_DETAIL_FRIENDLY = 'last leg occupancy detail'
-CONF_LAST_LEG_TRAIN_SET_FRIENDLY = 'last leg train set'
+CONF_LAST_LEG_TRAIN_SET_FRIENDLY = 'last leg vehicle set'
 CONF_LAST_LEG_TRANSPORT_TYPE_FRIENDLY = 'last leg transport type'
 CONF_LAST_LEG_TRANSPORT_NAME_FRIENDLY = 'last leg transport name'
 
@@ -201,7 +201,7 @@ OCCUPANCY_ICONS = {
 }
 
 OCCUPANCY_DETAIL_GLYPHS = {
-    0: "⬜",
+    0: "⬜", 
     1: "🟩",
     2: "🟨",
     3: "🟥"

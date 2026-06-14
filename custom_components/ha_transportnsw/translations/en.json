@@ -56,13 +56,15 @@
 	  },
 	  "subentry_journey": {
 		  "entry_type": "",
+		  "title": "Transport NSW Mk II",
+          "flow_title": "Transport NSW Mk II",
 		  "abort": {
 			  "already_configured": "You have already added that journey.",
 			  "outbound_already_configured": "You have already added the outbound journey.",
-			  "return_already_configured": "You have alreadty added the return part of that journey",
+			  "return_already_configured": "You have already added the return part of that journey",
               "reconfigure_successful": "Journey reconfiguration successful.",
 			  "subentries_created": "Journey{plural} registered successfully.",
-			  "subentries_reconfigured": "Journey{plural} reconfigured successfully!"
+			  "subentries_reconfigured": "Journey{plural} reconfigured successfully."
 		  },
           "error": {
             "apiratelimitexceeded": "API rate limit exceeded - wait a moment and try again.",

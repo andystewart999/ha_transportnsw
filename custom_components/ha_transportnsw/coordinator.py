@@ -48,6 +48,7 @@ class TransportNSWCoordinator(DataUpdateCoordinator):
         
         # TODO - option/mandate no updates between certain times,when the trains/buses aren't running?
         # TODO - option to only run between certain times (user-specified), and increase the poll rate for shorter windows?
+        # TODO - slow down the poll rate if it looks like we might exceed the daily API call count?
         
         # First, populate self.api_calls
         if self.api_calls == 0:
@@ -97,7 +98,7 @@ class TransportNSWCoordinator(DataUpdateCoordinator):
                     
                 try:
                     _LOGGER.debug(f"Calling get_trips: origin = {origin}, destination_id = {subentry.data[CONF_DESTINATION_ID]}, trip_wait_time = {subentry.data[CONF_TRIP_WAIT_TIME]}, journeys_to_return = {subentry.data[CONF_TRIPS_TO_CREATE]}, origin_transport_type = {subentry.data[CONF_ORIGIN_TRANSPORT_TYPE]}, destination_transport_type = {subentry.data[CONF_DESTINATION_TRANSPORT_TYPE]}, route_filter = {subentry.data[CONF_ROUTE_FILTER]}, include_realtime_location = True, max_changes = {subentry.data.get(CONF_MAX_CHANGES, 9)}")
-                    #_LOGGER.debug(f"Calling get_trips: origin = {origin}, destination_id = {subentry.data[CONF_DESTINATION_ID]}, trip_wait_time = {subentry.data[CONF_TRIP_WAIT_TIME]}, journeys_to_return = {subentry.data[CONF_TRIPS_TO_CREATE]}, origin_transport_type = {subentry.data[CONF_ORIGIN_TRANSPORT_TYPE]}, destination_transport_type = {subentry.data[CONF_DESTINATION_TRANSPORT_TYPE]}, route_filter = {subentry.data[CONF_ROUTE_FILTER]}, include_realtime_location = {subentry.data[CONF_INCLUDE_REALTIME_LOCATION]}, max_changes = {subentry.data.get(CONF_MAX_CHANGES, 9)}")
+
                     journey_data = await self.hass.async_add_executor_job(
                         get_trips,
                         self.config_entry.data[CONF_API_KEY],
@@ -110,17 +111,17 @@ class TransportNSWCoordinator(DataUpdateCoordinator):
                         subentry.data[CONF_ROUTE_FILTER],
                         subentry.data[CONF_TRIPS_TO_CREATE],
                         True,                                       # I need some of the info that's buried in this attribute, regardless of the users' requirements
-#                        subentry.data[CONF_INCLUDE_REALTIME_LOCATION],
                         subentry.data[CONF_ALERTS_SENSOR],
                         subentry.data[CONF_ALERT_SEVERITY],
                         subentry.data[CONF_ALERT_TYPES],
-                        subentry.data.get(CONF_MAX_CHANGES, 9) # A recently added option, might not exist yet so offer a default
+                        subentry.data.get(CONF_MAX_CHANGES, 9)      # A recently added option, might not exist yet so offer a default
                         )
+
                     _LOGGER.debug(f"Return from get_trips: {journey_data}")
 
                     if journey_data is not None and 'journeys_with_data' in journey_data and journey_data['journeys_with_data'] > 0:
                         if journey_data['journeys_to_return'] > journey_data['journeys_with_data']:
-                            _LOGGER.warning (f"{journey_data['journeys_to_return']} were requested but only {journey_data['journeys_with_data']} were returned - consider relaxing the journey restrictions.")
+                            _LOGGER.warning (f"{journey_data['journeys_to_return']} journeys were requested but only got {journey_data['journeys_with_data']} - consider relaxing the journey restrictions.")
         
                         if 'journeys' in journey_data:
                             returned_data[subentry.subentry_id] = journey_data['journeys']
@@ -138,9 +139,9 @@ class TransportNSWCoordinator(DataUpdateCoordinator):
                         # No journeys were returned, but the API call itself didn't fail
                         # Offer a slightly different warning message if it's a forced train journey
                         if subentry.data[CONF_ORIGIN_TRANSPORT_TYPE]  == [1]:
-                            _LOGGER.warning (f"No data returned for train-only journey {subentry.title} - there may be a bus replacement service active at the moment.")
+                            _LOGGER.warning (f"No journeys returned for train-only journey {subentry.title} - there may be a bus replacement service active at the moment.")
                         else:
-                            _LOGGER.warning(f"No data returned for journey {subentry.title} - consider relaxing the journey restrictions.")
+                            _LOGGER.warning(f"No journeys returned for '{subentry.title}' - consider relaxing the journey restrictions.")
 
                 except Exception as ex:
                     # This will show entities as unavailable by raising UpdateFailed exception

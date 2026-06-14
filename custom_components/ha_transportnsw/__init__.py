@@ -158,13 +158,14 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: MyConfigEntry):
                 last_leg_device_tracker = new_data['destination_sensors'].get(CONF_LAST_LEG_DEVICE_TRACKER, DEFAULT_LAST_LEG_DEVICE_TRACKER)
 
                 # Create the new sensor dictionary
-                new_options = {'device_trackers':{
+                new_options = {'device_trackers':
+                    {
                         CONF_FIRST_LEG_DEVICE_TRACKER: first_leg_device_tracker,
                         CONF_LAST_LEG_DEVICE_TRACKER: last_leg_device_tracker,
                         CONF_ORIGIN_DEVICE_TRACKER: DEFAULT_ORIGIN_DEVICE_TRACKER,
                         CONF_DESTINATION_DEVICE_TRACKER: DEFAULT_DESTINATION_DEVICE_TRACKER
-                        }
                     }
+                }
 
                 new_data.update(new_options)
                 
@@ -227,7 +228,9 @@ async def async_setup(hass: HomeAssistant, config_entry: MyConfigEntry):
     
 
 async def async_setup_entry(hass: HomeAssistant, config_entry: MyConfigEntry) -> bool:
-    """Set up Example Integration from a config entry."""
+    """Set up the ha_transportnsw integration from a config entry."""
+
+    hass.data.setdefault(DOMAIN, {})
 
     try:
         # Force a quick check and update of the selected sensors if 'verbose', this catches all future sensors that are created
@@ -236,7 +239,7 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: MyConfigEntry) ->
                 sensor_creation_option = subentry.data.get(CONF_SENSOR_CREATION, 'none')
                 if sensor_creation_option == 'verbose':
                     # Make a copy of the data, update it and then re-save it
-                    # This allows us to automatically enable the creation of new sensors since the user selected 'all sensors'
+                    # This allows us to automatically enable the creation of any new sensors since the user selected 'all sensors' and would reasonably expect new sensors to appear
                     
                     current_sensor_options = get_optional_sensors(subentry.data.copy())
                     new_sensor_options = set_optional_sensors(sensor_creation_option)
@@ -252,7 +255,7 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: MyConfigEntry) ->
                         _LOGGER.debug (f"Sensors options unchanged")
 
     except Exception as ex:
-        _LOGGER.error(f"Error {ex} checking optional sensors")
+        _LOGGER.error(f"Error checking optional sensors: {ex}")
 
 
     try:
@@ -265,23 +268,28 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: MyConfigEntry) ->
         _LOGGER.debug (f"Initialised coordinator for {config_entry.title}")
 
     except Exception as ex:
-        _LOGGER.error(f"Error {ex} initialising coordinator")
+        _LOGGER.error(f"Error initialising coordinator: {ex}")
 
 
     try:
-        # Register the integration-specific Lovelace hard
-        card_path = f"{Path(__file__).parent}/www/{CUSTOM_LOVELACE_CARD}"
+        # Register the integration-specific Lovelace card unless it's been done already
         url_path = f"/{DOMAIN}/{CUSTOM_LOVELACE_CARD}"
 
-        await hass.http.async_register_static_paths([
-            StaticPathConfig(
-                url_path=url_path,
-                path=str(card_path),
-                cache_headers=False,
-            )
-        ])
+        if not hass.data[DOMAIN].get("static_path_registered", False):
+            card_path = f"{Path(__file__).parent}/www/{CUSTOM_LOVELACE_CARD}"
+            url_path = f"/{DOMAIN}/{CUSTOM_LOVELACE_CARD}"
+    
+            await hass.http.async_register_static_paths([
+                StaticPathConfig(
+                    url_path=url_path,
+                    path=str(card_path),
+                    cache_headers=False,
+                )
+            ])
+            hass.data[DOMAIN]['static_path_registered'] = True
+            _LOGGER.debug (f"Registered HTTP static path '{url_path}' to '{card_path}'")
 
-        # Fetch the Lovelace dashboard configuration resource history
+        # Now also register the associated .js file
         lovelace = hass.data.get("lovelace")
         
         # If the user is using YAML mode for Lovelace, resources are managed there.
@@ -295,21 +303,18 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: MyConfigEntry) ->
                     "res_type": "module",
                     "url": url_path
                 })
-
-#        add_extra_js_url(
-#            hass,
-#            url_path,
-#        )
-        _LOGGER.debug (f"Registered HTTP static path '{url_path}' to '{card_path}'")
+                _LOGGER.debug (f"Registered module {url_path}")
+            else:
+                _LOGGER.debug (f"Module {url_path} is already registered")
 
     except Exception as ex:
-        _LOGGER.error(f"Error {ex} registering Lovelace card '{CUSTOM_LOVELACE_CARD}'")
+        _LOGGER.error(f"Error registering Lovelace card '{CUSTOM_LOVELACE_CARD}': {ex}")
 
 
     # Setup platforms
     await hass.config_entries.async_forward_entry_setups(config_entry, PLATFORMS)
 
-    # Return true to denote a successful setup.
+    # Return true to denote a successful setup
     return True
 
 
@@ -328,10 +333,10 @@ async def async_unload_entry(hass: HomeAssistant, config_entry: MyConfigEntry) -
             )
             if item_id:
                 await lovelace.resources.async_delete_item(item_id)
-                _LOGGER.debug (f"De-registered Lovelace card '{resource_url}'")
+                _LOGGER.debug (f"Unregistered Lovelace card '{resource_url}'")
 
     except Exception as ex:
-        _LOGGER.error (f"Error {ex} de-registering Lovelace card '{resource_url}'")
+        _LOGGER.error (f"Error unregistering Lovelace card '{resource_url}': {ex}")
 
 
     # Unload platforms and return result
