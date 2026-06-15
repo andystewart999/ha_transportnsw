@@ -1,4 +1,4 @@
-const CARD_VERSION = '3.0.0b5'
+const CARD_VERSION = '3.0.0b6'
 
 class VehicleOccupancyCard extends HTMLElement {
   constructor() {
@@ -10,7 +10,7 @@ class VehicleOccupancyCard extends HTMLElement {
 
   static getStubConfig() {
     return {
-      entity1: "",
+      entity: "",
       entity2: "",
       title: "",
       attribute: "occupancy_detail",
@@ -22,7 +22,7 @@ class VehicleOccupancyCard extends HTMLElement {
     return {
       schema: [
         {
-          name: "entity1",
+          name: "entity",
           label: "Carriage occupancy",
           required: true,
           selector: {
@@ -76,7 +76,7 @@ class VehicleOccupancyCard extends HTMLElement {
 
       computeHelper: (schema) => {
         switch (schema.name) {
-          case "entity1":
+          case "entity":
             return "Select a Transport NSW Mk II sensor that contains detailed occupancy information";
           case "entity2":
             return "Optional entity whose state will be shown on the right-hand side of the card";
@@ -94,7 +94,7 @@ class VehicleOccupancyCard extends HTMLElement {
   }
 
   setConfig(config) {
-    if (!config.entity1) {
+    if (!config.entity) {
       throw new Error(
         "You must specify a Transport NSW Mk II sensor that contains occupancy detail information"
       );
@@ -180,7 +180,7 @@ class VehicleOccupancyCard extends HTMLElement {
     console.log("checkversion")
     this.checkVersion(hass)
 
-    const stateObj1 = hass.states[this.config.entity1];
+    const stateObj1 = hass.states[this.config.entity];
     const stateObj2 = this.config.entity2
       ? hass.states[this.config.entity2]
       : undefined;
@@ -189,7 +189,7 @@ class VehicleOccupancyCard extends HTMLElement {
       this.innerHTML = `
         <ha-card>
           <div class="card-content">
-            Sensor not found: ${this.config.entity1}
+            Sensor not found: ${this.config.entity}
           </div>
         </ha-card>
       `;
@@ -224,7 +224,7 @@ class VehicleOccupancyCard extends HTMLElement {
     }
 
     // Try to get the device name so we can use it in the title.
-    const entityRegistryEntry = hass.entities?.[this.config.entity1];
+    const entityRegistryEntry = hass.entities?.[this.config.entity];
     const deviceId = entityRegistryEntry?.device_id;
     const device = deviceId ? hass.devices?.[deviceId] : undefined;
 
@@ -521,7 +521,7 @@ window.customCards.push({
     return {
       config: {
         type: "custom:ha-transportnsw-card",
-        entity1: entityId,
+        entity: entityId,
         entity2: "",
         title: "",
         attribute: "occupancy_detail",
