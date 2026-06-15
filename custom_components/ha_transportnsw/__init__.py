@@ -7,8 +7,16 @@ from dataclasses import dataclass
 import logging
 
 from homeassistant import config_entries
-from homeassistant.config_entries import ConfigEntry, ConfigSubentryData #, ConfigSubentry 
-from homeassistant.core import HomeAssistant
+from homeassistant.components import websocket_api
+from homeassistant.config_entries import (
+    ConfigEntry,
+    ConfigSubentryData
+)
+from homeassistant.core import (
+    HomeAssistant,
+    CoreState,
+    EVENT_HOMEASSISTANT_STARTED
+)
 from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.device_registry import DeviceEntry
@@ -19,18 +27,18 @@ from homeassistant.const import (
     CONF_API_KEY,
     CONF_SCAN_INTERVAL
 )
-from homeassistant.components import persistent_notification
+from homeassistant.components import (
+    persistent_notification,
+    websocket_api
+)
+import voluptuous as vol
 
 from TransportNSWv2 import InvalidAPIKey, StopError
 
 from .helpers import check_stops, set_optional_sensors, get_optional_sensors
 from .coordinator import TransportNSWCoordinator
 from .const import *
-
-# For the custom Lovelace card:
-from pathlib import Path
-from homeassistant.components.frontend import add_extra_js_url
-from homeassistant.components.http import StaticPathConfig
+from .www import JSModuleRegistration
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -190,6 +198,27 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: MyConfigEntry):
 
     return True
 
+async def async_register_frontend(hass: HomeAssistant) -> None:
+    """Register frontend modules after HA startup."""
+    module_register = JSModuleRegistration(hass)
+    await module_register.async_register()
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/version",
+    }
+)
+@websocket_api.async_response
+async def websocket_get_version(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict,
+) -> None:
+    """Handle version request from frontend."""
+    connection.send_result(
+        msg["id"],
+        {"version": INTEGRATION_VERSION},
+    )
 
 async def async_setup(hass: HomeAssistant, config_entry: MyConfigEntry):
 
@@ -224,13 +253,24 @@ async def async_setup(hass: HomeAssistant, config_entry: MyConfigEntry):
                 )
             )
 
+    # Register websocket command for version checking
+    websocket_api.async_register_command(hass, websocket_get_version)
+
+    async def _setup_frontend(_event=None) -> None:
+        await async_register_frontend(hass)
+
+    # If HA is already running, register immediately
+    if hass.state == CoreState.running:
+        await _setup_frontend()
+    else:
+        # Otherwise, wait for STARTED event
+        hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STARTED, _setup_frontend)
+
     return True
     
 
 async def async_setup_entry(hass: HomeAssistant, config_entry: MyConfigEntry) -> bool:
     """Set up the ha_transportnsw integration from a config entry."""
-
-    hass.data.setdefault(DOMAIN, {})
 
     try:
         # Force a quick check and update of the selected sensors if 'verbose', this catches all future sensors that are created
@@ -257,7 +297,6 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: MyConfigEntry) ->
     except Exception as ex:
         _LOGGER.error(f"Error checking optional sensors: {ex}")
 
-
     try:
         # Initialise the coordinator that manages data updates
         coordinator = TransportNSWCoordinator(hass, config_entry)
@@ -270,48 +309,6 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: MyConfigEntry) ->
     except Exception as ex:
         _LOGGER.error(f"Error initialising coordinator: {ex}")
 
-
-    try:
-        # Register the integration-specific Lovelace card unless it's been done already
-        url_path = f"/{DOMAIN}/{CUSTOM_LOVELACE_CARD}"
-
-        if not hass.data[DOMAIN].get("static_path_registered", False):
-            card_path = f"{Path(__file__).parent}/www/{CUSTOM_LOVELACE_CARD}"
-            url_path = f"/{DOMAIN}/{CUSTOM_LOVELACE_CARD}"
-    
-            await hass.http.async_register_static_paths([
-                StaticPathConfig(
-                    url_path=url_path,
-                    path=str(card_path),
-                    cache_headers=False,
-                )
-            ])
-            hass.data[DOMAIN]['static_path_registered'] = True
-            _LOGGER.debug (f"Registered HTTP static path '{url_path}' to '{card_path}'")
-
-        # Now also register the associated .js file
-        # Include the version number in an attempt to force HA to reload when an updated version is released
-        lovelace = hass.data.get("lovelace")
-        
-        # If the user is using YAML mode for Lovelace, resources are managed there.
-        # If using storage mode (UI), we can add it to the collection programmatically.
-        if lovelace and hasattr(lovelace, "resources"):
-            resources = lovelace.resources
-
-            # Prevent duplicate entries
-            if not any(res.get("url") == url_path for res in resources.async_items()):
-                await resources.async_create_item({
-                    "res_type": "module",
-                    "url": f"{url_path}?v={CUSTOM_LOVELACE_CARD_VERSION}"
-                })
-                _LOGGER.debug (f"Registered module {url_path}")
-            else:
-                _LOGGER.debug (f"Module {url_path} is already registered")
-
-    except Exception as ex:
-        _LOGGER.error(f"Error registering Lovelace card '{CUSTOM_LOVELACE_CARD}': {ex}")
-
-
     # Setup platforms
     await hass.config_entries.async_forward_entry_setups(config_entry, PLATFORMS)
 
@@ -321,23 +318,23 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: MyConfigEntry) ->
 
 async def async_unload_entry(hass: HomeAssistant, config_entry: MyConfigEntry) -> bool:
     """Unload a config entry."""
-    try:
-        """Handle removal of an entry, cleaning up UI resources."""
-        url_path = f"/{DOMAIN}/{CUSTOM_LOVELACE_CARD}"
-        lovelace = hass.data.get("lovelace")
+    # try:
+    #     """Handle removal of an entry, cleaning up UI resources."""
+    #     resource_url = f"/{DOMAIN}/{CUSTOM_LOVELACE_CARD}"
+    #     lovelace = hass.data.get("lovelace")
         
-        if lovelace and hasattr(lovelace, "resources"):
-            # Find the specific registered resource item ID
-            item_id = next(
-                (res.get("id") for res in lovelace.resources.async_items() if res.get("url").startswith(url_path),
-                None
-            )
-            if item_id:
-                await lovelace.resources.async_delete_item(item_id)
-                _LOGGER.debug (f"Unregistered Lovelace card '{url_path}'")
+    #     if lovelace and hasattr(lovelace, "resources"):
+    #         # Find the specific registered resource item ID
+    #         item_id = next(
+    #             (res.get("id") for res in lovelace.resources.async_items() if res.get("url") == resource_url),
+    #             None
+    #         )
+    #         if item_id:
+    #             await lovelace.resources.async_delete_item(item_id)
+    #             _LOGGER.debug (f"Unregistered Lovelace card '{resource_url}'")
 
-    except Exception as ex:
-        _LOGGER.error (f"Error unregistering Lovelace card '{url_path}': {ex}")
+    # except Exception as ex:
+    #     _LOGGER.error (f"Error unregistering Lovelace card '{resource_url}': {ex}")
 
 
     # Unload platforms and return result

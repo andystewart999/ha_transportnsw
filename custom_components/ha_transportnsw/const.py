@@ -1,3 +1,6 @@
+from pathlib import Path
+import json
+
 """Constants for our integration."""
 
 DOMAIN = "ha_transportnsw"
@@ -148,8 +151,25 @@ ORIGIN_LATITUDE = 'origin_latitude'
 ORIGIN_LONGITUDE = 'origin_longitude'
 DESTINATION_LATITUDE = 'destination_latitude'
 DESTINATION_LONGITUDE = 'destination_longitude'
-CUSTOM_LOVELACE_CARD = 'vehicle-occupancy-card.js'
-CUSTOM_LOVELACE_CARD_VERSION = 2
+
+# Lovelace card stuff
+## Read version from manifest.json
+MANIFEST_PATH = Path(__file__).parent / "manifest.json"
+with open(MANIFEST_PATH, encoding="utf-8") as f:
+    INTEGRATION_VERSION = json.load(f).get("version", "0.0.0")
+
+## Base URL for frontend resources
+URL_BASE = f"/{DOMAIN}"
+
+## List of JavaScript modules to register
+JSMODULES = [
+    {
+        "name": "Transport NSW vehicle occupancy card",
+        "filename": "vehicle-occupancy-card.js",
+        "version": INTEGRATION_VERSION,
+    }
+]
+
 
 #Transport for NSW constants
 TFNSW_ATTRIBUTION = "Data provided by Transport NSW"

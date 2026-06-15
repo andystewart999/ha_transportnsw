@@ -1,4 +1,13 @@
+const CARD_VERSION = '3.0.0b5'
+
 class VehicleOccupancyCard extends HTMLElement {
+  constructor() {
+    super();
+    this.backendVersion = null;
+    this.versionCheckDone = false;
+  }
+
+
   static getStubConfig() {
     return {
       entity1: "",
@@ -101,7 +110,76 @@ class VehicleOccupancyCard extends HTMLElement {
     };
   }
 
+//  connectedCallback() {
+//      this.checkVersion();
+//  }
+
+  async checkVersion(hass) {
+      if (this.versionCheckDone) return;
+      
+      try {
+          const result = await hass.connection.sendMessagePromise({
+              type: 'ha_transportnsw/version',
+          });
+          
+          this.backendVersion = result.version
+          this.versionCheckDone = true;
+
+          console.log('backend', this.backendVersion)
+          console.log('CARD_VERSION', CARD_VERSION)
+
+          if (this.backendVersion !== CARD_VERSION) {
+              this.showVersionMismatch();
+          }
+      } catch (err) {
+          console.error('Failed to check version:', err)
+      }
+  }
+
+  showVersionMismatch() {
+    // Show toast notification with reload action
+    // Using hass-notification event instead of persistent_notification
+    // because toast only appears in current session and gets immediate attention
+    const message = `Transport NSW Mk II version mismatch detected! Backend: ${this.backendVersion} | Frontend: ${CARD_VERSION}`;
+    
+    this.dispatchEvent(
+      new CustomEvent('hass-notification', {
+        detail: {
+          message: message,
+          duration: -1,  // Persistent until dismissed
+          dismissable: true,
+          action: {
+            text: 'Reload',
+            action: this.handleReload,
+          },
+        },
+        bubbles: true,
+        composed: true,
+      })
+    );
+  }
+
+  // Arrow function to preserve 'this' context when used as action handler
+  handleReload = () => {
+    // Clear application cache before reload
+    if ('caches' in window) {
+      caches.keys().then((names) => {
+        names.forEach((name) => {
+          caches.delete(name);
+        });
+      }).then(() => {
+        window.location.reload();
+      });
+    } else {
+      window.location.reload();
+    }
+  }
+
+
   set hass(hass) {
+    console.log("checkversion")
+    this.checkVersion(hass)
+
     const stateObj1 = hass.states[this.config.entity1];
     const stateObj2 = this.config.entity2
       ? hass.states[this.config.entity2]
@@ -177,8 +255,7 @@ class VehicleOccupancyCard extends HTMLElement {
         }
     }
 
-    console.log('rightSensor', rightSensor)
-    
+
     this.innerHTML = `
       <ha-card>
         <div class="card-content occupancy-card">
