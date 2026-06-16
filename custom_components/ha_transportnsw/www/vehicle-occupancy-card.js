@@ -1,4 +1,4 @@
-const CARD_VERSION = '3.0.0b6'
+const CARD_VERSION = '3.0.0b7'
 
 class VehicleOccupancyCard extends HTMLElement {
   constructor() {
@@ -6,7 +6,6 @@ class VehicleOccupancyCard extends HTMLElement {
     this.backendVersion = null;
     this.versionCheckDone = false;
   }
-
 
   static getStubConfig() {
     return {
@@ -23,7 +22,6 @@ class VehicleOccupancyCard extends HTMLElement {
       schema: [
         {
           name: "entity",
-          label: "Carriage occupancy",
           required: true,
           selector: {
             entity: {
@@ -39,7 +37,6 @@ class VehicleOccupancyCard extends HTMLElement {
         },
         {
           name: "entity2",
-          label: "Second entity status",
           required: false,
           selector: {
             entity: {
@@ -58,7 +55,10 @@ class VehicleOccupancyCard extends HTMLElement {
           name: "attribute",
           required: false,
           selector: {
-            text: {},
+            attribute: {},
+          },
+          context: {
+              filter_entity: "entity",
           },
         },
         {
@@ -90,6 +90,25 @@ class VehicleOccupancyCard extends HTMLElement {
 
         return undefined;
       },
+
+      computeLabel: (schema) => {
+        switch (schema.name) {
+          case "entity":
+            return "Detailed occupancy sensor";
+          case "entity2":
+            return "Second entity status";
+          case "title":
+            return "Title";
+          case "attribute":
+            return "Detailed occupancy attribute";
+          case "max_carriage_width":
+            return "Max carriage width";
+        }
+
+        return undefined;
+      },
+
+
     };
   }
 
@@ -124,9 +143,6 @@ class VehicleOccupancyCard extends HTMLElement {
           
           this.backendVersion = result.version
           this.versionCheckDone = true;
-
-          console.log('backend', this.backendVersion)
-          console.log('CARD_VERSION', CARD_VERSION)
 
           if (this.backendVersion !== CARD_VERSION) {
               this.showVersionMismatch();
@@ -177,7 +193,6 @@ class VehicleOccupancyCard extends HTMLElement {
 
 
   set hass(hass) {
-    console.log("checkversion")
     this.checkVersion(hass)
 
     const stateObj1 = hass.states[this.config.entity];
