@@ -318,23 +318,10 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: MyConfigEntry) ->
 
 async def async_unload_entry(hass: HomeAssistant, config_entry: MyConfigEntry) -> bool:
     """Unload a config entry."""
-    # try:
-    #     """Handle removal of an entry, cleaning up UI resources."""
-    #     resource_url = f"/{DOMAIN}/{CUSTOM_LOVELACE_CARD}"
-    #     lovelace = hass.data.get("lovelace")
-        
-    #     if lovelace and hasattr(lovelace, "resources"):
-    #         # Find the specific registered resource item ID
-    #         item_id = next(
-    #             (res.get("id") for res in lovelace.resources.async_items() if res.get("url") == resource_url),
-    #             None
-    #         )
-    #         if item_id:
-    #             await lovelace.resources.async_delete_item(item_id)
-    #             _LOGGER.debug (f"Unregistered Lovelace card '{resource_url}'")
 
-    # except Exception as ex:
-    #     _LOGGER.error (f"Error unregistering Lovelace card '{resource_url}': {ex}")
+    """Unregister frontend modules during unload"""
+    module_register = JSModuleRegistration(hass)
+    await module_register.async_unregister()
 
 
     # Unload platforms and return result
