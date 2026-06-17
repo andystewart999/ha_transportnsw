@@ -112,9 +112,11 @@ class JSModuleRegistration:
         if self.hass.data.get(LOVELACE_DATA).resource_mode == "storage":
             for module in JSMODULES:
                 url = f"{URL_BASE}/{module['filename']}"
+                _LOGGER.error(f"Unregistering: checking for {url}")
                 resources = [
                     r for r in self.lovelace.resources.async_items()
                     if r["url"].startswith(url)
                 ]
                 for resource in resources:
+                    _LOGGER.error(f"Unregistering resource {resource}")
                     await self.lovelace.resources.async_delete_item(resource["id"])

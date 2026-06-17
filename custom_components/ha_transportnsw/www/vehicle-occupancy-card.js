@@ -1,4 +1,4 @@
-const CARD_VERSION = '3.0.0b7'
+const CARD_VERSION = '3.0.0b8'
 
 class VehicleOccupancyCard extends HTMLElement {
   constructor() {
@@ -10,7 +10,7 @@ class VehicleOccupancyCard extends HTMLElement {
   static getStubConfig() {
     return {
       entity: "",
-      entity2: "",
+      entity2: "",g
       title: "",
       attribute: "occupancy_detail",
       max_carriage_width: 80,
@@ -504,6 +504,20 @@ class VehicleOccupancyCard extends HTMLElement {
   getCardSize() {
     return 3;
   }
+
+  // The rules for sizing your card in the grid in sections view
+  // Testing!
+  getGridOptions() {
+    return {
+      columns: 6,
+      min_columns: 3,
+      rows: 1,
+      min_rows: 1
+    };
+  }
+
+
+
 }
 
 customElements.define("ha-transportnsw-card", VehicleOccupancyCard);
