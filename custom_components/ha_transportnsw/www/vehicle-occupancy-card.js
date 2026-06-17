@@ -10,7 +10,7 @@ class VehicleOccupancyCard extends HTMLElement {
   static getStubConfig() {
     return {
       entity: "",
-      entity2: "",g
+      entity2: "",
       title: "",
       attribute: "occupancy_detail",
       max_carriage_width: 80,
