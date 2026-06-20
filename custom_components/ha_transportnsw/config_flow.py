@@ -125,7 +125,7 @@ class TransportNSWConfigFlowHandler(ConfigFlow, domain=DOMAIN):
                     # Get a reference to the config entry that's being reconfigured
                     config_entry = self._get_reconfigure_entry()
 
-                    # We don't have an update listener in place (it causes problems when adding multiple subentries in one go) so we need to force an update ourselves, rather than just doing the update and having a listener catch it
+                    # We don't have an update listener in place (it causes problems when adding multiple subentries in one go) so we need to force a reload ourselves, rather than just doing the entry update and having a listener catch it
                     return self.async_update_reload_and_abort(
                         config_entry,
                         title=f"Transport NSW Mk II ({user_input[CONF_API_KEY][-4:]})",

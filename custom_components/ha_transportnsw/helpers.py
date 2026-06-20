@@ -69,13 +69,15 @@ def get_trips (api_key: str, name_origin: str, name_destination: str, journey_wa
     try:
         if not include_alerts:
             alert_severity = 'none'
-    
+
+        sleep_time = 0.5            # This will be important later
         tfnsw = TransportNSWv2()
+
         data = tfnsw.get_trip (api_key = api_key, name_origin = name_origin, name_destination = name_destination, journey_wait_time = journey_wait_time,
             origin_transport_type = origin_transport_type, destination_transport_type = destination_transport_type, strict_transport_type = strict_transport_type, raw_output = False,
             route_filter = route_filter, journeys_to_return = journeys_to_return, include_realtime_location = include_realtime_location,
-            include_alerts = alert_severity, alert_type = alert_type, check_stop_ids = False, max_changes = max_changes)
-    
+            include_alerts = alert_severity, alert_type = alert_type, check_stop_ids = False, max_changes = max_changes, sleep_time = sleep_time)
+
         return json.loads(data)
 
     except InvalidAPIKey:

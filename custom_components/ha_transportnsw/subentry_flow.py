@@ -281,7 +281,7 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
                             if existing_subentry.unique_id == unique_id:
                                 errors["base"] = "return_already_configured"
 
-            # Check for errors again - duplicate journeys are an error
+            # Check for errors again - duplicate journeys are an error that might have just been discovered
             if "base" not in errors:
                 # Validation was successful, create the config subentry/subentries
                 
@@ -548,12 +548,10 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
                         self._get_entry(),
                         self._get_reconfigure_subentry(),
                         unique_id = f"{self._input_data[CONF_ORIGIN_ID]}_{unique_id_destination}",
-                        data = self._input_data,
-                        title = self._input_data["user_title"]
+                        data = self._input_data
                     )
                 else:
                     description_placeholders = create_subentries(self, self._get_entry(), self._input_data)
-
                     await self.hass.config_entries.async_reload(self._get_entry().entry_id)
 
                     return self.async_abort(

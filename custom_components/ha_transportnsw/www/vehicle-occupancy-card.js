@@ -1,8 +1,26 @@
+const CARD_VERSION = '3.0.0'
+
 class VehicleOccupancyCard extends HTMLElement {
+  constructor() {
+    super();
+    this.backendVersion = null;
+    this.versionCheckDone = false;
+
+    // Store the latest Home Assistant object so the timed rotation can
+    // re-render the card without waiting for a Home Assistant state update.
+    this._hass = null;
+
+    // Used to rotate through the optional right-hand-side entities.
+    this.entity2Index = 0;
+    this.entity2Timer = null;
+    this.entity2Key = "";
+  }
+
   static getStubConfig() {
     return {
-      entity1: "",
-      entity2: "",
+      entity: "",
+      entity2: [],
+      rotation_interval: 10,
       title: "",
       attribute: "occupancy_detail",
       max_carriage_width: 80,
@@ -13,8 +31,7 @@ class VehicleOccupancyCard extends HTMLElement {
     return {
       schema: [
         {
-          name: "entity1",
-          label: "Carriage occupancy",
+          name: "entity",
           required: true,
           selector: {
             entity: {
@@ -30,11 +47,21 @@ class VehicleOccupancyCard extends HTMLElement {
         },
         {
           name: "entity2",
-          label: "Second entity status",
           required: false,
           selector: {
             entity: {
-              multiple: false,
+              multiple: true,
+            },
+          },
+        },
+        {
+          name: "rotation_interval",
+          required: false,
+          selector: {
+            number: {
+              min: 1,
+              max: 100,
+              unit_of_measurement: "s",
             },
           },
         },
@@ -49,7 +76,10 @@ class VehicleOccupancyCard extends HTMLElement {
           name: "attribute",
           required: false,
           selector: {
-            text: {},
+            attribute: {},
+          },
+          context: {
+            filter_entity: "entity",
           },
         },
         {
@@ -67,10 +97,12 @@ class VehicleOccupancyCard extends HTMLElement {
 
       computeHelper: (schema) => {
         switch (schema.name) {
-          case "entity1":
+          case "entity":
             return "Select a Transport NSW Mk II sensor that contains detailed occupancy information";
           case "entity2":
-            return "Optional entity whose state will be shown on the right-hand side of the card";
+            return "Optional entities whose states will rotate on the right-hand side of the card";
+          case "rotation_interval":
+            return "How often the optional entities will rotate, in seconds - defaults to 10 seconds";
           case "title":
             return "Set a title for the card - defaults to the entity's device name if blank";
           case "attribute":
@@ -81,37 +113,186 @@ class VehicleOccupancyCard extends HTMLElement {
 
         return undefined;
       },
+
+      computeLabel: (schema) => {
+        switch (schema.name) {
+          case "entity":
+            return "Detailed occupancy sensor";
+          case "entity2":
+            return "Right-side status entities";
+          case "rotation_interval":
+            return "Entity rotation interval (s)";
+          case "title":
+            return "Title";
+          case "attribute":
+            return "Detailed occupancy attribute";
+          case "max_carriage_width":
+            return "Max carriage width";
+        }
+
+        return undefined;
+      },
+
+
     };
   }
 
   setConfig(config) {
-    if (!config.entity1) {
+    if (!config.entity) {
       throw new Error(
         "You must specify a Transport NSW Mk II sensor that contains occupancy detail information"
       );
     }
 
+    // Backwards compatibility: older card configs may have entity2 as a
+    // single string. New configs use an array because the selector is
+    // multi-selectable.
+    const entity2List = Array.isArray(config.entity2)
+      ? config.entity2.filter(Boolean)
+      : config.entity2
+        ? [config.entity2]
+        : [];
+
     this.config = {
       title: "",
-      entity2: "",
+      entity2: [],
+      rotation_interval: 10,
       attribute: "occupancy_detail",
       max_carriage_width: 80,
       demo: false,
       ...config,
+      entity2: entity2List,
     };
+
+    // Reset the rotation when the configuration changes.
+    this.entity2Index = 0;
+    this.entity2Key = entity2List.join("|");
   }
 
+  connectedCallback() {
+    if (this.entity2Timer) return;
+
+    this.entity2Timer = window.setInterval(() => {
+      const entity2List = this.getEntity2List();
+
+      if (entity2List.length > 1) {
+        this.entity2Index = (this.entity2Index + 1) % entity2List.length;
+
+        if (this._hass) {
+          this.render(this._hass);
+        }
+      }
+    }, (this.config.rotation_interval) * 1000);
+  }
+
+  disconnectedCallback() {
+    if (this.entity2Timer) {
+      window.clearInterval(this.entity2Timer);
+      this.entity2Timer = null;
+    }
+  }
+
+  getEntity2List() {
+    if (Array.isArray(this.config?.entity2)) {
+      return this.config.entity2.filter(Boolean);
+    }
+
+    if (this.config?.entity2) {
+      return [this.config.entity2];
+    }
+
+    return [];
+  }
+
+  async checkVersion(hass) {
+      if (this.versionCheckDone) return;
+      
+      try {
+          const result = await hass.connection.sendMessagePromise({
+              type: 'ha_transportnsw/version',
+          });
+          
+          this.backendVersion = result.version
+          this.versionCheckDone = true;
+
+          if (this.backendVersion !== CARD_VERSION) {
+              this.showVersionMismatch();
+          }
+      } catch (err) {
+          console.error('Failed to check version:', err)
+      }
+  }
+
+  showVersionMismatch() {
+    // Show toast notification with reload action
+    // Using hass-notification event instead of persistent_notification
+    // because toast only appears in current session and gets immediate attention
+    const message = `Transport NSW Mk II version mismatch detected! Backend: ${this.backendVersion},  frontend: ${CARD_VERSION}`;
+    
+    this.dispatchEvent(
+      new CustomEvent('hass-notification', {
+        detail: {
+          message: message,
+          duration: -1,  // Persistent until dismissed
+          dismissable: true,
+          action: {
+            text: 'Reload',
+            action: this.handleReload,
+          },
+        },
+        bubbles: true,
+        composed: true,
+      })
+    );
+  }
+
+  // Arrow function to preserve 'this' context when used as action handler
+  handleReload = () => {
+    // Clear application cache before reload
+    if ('caches' in window) {
+      caches.keys().then((names) => {
+        names.forEach((name) => {
+          caches.delete(name);
+        });
+      }).then(() => {
+        window.location.reload();
+      });
+    } else {
+      window.location.reload();
+    }
+  }
+
+
   set hass(hass) {
-    const stateObj1 = hass.states[this.config.entity1];
-    const stateObj2 = this.config.entity2
-      ? hass.states[this.config.entity2]
+    this._hass = hass;
+    this.checkVersion(hass);
+    this.render(hass);
+  }
+
+  render(hass) {
+    const stateObj1 = hass.states[this.config.entity];
+
+    const entity2List = this.getEntity2List();
+    const entity2Key = entity2List.join("|");
+
+    if (entity2Key !== this.entity2Key) {
+      this.entity2Key = entity2Key;
+      this.entity2Index = 0;
+    }
+
+    const selectedEntity2 = entity2List.length > 0
+      ? entity2List[this.entity2Index % entity2List.length]
+      : undefined;
+
+    const stateObj2 = selectedEntity2
+      ? hass.states[selectedEntity2]
       : undefined;
 
     if (!stateObj1) {
       this.innerHTML = `
         <ha-card>
           <div class="card-content">
-            Sensor not found: ${this.config.entity1}
+            Sensor not found: ${this.config.entity}
           </div>
         </ha-card>
       `;
@@ -146,7 +327,7 @@ class VehicleOccupancyCard extends HTMLElement {
     }
 
     // Try to get the device name so we can use it in the title.
-    const entityRegistryEntry = hass.entities?.[this.config.entity1];
+    const entityRegistryEntry = hass.entities?.[this.config.entity];
     const deviceId = entityRegistryEntry?.device_id;
     const device = deviceId ? hass.devices?.[deviceId] : undefined;
 
@@ -177,8 +358,7 @@ class VehicleOccupancyCard extends HTMLElement {
         }
     }
 
-    console.log('rightSensor', rightSensor)
-    
+
     this.innerHTML = `
       <ha-card>
         <div class="card-content occupancy-card">
@@ -412,6 +592,20 @@ class VehicleOccupancyCard extends HTMLElement {
   getCardSize() {
     return 3;
   }
+
+  // The rules for sizing your card in the grid in sections view
+  // Testing!
+  getGridOptions() {
+    return {
+      columns: 9,
+      min_columns: 9,
+      rows: 1,
+      min_rows: 1
+    };
+  }
+
+
+
 }
 
 customElements.define("ha-transportnsw-card", VehicleOccupancyCard);
@@ -444,8 +638,9 @@ window.customCards.push({
     return {
       config: {
         type: "custom:ha-transportnsw-card",
-        entity1: entityId,
-        entity2: "",
+        entity: entityId,
+        entity2: [],
+        rotation_interval: 10,
         title: "",
         attribute: "occupancy_detail",
         max_carriage_width: 80,
