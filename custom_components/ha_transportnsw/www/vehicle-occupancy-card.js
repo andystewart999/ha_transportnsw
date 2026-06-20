@@ -589,17 +589,17 @@ class VehicleOccupancyCard extends HTMLElement {
     `;
   }
 
+  // The default height for the card in masonry view
   getCardSize() {
     return 3;
   }
 
-  // The rules for sizing your card in the grid in sections view
-  // Testing!
+  // The default rules for the card in sections view
   getGridOptions() {
     return {
       columns: 9,
       min_columns: 9,
-      rows: 1,
+      rows: "auto",
       min_rows: 1
     };
   }
