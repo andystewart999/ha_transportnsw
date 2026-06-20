@@ -56,7 +56,6 @@
 	  },
 	  "subentry_journey": {
 		  "entry_type": "",
-		  "title": "Transport NSW Mk II",
           "flow_title": "Transport NSW Mk II",
 		  "abort": {
 			  "already_configured": "You have already added that journey.",
