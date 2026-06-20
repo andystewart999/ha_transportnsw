@@ -63,6 +63,19 @@ There are many additional sensors that are available if required, which can be s
 ### Attributes 
 Some of the sensors have their own additional attributes:
 
-- Changes: The state of this sensor is the number of changes within the journey.  The ```locations_list``` attribute includes every stop on the journey, plus the locations of the origin and destination vehicles (if available) in JSON.
+- Changes: The state of this sensor is the number of changes within the journey.  The ```changes``` attribute contains a simple comma-separated list of origin, destination and stations where there is a change.  The ```locations``` attribute is a dictlist that includes every relevant (origin, changes, destination) stop on the journey, plus the locations of the first leg and last leg vehicles (if available).
+- Occupancy:  The state of this sensor is the general vehicle occupancy level, if available.  The ```occupancy detail``` attribute contains a dictlist of per-carriage occupancy detail, if available.
+- Occuppancy detail:  The state of this sensor is a glyph-based representation of the per-carriage occupancy, if available.  The ```occupancy detail``` attribute contains the same information as the Occupancy sensor's ```occupancy detail``` attribute.
 - Alerts: The state of this sensor is the highest alert returned by the API.  The attributes are the full JSON dump of the alert details, which can be processed by your automations or template sensors as required.
 - Device tracker: The stop name and ID are included.
+
+## Lovelace card
+A custom Lovelace card is included for your dashboards.  It shows per-carriage detailed occupancy in the same style as the Transport NSW train information boards, and scales automatically depending on the length of the vehicle and the number of carriages or equivalent that it has.  As well as showing occupancy detail you can optionally select one or more sensor states to show in the top-right corner of the card, rotating through each one at a rate of your choosing:
+
+![Custom Lovelace card](https://github.com/andystewart999/ha_integration_resources/blob/main/documentation/ha_transportnsw/www/vehicle-occupancy-card.png)
+
+The card fully supports Home Assistant's section view, has a graphical editor and will also be offered as a suggestion in the 'by entity' picker:
+
+![Card suggestion](https://github.com/andystewart999/ha_integration_resources/blob/main/documentation/ha_transportnsw/www/card-suggestions.png)
+
+
