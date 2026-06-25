@@ -4,9 +4,9 @@ import logging
 from typing import List
 import json
 from pathlib import Path
-import pytz
-import tzlocal
-import time
+#import pytz
+#import tzlocal
+#import time
 
 from datetime import date, datetime
 from homeassistant.core import HomeAssistant
@@ -14,6 +14,8 @@ from homeassistant.helpers import (
     entity_registry as er,
     selector
 )
+from homeassistant.util import dt as dt_util
+
 from .const import *
 
 _LOGGER = logging.getLogger(__name__)
@@ -217,7 +219,8 @@ def set_api_calls (file_path: str, api_calls: int) -> int:
     except:
         api_info = {}
 
-    current_date = datetime.now().date()
+    current_date = dt_util.now().date()
+
     # Do we need to reset the API counter?
     if 'last_reset_date' in api_info:
         # Check the date
