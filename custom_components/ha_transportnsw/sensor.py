@@ -1,10 +1,10 @@
 """Interfaces with the Transport NSW Mk II API sensors."""
 
 import logging
-from datetime import datetime, timezone, timedelta
-import pytz
-import tzlocal
-import time
+from datetime import datetime #, timezone, timedelta
+# import pytz
+# import tzlocal
+# import time
 
 from homeassistant.components.sensor import (
     SensorDeviceClass,
@@ -30,6 +30,7 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.config_entries import ConfigSubentry
 from homeassistant.const import EntityCategory
+from homeassistant.util import dt as dt_util
 
 from . import MyConfigEntry
 from .const import *
@@ -84,13 +85,16 @@ def get_occupancy_detail(occupancy_detail) -> str:
 
 
 def convert_date(utc_string) -> datetime:
-    fmt = '%Y-%m-%dT%H:%M:%SZ'
+    # fmt = '%Y-%m-%dT%H:%M:%SZ'
     
-    utc_dt = datetime.strptime(utc_string, fmt)
-    utc_dt = utc_dt.replace(tzinfo=pytz.utc)
-    local_timezone = tzlocal.get_localzone()
-    local_dt = utc_dt.astimezone(local_timezone)
-    
+    # utc_dt = datetime.strptime(utc_string, fmt)
+    # utc_dt = utc_dt.replace(tzinfo=pytz.utc)
+    # local_timezone = tzlocal.get_localzone()
+    # local_dt = utc_dt.astimezone(local_timezone)
+
+    utc_dt = dt_util.parse_datetime(utc_string)
+    local_dt = dt_util.as_local(utc_dt)
+
     return local_dt
 
 
