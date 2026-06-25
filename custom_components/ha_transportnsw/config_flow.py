@@ -3,7 +3,6 @@ from __future__ import annotations
 from TransportNSWv2 import InvalidAPIKey, APIRateLimitExceeded, StopError, TripError
 
 import logging
-import random
 from typing import Any
 
 import voluptuous as vol
