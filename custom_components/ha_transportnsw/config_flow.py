@@ -11,7 +11,7 @@ from homeassistant.config_entries import (
     ConfigFlow,
     ConfigFlowResult,
     ConfigSubentryFlow,
-    OptionsFlowWithReload,
+    OptionsFlow,
     SOURCE_RECONFIGURE,
     SOURCE_IMPORT
 )
@@ -130,22 +130,27 @@ class TransportNSWConfigFlowHandler(ConfigFlow, domain=DOMAIN):
                         # Still here?  There's no existing integration with the new API key
                         reason = "reconfigure_successful"
                     else:
-                        _LOGGER.error("1")
                         # The API key hasn't changed - and with no other options we can just abort
-                        self.async_abort(
+                        return self.async_abort(
                             reason="reconfigure_successful_no_change"
                         )
-                        _LOGGER.error("2")
 
                     # Get a reference to the config entry that's being reconfigured
                     config_entry = self._get_reconfigure_entry()
+
+                    # Get the scan_interval value now otherwise it will be lost
+                    current_data = dict(config_entry.data)
+                    combined_data = {
+                        **current_data,
+                        **user_input
+                    }
 
                     # We don't have an update listener in place (it causes problems when adding multiple subentries in one go) so we need to force a reload ourselves, rather than just doing the entry update and having a listener catch it
                     return self.async_update_reload_and_abort(
                         config_entry,
                         title=f"Transport NSW Mk II ({user_input[CONF_API_KEY][-4:]})",
                         unique_id=user_input[CONF_API_KEY],
-                        data=user_input,
+                        data=combined_data,
                         reload_even_if_entry_is_unchanged=False,
                         reason = f"reconfigure_successful_api_change_{str(user_input[CONF_API_KEY] != self._previous_key).lower()}"
                     )
@@ -244,8 +249,8 @@ class TransportNSWConfigFlowHandler(ConfigFlow, domain=DOMAIN):
     def async_get_options_flow(config_entry: ConfigEntry) -> TransportNSWOptionsFlowHandler:
         return TransportNSWOptionsFlowHandler()
 
-class TransportNSWOptionsFlowHandler(OptionsFlowWithReload):
-    """TransportNSW config flow options handler - we don't have an options change listener hence using OptionsFlowWithReload"""
+class TransportNSWOptionsFlowHandler(OptionsFlow):
+    """TransportNSW config flow options handler - we don't have an options change listener so at the end we'll always force a reload"""
 
     async def async_step_init(self, user_input=None) -> FlowResult:
         """Handle the options flow"""
@@ -276,13 +281,32 @@ class TransportNSWOptionsFlowHandler(OptionsFlowWithReload):
                 **new_options
             }
 
-            self.hass.config_entries.async_update_entry(
-                self.config_entry,
-                data=combined_data
-            )
-            
-            # And then return async_create_entry with the updated options to finish the flow
-            return self.async_create_entry(title="", data=combined_options)
+            # Check if ANY values actually changed across both dictionaries
+            data_changed = current_data != combined_data
+            options_changed = current_options != combined_options
+
+            if data_changed:
+                # Update the scan interval, stored under config_entry.data
+                self.hass.config_entries.async_update_entry(
+                    self.config_entry,
+                    data=combined_data
+                )
+
+            # And then return async_create_entry with the updated config_entry.options to finish the flow
+            # But we have to hold off actually returning for the moment as we may need to force a reload at the end of the process
+            result = self.async_create_entry(title="", data=combined_options)
+
+            # Schedule an integration reload if we need to - we can't use OptionsFlowWithReload as that only monitors changes to the options, not the data
+            if data_changed or options_changed:
+                self.hass.async_create_task(
+                    self.hass.config_entries.async_reload(
+                        self.config_entry.entry_id
+                    )
+                )
+
+            # Finally, actually return from the OptionsFlow
+            return result
+
 
 
         # Show the options form
