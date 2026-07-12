@@ -6,28 +6,35 @@ import logging
 from typing import Any
 
 import voluptuous as vol
-#from homeassistant.helpers.selector import selector, BooleanSelector, BooleanSelectorConfig
-import homeassistant.helpers.config_validation as cv
-from homeassistant.data_entry_flow import section
 from homeassistant.config_entries import (
     ConfigEntry,
     ConfigFlow,
     ConfigFlowResult,
     ConfigSubentryFlow,
-    OptionsFlow,
+    OptionsFlowWithReload,
     SOURCE_RECONFIGURE,
     SOURCE_IMPORT
 )
+from homeassistant.data_entry_flow import FlowResult
 from homeassistant.const import (
     CONF_API_KEY,
     CONF_SCAN_INTERVAL
 )
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
-from homeassistant.components import persistent_notification
+#from homeassistant.components import persistent_notification
+from homeassistant.components.persistent_notification import async_create as async_create_notification
 
-from .const import *
-from .helpers import get_trips, check_stops, get_stop_detail#, set_optional_sensors
+from .const import (
+    CONF_REQUEST_LOCATION_UPDATE,
+    DEFAULT_REQUEST_LOCATION_UPDATE,
+    DEFAULT_SCAN_INTERVAL,
+    DOMAIN,
+    STOP_TEST_ID,
+    SUBENTRY_TYPE_JOURNEY,
+    TFNSW_REGISTRATION,
+)
+from .helpers import check_stops
 from .subentry_flow import JourneySubEntryFlowHandler
 
 _LOGGER = logging.getLogger(__name__)
@@ -37,23 +44,28 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> None:
     # Check that the API key is valid by calling the quick and easy 'stops' API with a hard-coded, known good station ID (Central Station)
 
     try:
+        # We don't actually care about the returned value, just need to force a check and see if any errors are raised
         stop_data = await hass.async_add_executor_job (
-             check_stops,
-             data[CONF_API_KEY],
-             [STOP_TEST_ID]
-             )
+            check_stops,
+            data[CONF_API_KEY],
+            [STOP_TEST_ID]
+        )
 
-    except InvalidAPIKey:
-        raise InvalidAPIKey
+    # Testing simpler exception code
+    except (InvalidAPIKey, APIRateLimitExceeded, StopError):
+        raise
+
+    # except InvalidAPIKey:
+    #     raise InvalidAPIKey
     
-    except APIRateLimitExceeded:
-        raise APIRateLimitExceeded
+    # except APIRateLimitExceeded:
+    #     raise APIRateLimitExceeded
     
-    except StopError:
-        raise StopError
+    # except StopError:
+    #     raise StopError
 
     except Exception as ex:
-        raise StopError
+        raise StopError from ex
 
 
 class TransportNSWConfigFlowHandler(ConfigFlow, domain=DOMAIN):
@@ -118,8 +130,12 @@ class TransportNSWConfigFlowHandler(ConfigFlow, domain=DOMAIN):
                         # Still here?  There's no existing integration with the new API key
                         reason = "reconfigure_successful"
                     else:
-                        # The API key hasn't changed - no need to check for a unique ID conflict
-                        reason = "reconfigure_successful_no_change"
+                        _LOGGER.error("1")
+                        # The API key hasn't changed - and with no other options we can just abort
+                        self.async_abort(
+                            reason="reconfigure_successful_no_change"
+                        )
+                        _LOGGER.error("2")
 
                     # Get a reference to the config entry that's being reconfigured
                     config_entry = self._get_reconfigure_entry()
@@ -137,7 +153,7 @@ class TransportNSWConfigFlowHandler(ConfigFlow, domain=DOMAIN):
                 elif self.source == SOURCE_IMPORT:
                     if existing_entry is not None:
                         # Looks like we're trying to re-import an existing entry, so create a persistent notification and abort
-                        persistent_notification.create(
+                        async_create_notification(
                             self.hass,
                             f"Skipping the migration of legacy configuration.yaml entries for API key ending `{user_input[CONF_API_KEY][-4:]}` as they've already been imported, or there's already a config entry with the same key.\n\nPlease remove those entries from configuration.yaml.",
                             title='Transport NSW Mk II',
@@ -158,7 +174,7 @@ class TransportNSWConfigFlowHandler(ConfigFlow, domain=DOMAIN):
                     # The data for the config entry is a subset of what we've been provided via the import process
                     self._input_data = {
                         CONF_API_KEY: user_input[CONF_API_KEY],
-                        CONF_SCAN_INTERVAL: user_input[CONF_SCAN_INTERVAL]
+                        #CONF_SCAN_INTERVAL: user_input[CONF_SCAN_INTERVAL]
                         
                     }
                     subentry_data = user_input['subentry_data']
@@ -196,10 +212,6 @@ class TransportNSWConfigFlowHandler(ConfigFlow, domain=DOMAIN):
         USER_DATA_SCHEMA = vol.Schema(
             {
                 vol.Required(CONF_API_KEY, default = user_input.get(CONF_API_KEY,'')): str,
-                vol.Required(
-                    CONF_SCAN_INTERVAL,
-                    default=user_input.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),
-                ): (vol.All(vol.Coerce(int), vol.Clamp(min=MIN_SCAN_INTERVAL))),
             }
         )
 
@@ -216,47 +228,67 @@ class TransportNSWConfigFlowHandler(ConfigFlow, domain=DOMAIN):
             description_placeholders = description_placeholders
         )
 
-    async def async_step_import(self, user_input: dict[str, Any]):
+    async def async_step_import(self, user_input: dict[str, Any]) -> ConfigFlowResult:
         # We're here so the config entry for this import hasn't been created already
         # We've been passed a complete subentry data-set, plus what we need to set up the initial config entry as well
         return await self.async_step_user(user_input = user_input)
 
 
     async def async_step_reconfigure(self, user_input: dict[str, Any] | None = None):
+        # Deliberately not passing user_input through, so the 'show form' code will run - there's specific SOURCE_RECONFIGURE to handle getting the current info
         return await self.async_step_user()
 
 
     @staticmethod
     @callback
-    def async_get_options_flow(config_entry):
+    def async_get_options_flow(config_entry: ConfigEntry) -> TransportNSWOptionsFlowHandler:
         return TransportNSWOptionsFlowHandler()
 
-OPTIONS_SCHEMA = vol.Schema(
-    {
-        vol.Required(CONF_REQUEST_LOCATION_UPDATE): bool,
-    }
-)
-
-class TransportNSWOptionsFlowHandler(OptionsFlow):
-    """TransportNSW config flow options handler"""
+class TransportNSWOptionsFlowHandler(OptionsFlowWithReload):
+    """TransportNSW config flow options handler - we don't have an options change listener hence using OptionsFlowWithReload"""
 
     async def async_step_init(self, user_input=None) -> FlowResult:
         """Handle the options flow"""
 
-        if user_input is not None:
+        OPTIONS_SCHEMA = vol.Schema(
+            {
+                vol.Optional(CONF_SCAN_INTERVAL, default = self.config_entry.data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)): int,
+                vol.Optional(CONF_REQUEST_LOCATION_UPDATE, default = self.config_entry.options.get(CONF_REQUEST_LOCATION_UPDATE, DEFAULT_REQUEST_LOCATION_UPDATE)): bool,
+            }
+        )
 
-            # Save and exit the options flow without forcing a reload of the config entry
-            return self.async_create_entry(
-                data=user_input
-                )
+        if user_input is not None:
+            # This caters for there possibly being more options in the future without me having to remember to incorporate them!
+            new_data = {key: value for key, value in user_input.items() if key == CONF_SCAN_INTERVAL}
+            new_options = {key: value for key, value in user_input.items() if key != CONF_SCAN_INTERVAL}
+
+            # We want to save these settings into both data AND options, not just options, even though this is an OptionsFlow
+            # So we have to do it via both async_update_entry and async_create_entry, and merge in the existing .data and .options values otherwise they'll be lost
+            current_data = dict(self.config_entry.data)
+            combined_data = {
+                **current_data,
+                **new_data
+            }
+
+            current_options = dict(self.config_entry.options)
+            combined_options = {
+                **current_options,
+                **new_options
+            }
+
+            self.hass.config_entries.async_update_entry(
+                self.config_entry,
+                data=combined_data
+            )
+            
+            # And then return async_create_entry with the updated options to finish the flow
+            return self.async_create_entry(title="", data=combined_options)
+
 
         # Show the options form
         return self.async_show_form(
             step_id="init",
-            data_schema=self.add_suggested_values_to_schema(
-                OPTIONS_SCHEMA,
-                self.config_entry.options
-                )
+            data_schema=OPTIONS_SCHEMA
             )
 
 class CannotConnect(HomeAssistantError):

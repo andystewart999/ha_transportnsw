@@ -17,8 +17,24 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.helpers import entity_registry
 
-from . import MyConfigEntry
-from .const import *
+from . import TransportNSWConfigEntry
+from .const import (
+    CONF_DESTINATION_DEVICE_TRACKER,
+    CONF_DESTINATION_ID,
+    CONF_DESTINATION_NAME,
+    CONF_FIRST_LEG_DEVICE_TRACKER,
+    CONF_LAST_LEG_DEVICE_TRACKER,
+    CONF_ORIGIN_DEVICE_TRACKER,
+    CONF_ORIGIN_ID,
+    CONF_ORIGIN_NAME,
+    CONF_ORIGIN_TYPE,
+    CONF_TRIPS_TO_CREATE,
+    DEVICE_TRACKER_LOOKUPS,
+    DOMAIN,
+    JOURNEY_ICONS,
+    SUBENTRY_TYPE_JOURNEY,
+    TFNSW_ATTRIBUTION
+)
 from .coordinator import TransportNSWCoordinator
 from .helpers import remove_entity, extract_from_hierarchy
 
@@ -78,7 +94,7 @@ def get_device_tracker_name(key, subentry_data, journey_data, device_suffix, leg
 
 async def async_setup_entry(
     hass: HomeAssistant,
-    config_entry: MyConfigEntry,
+    config_entry: TransportNSWConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
 

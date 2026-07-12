@@ -37,7 +37,36 @@ from TransportNSWv2 import InvalidAPIKey, StopError
 
 from .helpers import check_stops, set_optional_sensors, get_optional_sensors
 from .coordinator import TransportNSWCoordinator
-from .const import *
+from .const import (
+    CONF_ALERTS_SENSOR,
+    CONF_ALERT_SEVERITY,
+    CONF_ALERT_TYPES,
+    CONF_DESTINATION_DEVICE_TRACKER,
+    CONF_DESTINATION_ID,
+    CONF_DESTINATION_NAME,
+    CONF_DESTINATION_TRANSPORT_TYPE,
+    CONF_FIRST_LEG_DEVICE_TRACKER,
+    CONF_INCLUDE_REALTIME_LOCATION,
+    CONF_LAST_LEG_DEVICE_TRACKER,
+    CONF_MAX_CHANGES,
+    CONF_ORIGIN_DEVICE_TRACKER,
+    CONF_ORIGIN_ID,
+    CONF_ORIGIN_NAME,
+    CONF_ORIGIN_TRANSPORT_TYPE,
+    CONF_RETURN_INFO,
+    CONF_ROUTE_FILTER,
+    CONF_SENSOR_CREATION,
+    CONF_TRIPS_TO_CREATE,
+    CONF_TRIP_WAIT_TIME,
+    DEFAULT_DESTINATION_DEVICE_TRACKER,
+    DEFAULT_FIRST_LEG_DEVICE_TRACKER,
+    DEFAULT_LAST_LEG_DEVICE_TRACKER,
+    DEFAULT_ORIGIN_DEVICE_TRACKER,
+    DEFAULT_SCAN_INTERVAL,
+    DOMAIN,
+    INTEGRATION_VERSION,
+    SUBENTRY_TYPE_JOURNEY
+)
 from .www import JSModuleRegistration
 
 _LOGGER = logging.getLogger(__name__)
@@ -45,17 +74,17 @@ _LOGGER = logging.getLogger(__name__)
 PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.DEVICE_TRACKER]
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
-type MyConfigEntry = ConfigEntry[RuntimeData]
-
-
 @dataclass
 class RuntimeData:
     """Class to hold your data."""
 
     coordinator: DataUpdateCoordinator
 
+type TransportNSWConfigEntry = ConfigEntry[RuntimeData]   #this can probably be changed now that runtime data is a built-in property?
+
+
 async def get_migration_data(hass: HomeAssistant, yaml_entry):
-     # Convert a migrated YAML entry into ConfigSubentryData data and return it along with the api key
+    # Convert a migrated YAML entry into ConfigSubentryData data and return it along with the api key
 
     try:
         api_key = yaml_entry[CONF_API_KEY]
@@ -97,10 +126,10 @@ async def get_migration_data(hass: HomeAssistant, yaml_entry):
         # We need the stop names for the title, so get them now
         #stop_data = check_stops(api_key, [origin_id, destination_id])
         stop_data = await hass.async_add_executor_job (
-             check_stops,
-             api_key,
-             [origin_id, destination_id]
-             )
+            check_stops,
+            api_key,
+            [origin_id, destination_id]
+        )
 
         if stop_data['all_stops_valid']:
             # Get the origin and destination stop names
@@ -127,7 +156,7 @@ async def get_migration_data(hass: HomeAssistant, yaml_entry):
             CONF_ALERTS_SENSOR: include_alerts,
             CONF_ALERT_SEVERITY: alert_severity,
             CONF_ALERT_TYPES: alert_types
-            }
+        }
 
         subentry_data.update(sensor_options)
 
@@ -145,7 +174,7 @@ async def get_migration_data(hass: HomeAssistant, yaml_entry):
     return api_key, None, error
 
 # Schema migration
-async def async_migrate_entry(hass: HomeAssistant, config_entry: MyConfigEntry):
+async def async_migrate_entry(hass: HomeAssistant, config_entry: TransportNSWConfigEntry):
 
     if config_entry.version > 2:
         # This means the user has downgraded from a future version
@@ -166,7 +195,8 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: MyConfigEntry):
                 last_leg_device_tracker = new_data['destination_sensors'].get(CONF_LAST_LEG_DEVICE_TRACKER, DEFAULT_LAST_LEG_DEVICE_TRACKER)
 
                 # Create the new sensor dictionary
-                new_options = {'device_trackers':
+                new_options = {
+                    'device_trackers':
                     {
                         CONF_FIRST_LEG_DEVICE_TRACKER: first_leg_device_tracker,
                         CONF_LAST_LEG_DEVICE_TRACKER: last_leg_device_tracker,
@@ -187,10 +217,10 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: MyConfigEntry):
                 # Update the subentry
                 # Do we need to do this?  The integration is still loading
                 hass.config_entries.async_update_subentry(
-                     config_entry,
-                     subentry,
-                     data = new_data
-                     )
+                    config_entry,
+                    subentry,
+                    data = new_data
+                )
 
         # Finally, update the config entry itself - just the schema version number
         hass.config_entries.async_update_entry(config_entry, minor_version=0, version=2)
@@ -220,7 +250,7 @@ async def websocket_get_version(
         {"version": INTEGRATION_VERSION},
     )
 
-async def async_setup(hass: HomeAssistant, config_entry: MyConfigEntry):
+async def async_setup(hass: HomeAssistant, config_entry: TransportNSWConfigEntry):
 
     # Check if there's an old YAML config to import...
     yaml_data = defaultdict(list)
@@ -259,7 +289,7 @@ async def async_setup(hass: HomeAssistant, config_entry: MyConfigEntry):
     return True
 
 
-async def async_setup_entry(hass: HomeAssistant, config_entry: MyConfigEntry) -> bool:
+async def async_setup_entry(hass: HomeAssistant, config_entry: TransportNSWConfigEntry) -> bool:
     """Set up the ha_transportnsw integration from a config entry."""
 
     """ We need to register the Frontend .JS module, which will be unloaded if the Integration is itself unloaded or reloaded by the user
@@ -336,7 +366,7 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: MyConfigEntry) ->
     return True
 
 
-async def async_unload_entry(hass: HomeAssistant, config_entry: MyConfigEntry) -> bool:
+async def async_unload_entry(hass: HomeAssistant, config_entry: TransportNSWConfigEntry) -> bool:
     """Unload a config entry."""
 
     try:

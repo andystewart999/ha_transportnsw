@@ -32,7 +32,7 @@ from homeassistant.config_entries import ConfigSubentry
 from homeassistant.const import EntityCategory
 from homeassistant.util import dt as dt_util
 
-from . import MyConfigEntry
+from . import TransportNSWConfigEntry
 from .const import *
 from .coordinator import TransportNSWCoordinator
 from .helpers import remove_entity, remove_device, extract_from_hierarchy
@@ -300,7 +300,7 @@ ALERT_SENSORS: tuple[TransportNSWSensorEntityDescription, ...] = (
 
 async def async_setup_entry(
     hass: HomeAssistant,
-    config_entry: MyConfigEntry,
+    config_entry: TransportNSWConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ):
     """Set up the Sensors."""
@@ -395,7 +395,7 @@ class TransportNSWSensor(CoordinatorEntity, SensorEntity):
 
     entity_description: SensorEntityDescription
 
-    def __init__(self, coordinator: TransportNSWCoordinator, description: SensorEntityDescription, config_entry: MyConfigEntry) -> None:
+    def __init__(self, coordinator: TransportNSWCoordinator, description: SensorEntityDescription, config_entry: TransportNSWConfigEntry) -> None:
         """Initialise sensor."""
         super().__init__(coordinator)
 
@@ -407,7 +407,7 @@ class TransportNSWSensor(CoordinatorEntity, SensorEntity):
         self._attr_unique_id = f"{config_entry.entry_id}_{description.key}_0"
         self._attr_name = f"{description.name} ({self.api_short})"
 
- 
+
     @callback
     def _handle_coordinator_update(self) -> None:
         """Update sensor with latest data from coordinator."""

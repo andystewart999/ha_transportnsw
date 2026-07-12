@@ -1,20 +1,38 @@
 """Transport NSW Mk II DataUpdateCoordinator."""
 
-from dataclasses import dataclass
+#from dataclasses import dataclass
 from datetime import timedelta
 import logging
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
     CONF_API_KEY,
-    CONF_NAME,
-    CONF_SCAN_INTERVAL,
-    UnitOfTime, 
+#    CONF_NAME,
+    CONF_SCAN_INTERVAL
+#    UnitOfTime, 
 )
-from homeassistant.core import DOMAIN, HomeAssistant
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.helpers.location import find_coordinates
-from .const import *
+from .const import (
+    API_CALLS,
+    CONF_ALERT_SEVERITY,
+    CONF_ALERT_TYPES,
+    CONF_ALERTS_SENSOR,
+    CONF_DESTINATION_ID,
+    CONF_DESTINATION_TRANSPORT_TYPE,
+    CONF_MAX_CHANGES,
+    CONF_ORIGIN_ID,
+    CONF_ORIGIN_TRANSPORT_TYPE,
+    CONF_ORIGIN_TYPE,
+    CONF_REQUEST_LOCATION_UPDATE,
+    CONF_ROUTE_FILTER,
+    CONF_TRIPS_TO_CREATE,
+    CONF_TRIP_WAIT_TIME,
+    DEFAULT_SCAN_INTERVAL,
+    DOMAIN,
+    SUBENTRY_TYPE_JOURNEY,
+)
 from .helpers import get_trips, get_api_calls, set_api_calls
 
 _LOGGER = logging.getLogger(__name__)
@@ -29,7 +47,7 @@ class TransportNSWCoordinator(DataUpdateCoordinator):
         # set variables from options
         self.hass = hass
         self.config_entry = config_entry
-        self.poll_interval = config_entry.data[CONF_SCAN_INTERVAL]
+        self.poll_interval = config_entry.data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
         self.api_calls = 0      # We'll update it properly later, in async_update_data
         
         # Initialise DataUpdateCoordinator

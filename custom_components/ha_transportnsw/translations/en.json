@@ -9,7 +9,7 @@
       "reconfigure_successful": "New API key registered.",
       "reconfigure_successful_no_change": "No changes made.",
       "reconfigure_successful_api_change_true": "Reconfiguration to a new API key was successful.",
-      "reconfigure_successful_api_change_false": "Reconfiguration successful using the existing API key."
+      "reconfigure_successful_api_change_false": "No changes made."
     },
     "error": {
       "apiratelimitexceeded": "API rate limit exceeded - wait a moment and try again.",
@@ -21,8 +21,7 @@
     "step": {
       "user": {
         "data": {
-          "api_key": "Your Transport NSW API key",
-		  "scan_interval": "Sensor update interval (seconds)"
+          "api_key": "Your Transport NSW API key"
         },
         "description": "Enter your Transport NSW API key.  If you don't have one you can register [here]({tfnsw_registration})."
       }
@@ -34,6 +33,7 @@
         "title": "Options",
         "description": "These optional settings impact all of your journeys.",
         "data": {
+		  "scan_interval": "Sensor update interval (seconds)",
           "request_location_update": "If the journey origin is a device tracker (e.g. a mobile phone), attempt to request a location update at each poll.  Note that this could impact the battery life of the device being polled."
         }
       }

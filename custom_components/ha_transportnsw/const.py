@@ -1,14 +1,10 @@
+"""Constants for the Transport NSW Mk II integration"""
+
 from pathlib import Path
 import json
 
-"""Constants for our integration."""
 
 DOMAIN = "ha_transportnsw"
-
-DEFAULT_SCAN_INTERVAL = 120
-MIN_SCAN_INTERVAL = 30
-MAX_TRIP_WAIT_TIME = 60
-MAX_MAX_CHANGES = 5
 
 # Optional config entry settings
 CONF_REQUEST_LOCATION_UPDATE = 'request_location_update'
@@ -21,7 +17,6 @@ CONF_DESTINATION_ID = 'destination_id'
 CONF_DESTINATION_NAME = 'destination_name'
 CONF_TRIP_WAIT_TIME = 'trip_wait_time'
 CONF_CREATE_REVERSE_TRIP = 'create_reverse_trip'
-DEFAULT_CREATE_REVERSE_TRIP = False
 
 # Optional subentry settings
 CONF_RETURN_INFO = 'return_info'
@@ -97,33 +92,32 @@ CONF_LAST_LEG_DEVICE_TRACKER = 'last_leg_device_tracker'
 CONF_ORIGIN_DEVICE_TRACKER = 'origin_device_tracker'
 CONF_DESTINATION_DEVICE_TRACKER = 'destination_device_tracker'
 
-# Defaults
-DEFAULT_REQUEST_LOCATION_UPDATE = False
-
-DEFAULT_FIRST_LEG_DEVICE_TRACKER = 'never'
-DEFAULT_LAST_LEG_DEVICE_TRACKER = 'never'
-DEFAULT_ORIGIN_DEVICE_TRACKER = 'if_device_tracker_journey'
-DEFAULT_DESTINATION_DEVICE_TRACKER = 'never'
 
 ORIGIN_TRANSPORT_TYPE_LIST = ['Train', 'Metro', 'Light rail', 'Bus', 'Coach', 'Ferry', 'School bus', 'Walk']
 DESTINATION_TRANSPORT_TYPE_LIST = ['Train', 'Metro', 'Light rail', 'Bus', 'Coach', 'Ferry', 'School bus', 'Walk']
+ALL_TRANSPORT_TYPE_NUMERIC = [1, 2, 4, 5, 7, 9, 11, 99]
 
 # Changes info
 ATTR_CHANGES_LIST = 'changes_list'
 ATTR_LOCATIONS_LIST = 'locations_list'
 
 
-# Defaults
+# Sensor defaults
+DEFAULT_SCAN_INTERVAL = 120
+DEFAULT_CREATE_REVERSE_TRIP = False
+DEFAULT_REQUEST_LOCATION_UPDATE = False
+DEFAULT_FIRST_LEG_DEVICE_TRACKER = 'never'
+DEFAULT_LAST_LEG_DEVICE_TRACKER = 'never'
+DEFAULT_ORIGIN_DEVICE_TRACKER = 'if_device_tracker_journey'
+DEFAULT_DESTINATION_DEVICE_TRACKER = 'never'
 DEFAULT_TRIP_WAIT_TIME = 10
 DEFAULT_TRANSPORT_TYPE_SELECTOR = ['Train', 'Metro', 'Light rail', 'Bus', 'Ferry']
 DEFAULT_TRANSPORT_TYPE_NUMERIC = [1, 2, 4, 5, 9]
-ALL_TRANSPORT_TYPE_NUMERIC = [1, 2, 4, 5, 7, 9, 11, 99]
 DEFAULT_ROUTE_FILTER = ''
 DEFAULT_MAX_CHANGES = 2
 DEFAULT_ALERT_TYPES = ['lineinfo', 'stopinfo', 'routeinfo', 'stopblocking', 'bannerinfo']
 DEFAULT_ALERT_SEVERITY = 'high'
 DEFAULT_TRIPS_TO_CREATE = 1
-
 DEFAULT_SENSOR_CREATION = 'none'
 DEFAULT_CHANGES_SENSOR = False
 DEFAULT_DELAY_SENSOR = False
@@ -145,6 +139,13 @@ DEFAULT_LAST_LEG_LINE_NAME_SHORT_SENSOR = False
 DEFAULT_LAST_LEG_OCCUPANCY_SENSOR = False
 DEFAULT_LAST_LEG_OCCUPANCY_DETAIL_SENSOR = False
 DEFAULT_LAST_LEG_TRAIN_SET_SENSOR = False
+
+# SubentryFlow defaults
+MIN_SCAN_INTERVAL = 30
+MAX_TRIP_WAIT_TIME = 60
+MAX_MAX_CHANGES = 5
+
+
 
 # Misc
 ORIGIN_LATITUDE = 'origin_latitude'
@@ -170,13 +171,12 @@ JSMODULES = [
     }
 ]
 
-
 #Transport for NSW constants
 TFNSW_ATTRIBUTION = "Data provided by Transport NSW"
 TFNSW_REGISTRATION = "https://opendata.transport.nsw.gov.au/data/user/register"
 TFNSW_STOPFINDER = "https://transportnsw.info/routes/"
 
-
+# Subentry stuff
 SUBENTRY_TYPE_JOURNEY = 'subentry_journey'
 API_CALLS = 'api_calls'
 API_CALLS_NAME = 'API calls'
@@ -264,3 +264,9 @@ TRAIN_SETS = {
     "V": "V-set",
     "X": "XPT"
 }
+
+__all__ = [
+    name
+    for name in globals()
+    if name.isupper()
+]

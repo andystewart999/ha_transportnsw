@@ -2,3 +2,4 @@
 /branding/
 /images/
 /.gitignore
+custom_components/ha_transportnsw/www/__pycache__/__init__.cpython-314.pyc
