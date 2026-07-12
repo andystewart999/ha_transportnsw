@@ -1,4 +1,4 @@
-const CARD_VERSION = '3.0.2b1'
+const CARD_VERSION = '3.0.2b2'
 
 class VehicleOccupancyCard extends HTMLElement {
   constructor() {
@@ -356,7 +356,7 @@ class VehicleOccupancyCard extends HTMLElement {
             rightSensor = `<span id="right-sensor-relative-time"></span>`;
             rightSensorIsTimestamp = true;
         } else {
-            rightSensor = `xx${stateObj2.state}${
+            rightSensor = `${stateObj2.state}${
                 stateObj2.attributes?.unit_of_measurement
                 ? " " + stateObj2.attributes.unit_of_measurement
                 : ""
