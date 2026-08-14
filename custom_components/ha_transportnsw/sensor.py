@@ -188,6 +188,11 @@ ORIGIN_SENSORS: tuple[TransportNSWSensorEntityDescription, ...] = (
         state_path = 'origin_detail.detail'
     ),
     TransportNSWSensorEntityDescription(
+        key=CONF_FIRST_LEG_RUN_NAME_SENSOR,
+        name=CONF_FIRST_LEG_RUN_NAME_FRIENDLY,
+        state_path = 'origin_transport_detail.run_name'
+    ),
+    TransportNSWSensorEntityDescription(
         key=CONF_FIRST_LEG_LINE_NAME_SENSOR,
         name=CONF_FIRST_LEG_LINE_NAME_FRIENDLY,
         state_path = 'origin_transport_detail.line_name'
@@ -241,6 +246,11 @@ DESTINATION_SENSORS: tuple[TransportNSWSensorEntityDescription, ...] = (
         name=CONF_DESTINATION_DETAIL_FRIENDLY,
         state_path = 'destination_detail.detail'
 
+    ),
+    TransportNSWSensorEntityDescription(
+        key=CONF_LAST_LEG_RUN_NAME_SENSOR,
+        name=CONF_LAST_LEG_RUN_NAME_FRIENDLY,
+        state_path = 'destination_transport_detail.run_name'
     ),
     TransportNSWSensorEntityDescription(
         key=CONF_LAST_LEG_LINE_NAME_SENSOR,

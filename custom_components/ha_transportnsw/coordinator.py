@@ -27,6 +27,7 @@ from .const import (
     CONF_ORIGIN_TYPE,
     CONF_REQUEST_LOCATION_UPDATE,
     CONF_ROUTE_FILTER,
+    CONF_RUN_FILTER,
     CONF_TRIPS_TO_CREATE,
     CONF_TRIP_WAIT_TIME,
     DEFAULT_SCAN_INTERVAL,
@@ -112,7 +113,7 @@ class TransportNSWCoordinator(DataUpdateCoordinator):
                     origin = subentry.data[CONF_ORIGIN_ID]
 
                 try:
-                    _LOGGER.debug(f"Calling get_trips: origin = {origin}, destination_id = {subentry.data[CONF_DESTINATION_ID]}, trip_wait_time = {subentry.data[CONF_TRIP_WAIT_TIME]}, journeys_to_return = {subentry.data[CONF_TRIPS_TO_CREATE]}, origin_transport_type = {subentry.data[CONF_ORIGIN_TRANSPORT_TYPE]}, destination_transport_type = {subentry.data[CONF_DESTINATION_TRANSPORT_TYPE]}, route_filter = {subentry.data[CONF_ROUTE_FILTER]}, include_realtime_location = True, max_changes = {subentry.data.get(CONF_MAX_CHANGES, 9)}")
+                    _LOGGER.debug(f"Calling get_trips: origin = {origin}, destination_id = {subentry.data[CONF_DESTINATION_ID]}, trip_wait_time = {subentry.data[CONF_TRIP_WAIT_TIME]}, journeys_to_return = {subentry.data[CONF_TRIPS_TO_CREATE]}, origin_transport_type = {subentry.data[CONF_ORIGIN_TRANSPORT_TYPE]}, destination_transport_type = {subentry.data[CONF_DESTINATION_TRANSPORT_TYPE]}, route_filter = {subentry.data[CONF_ROUTE_FILTER]}, run_filter = {subentry.data.get(CONF_RUN_FILTER, '')}include_realtime_location = True, max_changes = {subentry.data.get(CONF_MAX_CHANGES, 9)}")
 
                     journey_data = await self.hass.async_add_executor_job(
                         get_trips,
@@ -124,6 +125,7 @@ class TransportNSWCoordinator(DataUpdateCoordinator):
                         subentry.data[CONF_DESTINATION_TRANSPORT_TYPE], 
                         True,
                         subentry.data[CONF_ROUTE_FILTER],
+                        subentry.data.get(CONF_RUN_FILTER, ""),     # A recently added option, might not exist yet so offer a default
                         subentry.data[CONF_TRIPS_TO_CREATE],
                         True,                                       # I need some of the info that's buried in this attribute, regardless of the users' requirements
                         subentry.data[CONF_ALERTS_SENSOR],

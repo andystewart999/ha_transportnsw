@@ -412,6 +412,7 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
                     vol.Required(CONF_ORIGIN_TRANSPORT_TYPE, default=default_origin_type): cv.multi_select(ORIGIN_TRANSPORT_TYPE_LIST),
                     vol.Required(CONF_DESTINATION_TRANSPORT_TYPE, default=default_destination_type): cv.multi_select(DESTINATION_TRANSPORT_TYPE_LIST),
                     vol.Optional(CONF_ROUTE_FILTER, default = user_input.get(CONF_ROUTE_FILTER, DEFAULT_ROUTE_FILTER)): str,
+                    vol.Optional(CONF_RUN_FILTER, default = user_input.get(CONF_RUN_FILTER, DEFAULT_RUN_FILTER)): str,
                     vol.Required(CONF_MAX_CHANGES, default = user_input.get(CONF_MAX_CHANGES, DEFAULT_MAX_CHANGES)): vol.All(vol.Coerce(int), vol.Range(min=0, max=MAX_MAX_CHANGES)),
                     vol.Required(CONF_TRIP_WAIT_TIME, default = user_input.get(CONF_TRIP_WAIT_TIME, DEFAULT_TRIP_WAIT_TIME)): vol.All(vol.Coerce(int), vol.Range(min=0, max=MAX_TRIP_WAIT_TIME)),
                 }
@@ -671,6 +672,7 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
                     vol.Required(CONF_FIRST_LEG_LINE_NAME_SHORT_SENSOR, default = user_input['origin_sensors'].get(CONF_FIRST_LEG_LINE_NAME_SHORT_SENSOR, DEFAULT_FIRST_LEG_LINE_NAME_SHORT_SENSOR)): bool,
                     vol.Required(CONF_FIRST_LEG_OCCUPANCY_SENSOR, default = user_input['origin_sensors'].get(CONF_FIRST_LEG_OCCUPANCY_SENSOR, DEFAULT_FIRST_LEG_OCCUPANCY_SENSOR)): bool,
                     vol.Required(CONF_FIRST_LEG_OCCUPANCY_DETAIL_SENSOR, default = user_input['origin_sensors'].get(CONF_FIRST_LEG_OCCUPANCY_DETAIL_SENSOR, DEFAULT_FIRST_LEG_OCCUPANCY_DETAIL_SENSOR)): bool,
+                    vol.Required(CONF_FIRST_LEG_RUN_NAME_SENSOR, default = user_input['origin_sensors'].get(CONF_FIRST_LEG_RUN_NAME_SENSOR, DEFAULT_FIRST_LEG_RUN_NAME_SENSOR)): bool,
                     vol.Required(CONF_FIRST_LEG_TRAIN_SET_SENSOR, default = user_input['origin_sensors'].get(CONF_FIRST_LEG_TRAIN_SET_SENSOR, DEFAULT_FIRST_LEG_TRAIN_SET_SENSOR)): bool
                 }
             )
@@ -683,6 +685,7 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
                     vol.Required(CONF_LAST_LEG_LINE_NAME_SHORT_SENSOR, default = user_input['destination_sensors'].get(CONF_LAST_LEG_LINE_NAME_SHORT_SENSOR, DEFAULT_LAST_LEG_LINE_NAME_SHORT_SENSOR)): bool,
                     vol.Required(CONF_LAST_LEG_OCCUPANCY_SENSOR, default = user_input['destination_sensors'].get(CONF_LAST_LEG_OCCUPANCY_SENSOR, DEFAULT_LAST_LEG_OCCUPANCY_SENSOR)): bool,
                     vol.Required(CONF_LAST_LEG_OCCUPANCY_DETAIL_SENSOR, default = user_input['destination_sensors'].get(CONF_LAST_LEG_OCCUPANCY_DETAIL_SENSOR, DEFAULT_LAST_LEG_OCCUPANCY_DETAIL_SENSOR)): bool,
+                    vol.Required(CONF_LAST_LEG_RUN_NAME_SENSOR, default = user_input['destination_sensors'].get(CONF_LAST_LEG_RUN_NAME_SENSOR, DEFAULT_LAST_LEG_RUN_NAME_SENSOR)): bool,
                     vol.Required(CONF_LAST_LEG_TRAIN_SET_SENSOR, default = user_input['destination_sensors'].get(CONF_LAST_LEG_TRAIN_SET_SENSOR, DEFAULT_LAST_LEG_TRAIN_SET_SENSOR)): bool
                 }
             )
