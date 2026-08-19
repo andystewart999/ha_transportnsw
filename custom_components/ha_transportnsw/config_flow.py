@@ -71,7 +71,7 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> None:
 class TransportNSWConfigFlowHandler(ConfigFlow, domain=DOMAIN):
     """Handle a config flow for Transport NSW Mk II"""
 
-    VERSION = 2
+    VERSION = 3
     MINOR_VERSION = 0
 
     _input_data: dict[str, Any]
@@ -261,6 +261,8 @@ class TransportNSWOptionsFlowHandler(OptionsFlow):
                 vol.Optional(CONF_REQUEST_LOCATION_UPDATE, default = self.config_entry.options.get(CONF_REQUEST_LOCATION_UPDATE, DEFAULT_REQUEST_LOCATION_UPDATE)): bool,
             }
         )
+
+        # TODO - as part of the schema migraton to v3, move scan_interval into 'options' and get rid of all of this!   as well as converting transport_type into strings
 
         if user_input is not None:
             # This caters for there possibly being more options in the future without me having to remember to incorporate them!

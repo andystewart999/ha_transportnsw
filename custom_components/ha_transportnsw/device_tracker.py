@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 from typing import Tuple
+from dataclasses import dataclass
+
 import logging
 
 from homeassistant.components.device_tracker import (
@@ -19,12 +21,16 @@ from homeassistant.helpers import entity_registry
 
 from . import TransportNSWConfigEntry
 from .const import (
-    CONF_DESTINATION_DEVICE_TRACKER,
     CONF_DESTINATION_ID,
     CONF_DESTINATION_NAME,
     CONF_FIRST_LEG_DEVICE_TRACKER,
+    CONF_FIRST_LEG_DEVICE_TRACKER_FRIENDLY,
     CONF_LAST_LEG_DEVICE_TRACKER,
+    CONF_LAST_LEG_DEVICE_TRACKER_FRIENDLY,
     CONF_ORIGIN_DEVICE_TRACKER,
+    CONF_ORIGIN_DEVICE_TRACKER_FRIENDLY,
+    CONF_DESTINATION_DEVICE_TRACKER,
+    CONF_DESTINATION_DEVICE_TRACKER_FRIENDLY,
     CONF_ORIGIN_ID,
     CONF_ORIGIN_NAME,
     CONF_ORIGIN_TYPE,
@@ -39,6 +45,84 @@ from .coordinator import TransportNSWCoordinator
 from .helpers import remove_entity, extract_from_hierarchy
 
 _LOGGER = logging.getLogger(__name__)
+
+# Extend the default TrackerEntityDescription class
+@dataclass(frozen = True, kw_only = True)
+class TransportNSWTrackerEntityDescription(TrackerEntityDescription):
+    # Custom extension adding a value path for retrieving simple values from the data returned by DataUpdateCoordinator
+    # or a callable function for more complex returns
+    # Also stores what 'type' of tracker this is - a vehicle or a location
+    
+    state_path: str | None = None
+    attrs_path: str | None = None
+    attrs_friendly: str | None = None
+    state_fn: Callable[[Any], Any] | None = None
+
+# state_fn functions
+def get_coords(location_data, sensor_key: str, location_key: str) -> float:
+    """Return the lat or lon value from the returned data."""
+
+    try:
+        # Find the key index
+        index = next((i for i, item in enumerate(location_data) if item.get("key") == sensor_key), None)
+        if index is None:
+            return None
+
+        return location_data[index]['coords'][location_key]
+
+    except:
+        return None
+
+def is_duplicate(location_data, sensor_key: str) -> bool:
+    """Is this device tracker a duplicate?"""
+
+    try:
+        # Find the key index
+        index = next((i for i, item in enumerate(location_data) if item.get("key") == sensor_key), None)
+        if index is None:
+            return False
+
+        return location_data[index]['same_as_origin']
+
+    except:
+        return False
+
+
+# Subentry-level sensor definitions
+DEVICE_TRACKER_SENSORS: tuple[TransportNSWTrackerEntityDescription, ...] = (
+    TransportNSWTrackerEntityDescription(
+        key=CONF_FIRST_LEG_DEVICE_TRACKER,
+        name=CONF_FIRST_LEG_DEVICE_TRACKER_FRIENDLY,
+#        icon='mdi:clock-outline',
+#        device_class = SensorDeviceClass.TIMESTAMP,
+        state_fn = get_coords,
+        state_path = "vehicles",
+    ),
+    TransportNSWTrackerEntityDescription(
+        key=CONF_LAST_LEG_DEVICE_TRACKER,
+        name=CONF_LAST_LEG_DEVICE_TRACKER_FRIENDLY,
+#        icon='mdi:clock-outline',
+#        device_class = SensorDeviceClass.TIMESTAMP,
+        state_fn = get_coords,
+        state_path = "vehicles",
+    ),
+    TransportNSWTrackerEntityDescription(
+        key=CONF_ORIGIN_DEVICE_TRACKER,
+        name=CONF_ORIGIN_DEVICE_TRACKER_FRIENDLY,
+#        icon='mdi:clock-outline',
+#        device_class = SensorDeviceClass.TIMESTAMP,
+        state_fn = get_coords,
+        state_path = "locations",
+    ),
+    TransportNSWTrackerEntityDescription(
+        key=CONF_DESTINATION_DEVICE_TRACKER,
+        name=CONF_DESTINATION_DEVICE_TRACKER_FRIENDLY,
+#        icon='mdi:clock-outline',
+#        device_class = SensorDeviceClass.TIMESTAMP,
+        state_fn = get_coords,
+        state_path = "locations",
+    ),
+)
 
 def is_tracker_enabled(tracker: str, data, origin_type: str) -> bool:
     # Determine if the device tracker sensor has been enabled in the options
@@ -123,24 +207,26 @@ async def async_setup_entry(
                     migration_suffix = f"_trip_{str(trip_index + 1)}"
                     device_identifier = f"trip_{str(trip_index + 1)}"
 
-                for tracker in [CONF_FIRST_LEG_DEVICE_TRACKER, CONF_LAST_LEG_DEVICE_TRACKER, CONF_ORIGIN_DEVICE_TRACKER, CONF_DESTINATION_DEVICE_TRACKER]:
+                for sensor in DEVICE_TRACKER_SENSORS:
+#                for tracker in [CONF_FIRST_LEG_DEVICE_TRACKER, CONF_LAST_LEG_DEVICE_TRACKER, CONF_ORIGIN_DEVICE_TRACKER, CONF_DESTINATION_DEVICE_TRACKER]:
                     if trip_index >= trips_to_create:
                         # We've finished creating sensors, now delete sensors that may have been created previously but that aren't needed any more
-                        remove_entity (entity_reg, config_entry.entry_id, subentry.subentry_id, trip_index, tracker)
+                        remove_entity (entity_reg, config_entry.entry_id, subentry.subentry_id, trip_index, sensor.key)
                     else:
-                        if is_tracker_enabled(tracker, subentry.data['device_trackers'], subentry.data.get(CONF_ORIGIN_TYPE, 'stop')):
+                        if is_tracker_enabled(sensor.key, subentry.data['device_trackers'], subentry.data.get(CONF_ORIGIN_TYPE, 'stop')):
 
-                            new_device_tracker = TrackerEntityDescription(
-                                key = tracker,
-                                name = f"{subentry.subentry_id}_{tracker}_{trip_index}"
-                                )
+                            # new_device_tracker = TrackerEntityDescription(
+                            #     key = tracker,
+                            #     name = f"{subentry.subentry_id}_{tracker}_{trip_index}"
+                            #     )
 
-                            leg_suffix = DEVICE_TRACKER_LOOKUPS.get(tracker, '')
+                            leg_suffix = DEVICE_TRACKER_LOOKUPS.get(sensor.key, '')
 
-                            device_trackers.append(TransportNSWDeviceTracker(coordinator, new_device_tracker, subentry, trip_index, sensor_suffix, name_suffix, leg_suffix, device_suffix, migration_suffix, device_identifier))
+#                            device_trackers.append(TransportNSWDeviceTracker(coordinator, sensor, subentry, trip_index, sensor_suffix, name_suffix, device_suffix, migration_suffix, device_identifier))
+                            device_trackers.append(TransportNSWDeviceTracker(coordinator, sensor, subentry, trip_index, sensor_suffix, name_suffix, leg_suffix, device_suffix, migration_suffix, device_identifier))
                         else:
                             # Try and remove it - don't worry if it never existed
-                            remove_entity (entity_reg, config_entry.entry_id, subentry.subentry_id, trip_index, tracker)
+                            remove_entity (entity_reg, config_entry.entry_id, subentry.subentry_id, trip_index, sensor.key)
 
             async_add_entities(device_trackers, config_subentry_id = subentry.subentry_id, update_before_add = True)
 
@@ -148,7 +234,7 @@ async def async_setup_entry(
 class TransportNSWDeviceTracker(CoordinatorEntity, TrackerEntity):
     """device tracker."""
 
-    def __init__(self, coordinator: TransportNSWCoordinator, description: TrackerEntityDescription, subentry: ConfigSubentry, index: int, sensor_suffix: str, name_suffix: str, leg_suffix: str, device_suffix: str, migration_suffix: str, device_identifier: str) -> None:
+    def __init__(self, coordinator: TransportNSWCoordinator, description: TransportNSWTrackerEntityDescription, subentry: ConfigSubentry, index: int, sensor_suffix: str, name_suffix: str, leg_suffix: str, device_suffix: str, migration_suffix: str, device_identifier: str) -> None:
         """Initialise sensor."""
         super().__init__(coordinator)
 
@@ -174,38 +260,62 @@ class TransportNSWDeviceTracker(CoordinatorEntity, TrackerEntity):
     @property
     def latitude(self) -> float | None:
         """Return latitude value of the vehicle/location"""
-
         try:
-            latitude, available = get_location_value(self.coordinator.data[self.subentry.subentry_id][self.journey_index], self.entity_description.key, 'coords', 0)
-            if latitude is not None:
-                return float(latitude)
+            journey_data = self.coordinator.data[self.subentry.subentry_id][self.journey_index]['locations_list'][self.entity_description.state_path]
+            value = self.entity_description.state_fn(journey_data, self.entity_description.key, 'latitude')
+
+            return value
 
         except Exception as ex:
-            pass
+            return None
 
     @property
     def longitude(self) -> float | None:
-        """Return longitude value of the vehicle/location"""
-
+        """Return latitude value of the vehicle/location"""
         try:
-            longitude, available = get_location_value(self.coordinator.data[self.subentry.subentry_id][self.journey_index], self.entity_description.key, 'coords', 1)
-            if longitude is not None:
-                return float(longitude)
+            journey_data = self.coordinator.data[self.subentry.subentry_id][self.journey_index]['locations_list'][self.entity_description.state_path]
+            value = self.entity_description.state_fn(journey_data, self.entity_description.key, 'longitude')
+
+            return value
 
         except Exception as ex:
-            pass
+            return None
 
     @property
     def available(self) -> bool:
-        """Return if entity is available - basically check to see if there's data where it should be, not based on if we have location data or not"""
+        """ Return if entity is available - basically check to see if there's data where it should be, not based on if we have location data or not
+            Also, for CONF_LAST_LEG_DEVICE_TRACKER we should make ourselves unavailable if it's a duplicate of CONF_LAST_LEG_DEVICE_TRACKER
+        """
+        
+        # If this is CONF_LAST_LEG_DEVICE_TRACKER we care about the user display setting for it
+        # For some reason I can't yet work out, returning False doesn't make the entity unavailable!  So I'm hiding it until I can work out why.
+        if self.entity_description.key == CONF_LAST_LEG_DEVICE_TRACKER:
+            hide_if_duplicated = True if self.subentry.data['device_trackers'][CONF_LAST_LEG_DEVICE_TRACKER] == 'if_not_duplicated' else False
+
         try:
             if self.coordinator.data is not None and self.subentry.subentry_id in self.coordinator.data:
-                journey_data = self.coordinator.data[self.subentry.subentry_id][self.journey_index]
-                
-                if journey_data is not None:
-                    return True
-                else:
+                if self.entity_description.key == CONF_LAST_LEG_DEVICE_TRACKER:
+                    journey_data = self.coordinator.data[self.subentry.subentry_id][self.journey_index]['locations_list'][self.entity_description.state_path]
+                    duplicated_tracker = is_duplicate(journey_data, self.entity_description.key)
+
+                    # We're going to need access to the entity registry to hide or show the device tracker
+                    entity_reg = entity_registry.async_get(self.hass)
+                    entity_id = entity_reg.async_get_entity_id('device_tracker', DOMAIN, self._attr_unique_id)
+
+                    if duplicated_tracker and hide_if_duplicated:
+                        hidden_by = entity_registry.RegistryEntryHider.INTEGRATION
+                    else:
+                        hidden_by = None
+
+                    # Hide or unhide the tracker
+                    entity_reg.async_update_entity(entity_id, hidden_by=hidden_by)
+
+                if duplicated_tracker and hide_if_duplicated:
                     return False
+                else:
+                    return super().available and True
+            else:
+                return False
 
         except:
             return False

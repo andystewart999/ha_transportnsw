@@ -2,9 +2,6 @@
 
 import logging
 from datetime import datetime #, timezone, timedelta
-# import pytz
-# import tzlocal
-# import time
 
 from homeassistant.components.sensor import (
     SensorDeviceClass,
@@ -38,6 +35,22 @@ from .coordinator import TransportNSWCoordinator
 from .helpers import remove_entity, remove_device, extract_from_hierarchy
 
 _LOGGER = logging.getLogger(__name__)
+
+def get_daily_api_calls(coordinator: TransportNSWCoordinator) -> int:
+    """ Return the current daily API calls total. """
+
+    return coordinator.daily_api_calls
+
+
+def get_average_api_calls(coordinator: TransportNSWCoordinator) -> int | None:
+    """ Return the average from rolling_average_api_calls. """
+    if len(coordinator.rolling_average_api_calls) < AVERAGE_API_CALLS_WINDOW:
+        return None
+
+    average = sum(coordinator.rolling_average_api_calls) / len(coordinator.rolling_average_api_calls)
+
+    # Round the result, but don't use Banker's Rounding
+    return round(average + 0.1)
 
 
 def get_highest_alert(alerts) -> str:
@@ -85,12 +98,6 @@ def get_occupancy_detail(occupancy_detail) -> str:
 
 
 def convert_date(utc_string) -> datetime:
-    # fmt = '%Y-%m-%dT%H:%M:%SZ'
-    
-    # utc_dt = datetime.strptime(utc_string, fmt)
-    # utc_dt = utc_dt.replace(tzinfo=pytz.utc)
-    # local_timezone = tzlocal.get_localzone()
-    # local_dt = utc_dt.astimezone(local_timezone)
 
     utc_dt = dt_util.parse_datetime(utc_string)
     local_dt = dt_util.as_local(utc_dt)
@@ -111,13 +118,22 @@ class TransportNSWSensorEntityDescription(SensorEntityDescription):
 
 
 # Config_entry-level sensor definitions
-DEFAULT_ENTRY_SENSORS: tuple[SensorEntityDescription, ...] = (
-    SensorEntityDescription(
+DEFAULT_ENTRY_SENSORS: tuple[TransportNSWSensorEntityDescription, ...] = (
+    TransportNSWSensorEntityDescription(
         key=API_CALLS,
         name=API_CALLS_NAME,
         native_unit_of_measurement='calls',
         icon='mdi:counter',
-        entity_category=EntityCategory.DIAGNOSTIC
+        entity_category=EntityCategory.DIAGNOSTIC,
+        state_fn = get_daily_api_calls,
+    ),
+    TransportNSWSensorEntityDescription(
+        key=AVERAGE_API_CALLS,
+        name=AVERAGE_API_CALLS_NAME,
+        native_unit_of_measurement='calls',
+        icon='mdi:counter',
+        entity_category=EntityCategory.DIAGNOSTIC,
+        state_fn = get_average_api_calls,
     ),
 )
 
@@ -403,9 +419,9 @@ async def async_setup_entry(
 class TransportNSWSensor(CoordinatorEntity, SensorEntity):
     """Implementation of a configentry sensor."""
 
-    entity_description: SensorEntityDescription
+    entity_description: TransportNSWSensorEntityDescription
 
-    def __init__(self, coordinator: TransportNSWCoordinator, description: SensorEntityDescription, config_entry: TransportNSWConfigEntry) -> None:
+    def __init__(self, coordinator: TransportNSWCoordinator, description: TransportNSWSensorEntityDescription, config_entry: TransportNSWConfigEntry) -> None:
         """Initialise sensor."""
         super().__init__(coordinator)
 
@@ -425,10 +441,15 @@ class TransportNSWSensor(CoordinatorEntity, SensorEntity):
         self.async_write_ha_state()
 
     @property
-    def native_value(self) -> int:
-        """Return the state of the entity."""
-            
-        return self.coordinator.api_calls
+    def native_value(self) -> StateType:
+        """Return the value of the sensor."""
+        try:
+            value = self.entity_description.state_fn(self.coordinator)
+            return value
+
+        except Exception as ex:
+            return None
+
 
 class TransportNSWSubentrySensor(CoordinatorEntity, SensorEntity):
     """Implementation of subentry sensor."""
@@ -448,7 +469,6 @@ class TransportNSWSubentrySensor(CoordinatorEntity, SensorEntity):
         self.sensor_suffix = sensor_suffix
         self.device_identifier = device_identifier
 
-        
         # Cater for migrated entries with a different naming convention
         if CONF_NAME not in subentry.data or subentry.data[CONF_NAME] == '':
             # Use the new naming convention
@@ -475,7 +495,7 @@ class TransportNSWSubentrySensor(CoordinatorEntity, SensorEntity):
         """Return device info for this sensor."""
         identifiers = {
         "identifiers": {(DOMAIN, f"{self.subentry.subentry_id}_{self.subentry.data[CONF_ORIGIN_ID]}_{self.subentry.data[CONF_DESTINATION_ID]}_{self.device_identifier}")
-                       },
+        },
         "name": f"{self.subentry.data[CONF_ORIGIN_NAME]} to {self.subentry.data[CONF_DESTINATION_NAME]}{self.device_suffix}",
         "manufacturer": "Transport for NSW"
         }
@@ -565,53 +585,29 @@ class TransportNSWSubentrySensor(CoordinatorEntity, SensorEntity):
             if self.coordinator.data is not None and self.subentry.subentry_id in self.coordinator.data:
                 journey_data = self.coordinator.data[self.subentry.subentry_id][self.journey_index]
 
-                # Is this a migrated 'due' sensor?
-                if self.subentry.data[CONF_NAME] != '' and self.entity_description.key == CONF_DUE_SENSOR:
-                    attrs = {
-                        'due': journey_data[CONF_DUE_SENSOR],
-                        'delay': journey_data[CONF_DELAY_SENSOR],
-                        'duration': journey_data[CONF_DURATION_SENSOR],
-                        'arrival_time': journey_data[CONF_LAST_LEG_ARRIVAL_TIME_SENSOR],
-                        'changes': journey_data[CONF_CHANGES_SENSOR],
-                        'origin_name': journey_data[CONF_ORIGIN_NAME_SENSOR],
-                        'origin_detail': get_specific_platform(journey_data, CONF_ORIGIN_DETAIL_SENSOR),
-                        'departure_time': journey_data[CONF_FIRST_LEG_DEPARTURE_TIME_SENSOR],
-                        'destination_name': journey_data[CONF_DESTINATION_NAME_SENSOR],
-                        'destination_detail': get_specific_platform(journey_data, CONF_DESTINATION_DETAIL_SENSOR),
-                        'occupancy': journey_data[CONF_FIRST_LEG_OCCUPANCY_SENSOR],
-                        'origin_line_name': journey_data[CONF_FIRST_LEG_LINE_NAME_SENSOR],
-                        'short_origin_line_name': journey_data[CONF_FIRST_LEG_LINE_NAME_SHORT_SENSOR],
-                        'origin_transport_type': journey_data[CONF_FIRST_LEG_TRANSPORT_TYPE_SENSOR],
-                        'origin_transport_name': journey_data[CONF_FIRST_LEG_TRANSPORT_NAME_SENSOR],
-                        'latitude': journey_data[ORIGIN_LATITUDE],
-                        'longitude': journey_data[ORIGIN_LONGITUDE],
-                        'alerts': journey_data[CONF_ALERTS_SENSOR]
-                    }            
+                # Attributes for all sensors
+                attrs["origin_id"] = extract_from_hierarchy(journey_data, 'origin_detail.stop_id')
+                attrs["destination_id"] = extract_from_hierarchy(journey_data, 'destination_detail.stop_id')
     
-                else:
-                    # Attributes for all sensors
-                    attrs["origin_id"] = extract_from_hierarchy(journey_data, 'origin_detail.stop_id')
-                    attrs["destination_id"] = extract_from_hierarchy(journey_data, 'destination_detail.stop_id')
-        
-                    # Key-specific attributes
-                    if self.entity_description.attrs_path:
-                        if not isinstance(self.entity_description.attrs_path, list):
-                            attrs_path = [self.entity_description.attrs_path]
-                        else:
-                            attrs_path = self.entity_description.attrs_path
+                # Key-specific attributes
+                if self.entity_description.attrs_path:
+                    if not isinstance(self.entity_description.attrs_path, list):
+                        attrs_path = [self.entity_description.attrs_path]
+                    else:
+                        attrs_path = self.entity_description.attrs_path
 
-                        if not isinstance(self.entity_description.attrs_friendly, list):
-                            attrs_friendly = [self.entity_description.attrs_friendly]
-                        else:
-                            attrs_friendly = self.entity_description.attrs_friendly
+                    if not isinstance(self.entity_description.attrs_friendly, list):
+                        attrs_friendly = [self.entity_description.attrs_friendly]
+                    else:
+                        attrs_friendly = self.entity_description.attrs_friendly
 
 
-                        # Handle multiple attributes being set for a single sensor
-                        for index, path in enumerate(attrs_path):
-                            attr_friendly = attrs_friendly[index]
-                            attr_value = extract_from_hierarchy(journey_data, path)
+                    # Handle multiple attributes being set for a single sensor
+                    for index, path in enumerate(attrs_path):
+                        attr_friendly = attrs_friendly[index]
+                        attr_value = extract_from_hierarchy(journey_data, path)
 
-                            attrs[attr_friendly] = attr_value
+                        attrs[attr_friendly] = attr_value
 
         finally:
             attrs['attribution'] = TFNSW_ATTRIBUTION

@@ -41,7 +41,7 @@ CONF_ORIGIN_NAME_SENSOR = 'origin_name'
 CONF_ORIGIN_DETAIL_SENSOR = 'origin_detail'
 CONF_FIRST_LEG_LINE_NAME_SENSOR = 'origin_line_name'
 CONF_FIRST_LEG_LINE_NAME_SHORT_SENSOR = 'origin_line_name_short'
-CONF_FIRST_LEG_RUN_NAME_SENSOR = 'origin_line_name'
+CONF_FIRST_LEG_RUN_NAME_SENSOR = 'origin_run_name'
 CONF_FIRST_LEG_TRANSPORT_TYPE_SENSOR = 'origin_transport_type'
 CONF_FIRST_LEG_TRANSPORT_NAME_SENSOR = 'origin_transport_name'
 CONF_FIRST_LEG_OCCUPANCY_SENSOR = 'origin_occupancy'
@@ -51,7 +51,7 @@ CONF_DESTINATION_NAME_SENSOR = 'destination_name'
 CONF_DESTINATION_DETAIL_SENSOR = 'destination_detail'
 CONF_LAST_LEG_LINE_NAME_SENSOR = 'destination_line_name'
 CONF_LAST_LEG_LINE_NAME_SHORT_SENSOR = 'destination_line_name_short'
-CONF_LAST_LEG_RUN_NAME_SENSOR = 'destination_line_name'
+CONF_LAST_LEG_RUN_NAME_SENSOR = 'destination_run_name'
 CONF_LAST_LEG_TRANSPORT_TYPE_SENSOR = 'destination_transport_type'
 CONF_LAST_LEG_TRANSPORT_NAME_SENSOR = 'destination_transport_name'
 CONF_LAST_LEG_OCCUPANCY_SENSOR = 'destination_occupancy'
@@ -93,14 +93,18 @@ CONF_LAST_LEG_TRANSPORT_NAME_FRIENDLY = 'last leg transport name'
 
 # Device tracker options
 CONF_FIRST_LEG_DEVICE_TRACKER = 'first_leg_device_tracker'
+CONF_FIRST_LEG_DEVICE_TRACKER_FRIENDLY = 'First leg transport'
 CONF_LAST_LEG_DEVICE_TRACKER = 'last_leg_device_tracker'
+CONF_LAST_LEG_DEVICE_TRACKER_FRIENDLY = 'Last leg transport'
 CONF_ORIGIN_DEVICE_TRACKER = 'origin_device_tracker'
+CONF_ORIGIN_DEVICE_TRACKER_FRIENDLY = 'Origin location'
 CONF_DESTINATION_DEVICE_TRACKER = 'destination_device_tracker'
-
+CONF_DESTINATION_DEVICE_TRACKER_FRIENDLY = 'Destination location'
 
 ORIGIN_TRANSPORT_TYPE_LIST = ['Train', 'Metro', 'Light rail', 'Bus', 'Coach', 'Ferry', 'School bus', 'Walk']
 DESTINATION_TRANSPORT_TYPE_LIST = ['Train', 'Metro', 'Light rail', 'Bus', 'Coach', 'Ferry', 'School bus', 'Walk']
 ALL_TRANSPORT_TYPE_NUMERIC = [1, 2, 4, 5, 7, 9, 11, 99]
+ALL_TRANSPORT_TYPE_STRING = ['1', '2', '4', '5', '7', '9', '11', '99']
 
 # Changes info
 ATTR_CHANGES_LIST = 'changes_list'
@@ -116,7 +120,7 @@ DEFAULT_ORIGIN_DEVICE_TRACKER = 'if_device_tracker_journey'
 DEFAULT_DESTINATION_DEVICE_TRACKER = 'never'
 DEFAULT_TRIP_WAIT_TIME = 10
 DEFAULT_TRANSPORT_TYPE_SELECTOR = ['Train', 'Metro', 'Light rail', 'Bus', 'Ferry']
-DEFAULT_TRANSPORT_TYPE_NUMERIC = [1, 2, 4, 5, 9]
+DEFAULT_TRANSPORT_TYPE = ['1', '2', '4', '5', '9']
 DEFAULT_RUN_FILTER = ''
 DEFAULT_ROUTE_FILTER = ''
 DEFAULT_MAX_CHANGES = 2
@@ -186,7 +190,10 @@ TFNSW_STOPFINDER = "https://transportnsw.info/routes/"
 # Subentry stuff
 SUBENTRY_TYPE_JOURNEY = 'subentry_journey'
 API_CALLS = 'api_calls'
+AVERAGE_API_CALLS = 'average_api_calls'
 API_CALLS_NAME = 'API calls'
+AVERAGE_API_CALLS_NAME = 'Average API calls per poll'
+AVERAGE_API_CALLS_WINDOW = 10
 STOP_TEST_ID = '200060' # Central station
 
 # Lookups and mapping dictionaries

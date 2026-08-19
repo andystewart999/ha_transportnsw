@@ -7,8 +7,15 @@ import copy
 from typing import Any
 
 import voluptuous as vol
-from homeassistant.helpers.selector import selector#, BooleanSelector, BooleanSelectorConfig
-import homeassistant.helpers.config_validation as cv
+from homeassistant.helpers.selector import selector #, BooleanSelector, BooleanSelectorConfig  #TODO standardise on selector use
+from homeassistant.helpers.selector import (
+    SelectSelector,
+    SelectSelectorConfig,
+    SelectSelectorMode,
+    TextSelector,
+    TextSelectorConfig,
+    TextSelectorType,
+)
 from homeassistant.data_entry_flow import section
 from homeassistant.config_entries import (
     #ConfigEntry,
@@ -151,10 +158,10 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
 
         try:
             stop_data = await hass.async_add_executor_job (
-                 check_stops,
-                 config_entry.data[CONF_API_KEY],
-                 stop_list
-                 )
+                check_stops,
+                config_entry.data[CONF_API_KEY],
+                stop_list
+            )
 
             if 'all_stops_valid' in stop_data and stop_data['all_stops_valid'] == True:
                 # Get the origin and destination stop names, we'll need them to name the subentry
@@ -344,7 +351,7 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
                     }
                 ),
                 vol.Required(CONF_CREATE_REVERSE_TRIP, default = user_input.get(CONF_CREATE_REVERSE_TRIP, DEFAULT_CREATE_REVERSE_TRIP)): bool,
-             }
+            }
         )
 
         description_placeholders = {
@@ -366,9 +373,18 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
 
         errors: dict[str, str] = {}
         if user_input is not None:
+            # Fix up an issue with how Voluptuous treats empty string fields
+            if CONF_RUN_FILTER not in user_input:
+                user_input[CONF_RUN_FILTER] = ''
+            if CONF_ROUTE_FILTER not in user_input:
+                user_input[CONF_ROUTE_FILTER] = ''
+
             # Convert the selected transport types to their numerical equivalents for the API
-            user_input[CONF_ORIGIN_TRANSPORT_TYPE] = convert_transport_types_friendly_to_numeric(user_input[CONF_ORIGIN_TRANSPORT_TYPE])
-            user_input[CONF_DESTINATION_TRANSPORT_TYPE] = convert_transport_types_friendly_to_numeric(user_input[CONF_DESTINATION_TRANSPORT_TYPE])
+            #user_input[CONF_ORIGIN_TRANSPORT_TYPE] = [int(transport_type) for transport_type in user_input[CONF_ORIGIN_TRANSPORT_TYPE]]
+            #user_input[CONF_DESTINATION_TRANSPORT_TYPE] = [int(transport_type) for transport_type in user_input[CONF_DESTINATION_TRANSPORT_TYPE]]
+
+#            user_input[CONF_ORIGIN_TRANSPORT_TYPE] = convert_transport_types_friendly_to_numeric(user_input[CONF_ORIGIN_TRANSPORT_TYPE])
+#            user_input[CONF_DESTINATION_TRANSPORT_TYPE] = convert_transport_types_friendly_to_numeric(user_input[CONF_DESTINATION_TRANSPORT_TYPE])
 
             self._input_data.update(user_input)
 
@@ -387,14 +403,20 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
 
                 self._input_data = user_input
 
-                default_origin_type = convert_transport_types_numeric_to_friendly(user_input[CONF_ORIGIN_TRANSPORT_TYPE])
-                default_destination_type = convert_transport_types_numeric_to_friendly(user_input[CONF_DESTINATION_TRANSPORT_TYPE])
+                # Fix this - it's a test
+#                default_origin_type = user_input[CONF_ORIGIN_TRANSPORT_TYPE]
+#                default_destination_type = user_input[CONF_DESTINATION_TRANSPORT_TYPE]
+#                default_origin_type = convert_transport_types_numeric_to_friendly(user_input[CONF_ORIGIN_TRANSPORT_TYPE])
+#                default_destination_type = convert_transport_types_numeric_to_friendly(user_input[CONF_DESTINATION_TRANSPORT_TYPE])
 
             else:
-                user_input = {}
-                default_origin_type = DEFAULT_TRANSPORT_TYPE_SELECTOR
-                default_destination_type = DEFAULT_TRANSPORT_TYPE_SELECTOR
-                description_placeholders = {"journey_name": self.context['title_placeholders']['journey_name']}
+                # Create the initial defaults
+                user_input = {
+                    CONF_ORIGIN_TRANSPORT_TYPE: DEFAULT_TRANSPORT_TYPE,
+                    CONF_DESTINATION_TRANSPORT_TYPE: DEFAULT_TRANSPORT_TYPE,
+                    CONF_MAX_CHANGES: DEFAULT_MAX_CHANGES,
+                    CONF_TRIP_WAIT_TIME: DEFAULT_TRIP_WAIT_TIME,
+                }
 
             if CONF_ORIGIN_TYPE in self._input_data and self._input_data[CONF_ORIGIN_TYPE] == 'device_tracker':
                 description_placeholders = {
@@ -407,20 +429,49 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
                     "journey_description": "Only journeys with origin and destination legs that start and end with your selected transport types will be considered valid, so if you don't mind a little bit of a walk at either end (getting off at Gadigal Station and walking to Town Hall Station for example), make sure you select 'Walk' as an option."
                 }
 
+            # Create the origin/destination transport selectors - could be inline below, but it would get complicated to see what's happening
+            # We need to convert _TRANSPORT_TYPE_LIST into strings unfortunately
+            origin_transport_selector = SelectSelector(
+                SelectSelectorConfig(
+                    options=ALL_TRANSPORT_TYPE_STRING,
+                    multiple=True,  # This activates the multi-select behavior
+                    mode=SelectSelectorMode.DROPDOWN,  # Forces dropdown mode
+                    translation_key="transport_type_selector",
+                )
+            )
+
+            destination_transport_selector = SelectSelector(
+                SelectSelectorConfig(
+                    options=ALL_TRANSPORT_TYPE_STRING,
+                    multiple=True,  # This activates the multi-select behavior
+                    mode=SelectSelectorMode.DROPDOWN,  # Forces dropdown mode
+                    translation_key="transport_type_selector",
+                )
+            )
+
+            optional_text_selector = TextSelector(
+                TextSelectorConfig(
+                    type=TextSelectorType.TEXT
+                )
+            )
+
             STEP_SETTINGS_DATA_SCHEMA = vol.Schema(
                 {
-                    vol.Required(CONF_ORIGIN_TRANSPORT_TYPE, default=default_origin_type): cv.multi_select(ORIGIN_TRANSPORT_TYPE_LIST),
-                    vol.Required(CONF_DESTINATION_TRANSPORT_TYPE, default=default_destination_type): cv.multi_select(DESTINATION_TRANSPORT_TYPE_LIST),
-                    vol.Optional(CONF_ROUTE_FILTER, default = user_input.get(CONF_ROUTE_FILTER, DEFAULT_ROUTE_FILTER)): str,
-                    vol.Optional(CONF_RUN_FILTER, default = user_input.get(CONF_RUN_FILTER, DEFAULT_RUN_FILTER)): str,
-                    vol.Required(CONF_MAX_CHANGES, default = user_input.get(CONF_MAX_CHANGES, DEFAULT_MAX_CHANGES)): vol.All(vol.Coerce(int), vol.Range(min=0, max=MAX_MAX_CHANGES)),
-                    vol.Required(CONF_TRIP_WAIT_TIME, default = user_input.get(CONF_TRIP_WAIT_TIME, DEFAULT_TRIP_WAIT_TIME)): vol.All(vol.Coerce(int), vol.Range(min=0, max=MAX_TRIP_WAIT_TIME)),
+                    vol.Required(CONF_ORIGIN_TRANSPORT_TYPE): origin_transport_selector,
+                    vol.Required(CONF_DESTINATION_TRANSPORT_TYPE): destination_transport_selector,
+                    vol.Optional(CONF_ROUTE_FILTER): optional_text_selector,
+                    vol.Optional(CONF_RUN_FILTER): optional_text_selector,
+                    vol.Required(CONF_MAX_CHANGES): vol.All(vol.Coerce(int), vol.Range(min=0, max=MAX_MAX_CHANGES)),
+                    vol.Required(CONF_TRIP_WAIT_TIME): vol.All(vol.Coerce(int), vol.Range(min=0, max=MAX_TRIP_WAIT_TIME)),
                 }
             )
 
             return self.async_show_form(
                 step_id="settings",
-                data_schema=STEP_SETTINGS_DATA_SCHEMA,
+                data_schema=self.add_suggested_values_to_schema(
+                    STEP_SETTINGS_DATA_SCHEMA,
+                    user_input
+                ),
                 errors=errors,
                 last_step=False,
                 description_placeholders = description_placeholders
@@ -433,7 +484,7 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
         errors: dict[str, str] = {}
         if user_input is not None:
             self._input_data.update(user_input)
-                 
+
             if self._input_data[CONF_SENSOR_CREATION] != 'custom':
                 user_input[CONF_INCLUDE_REALTIME_LOCATION] = True
                 self._input_data.update(user_input)
@@ -454,7 +505,7 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
                     CONF_ALERT_TYPES: []
                     }
                 )
-             
+
             if self._input_data[CONF_SENSOR_CREATION] == 'custom':
                 # Show the next form so the user can select which sensors to create
                 return await self.async_step_custom_sensors()
@@ -578,7 +629,8 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
                     vol.Required(CONF_ALERT_SEVERITY, default = user_input.get(CONF_ALERT_SEVERITY, DEFAULT_ALERT_SEVERITY),): selector (
                             {
                                 "select": {
-                                    "options": ['verylow', 'low', 'normal', 'high', 'veryhigh'],
+#                                    "options": ['verylow', 'low', 'normal', 'high', 'veryhigh'],
+                                    "options": list(ALERT_PRIORITIES),
                                     "mode": "dropdown",
                                     "multiple": False,
                                     "translation_key": 'alert_priority_selector',

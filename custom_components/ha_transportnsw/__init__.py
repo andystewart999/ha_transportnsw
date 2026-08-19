@@ -55,6 +55,7 @@ from .const import (
     CONF_ORIGIN_TRANSPORT_TYPE,
     CONF_RETURN_INFO,
     CONF_ROUTE_FILTER,
+    CONF_RUN_FILTER,
     CONF_SENSOR_CREATION,
     CONF_TRIPS_TO_CREATE,
     CONF_TRIP_WAIT_TIME,
@@ -63,6 +64,8 @@ from .const import (
     DEFAULT_LAST_LEG_DEVICE_TRACKER,
     DEFAULT_ORIGIN_DEVICE_TRACKER,
     DEFAULT_SCAN_INTERVAL,
+    DEFAULT_RUN_FILTER,
+    DEFAULT_MAX_CHANGES,
     DOMAIN,
     INTEGRATION_VERSION,
     SUBENTRY_TYPE_JOURNEY
@@ -176,23 +179,26 @@ async def get_migration_data(hass: HomeAssistant, yaml_entry):
 # Schema migration
 async def async_migrate_entry(hass: HomeAssistant, config_entry: TransportNSWConfigEntry):
 
-    if config_entry.version > 2:
+    if config_entry.version > 3:
         # This means the user has downgraded from a future version
         return False
 
-    if config_entry.version == 1:
-        # Migrate old entry
-        _LOGGER.info(f"Migrating configuration from version {config_entry.version}")
+    new_data = {**config_entry.data}
+    new_options = {**config_entry.options}
+
+    if config_entry.version < 2:
+        # Migrate to version 2
+        _LOGGER.info(f"Migrating configuration from version {config_entry.version} to version 2")
 
         # Migrate all subentries to the version 2 data schema
         for subentry in config_entry.subentries.values():
             if subentry.subentry_type == SUBENTRY_TYPE_JOURNEY:
-                new_data = {**subentry.data}
+                new_subentry_data = {**subentry.data}
 
                 # We need to move a few entries around and create a whole new 'device_trackers' section
                 # Cater for missing options by using .get() although theoretically that's impossible
-                first_leg_device_tracker = new_data['origin_sensors'].get(CONF_FIRST_LEG_DEVICE_TRACKER, DEFAULT_FIRST_LEG_DEVICE_TRACKER)
-                last_leg_device_tracker = new_data['destination_sensors'].get(CONF_LAST_LEG_DEVICE_TRACKER, DEFAULT_LAST_LEG_DEVICE_TRACKER)
+                first_leg_device_tracker = new_subentry_data['origin_sensors'].get(CONF_FIRST_LEG_DEVICE_TRACKER, DEFAULT_FIRST_LEG_DEVICE_TRACKER)
+                last_leg_device_tracker = new_subentry_data['destination_sensors'].get(CONF_LAST_LEG_DEVICE_TRACKER, DEFAULT_LAST_LEG_DEVICE_TRACKER)
 
                 # Create the new sensor dictionary
                 new_options = {
@@ -205,26 +211,66 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: TransportNSWCon
                     }
                 }
 
-                new_data.update(new_options)
+                new_subentry_data.update(new_options)
                 
                 # Tidy up the old data a bit
-                if CONF_FIRST_LEG_DEVICE_TRACKER in new_data['origin_sensors']:
-                    del new_data['origin_sensors'][CONF_FIRST_LEG_DEVICE_TRACKER]
+                if CONF_FIRST_LEG_DEVICE_TRACKER in new_subentry_data['origin_sensors']:
+                    del new_subentry_data['origin_sensors'][CONF_FIRST_LEG_DEVICE_TRACKER]
 
-                if CONF_LAST_LEG_DEVICE_TRACKER in new_data['destination_sensors']:
-                    del new_data['destination_sensors'][CONF_LAST_LEG_DEVICE_TRACKER]
+                if CONF_LAST_LEG_DEVICE_TRACKER in new_subentry_data['destination_sensors']:
+                    del new_subentry_data['destination_sensors'][CONF_LAST_LEG_DEVICE_TRACKER]
 
                 # Update the subentry
-                # Do we need to do this?  The integration is still loading
                 hass.config_entries.async_update_subentry(
                     config_entry,
                     subentry,
-                    data = new_data
+                    data=new_subentry_data
                 )
 
-        # Finally, update the config entry itself - just the schema version number
-        hass.config_entries.async_update_entry(config_entry, minor_version=0, version=2)
-        _LOGGER.info(f"Migration to configuration version {config_entry.version} successful")
+    if config_entry.version < 3:
+        # Migrate to version 3
+        _LOGGER.info(f"Migrating configuration from version {config_entry.version} to version 3")
+
+        # Move CONF_SCAN_INTERVAL from .data to .options
+        if CONF_SCAN_INTERVAL in new_data:
+            new_options[CONF_SCAN_INTERVAL] = new_data[CONF_SCAN_INTERVAL]
+            del new_data[CONF_SCAN_INTERVAL]
+        else:
+            new_options[CONF_SCAN_INTERVAL] = DEFAULT_SCAN_INTERVAL
+
+        # Migrate all subentries to the version 2 data schema
+        for subentry in config_entry.subentries.values():
+            if subentry.subentry_type == SUBENTRY_TYPE_JOURNEY:
+                new_subentry_data = {**subentry.data}
+
+                # Convert *_transport_type to a list of strings
+                new_subentry_data[CONF_ORIGIN_TRANSPORT_TYPE] = strings = [str(transport_type) for transport_type in new_subentry_data[CONF_ORIGIN_TRANSPORT_TYPE]]
+                new_subentry_data[CONF_DESTINATION_TRANSPORT_TYPE] = strings = [str(transport_type) for transport_type in new_subentry_data[CONF_DESTINATION_TRANSPORT_TYPE]]
+
+                # Make sure that CONF_RUN_FILTER and CONF_MAX_CHANGES are present
+                if CONF_RUN_FILTER not in new_subentry_data:
+                    new_subentry_data[CONF_RUN_FILTER] = DEFAULT_RUN_FILTER
+                
+                if CONF_MAX_CHANGES not in new_subentry_data:
+                    new_subentry_data[CONF_MAX_CHANGES] = DEFAULT_MAX_CHANGES
+
+                # Update the subentry
+                hass.config_entries.async_update_subentry(
+                    config_entry,
+                    subentry,
+                    data=new_subentry_data
+                )
+
+    # Finally, update the config entry itself - just the schema version number
+    hass.config_entries.async_update_entry(
+        config_entry,
+        data=new_data,
+        options=new_options,
+        minor_version=0,
+        version=3
+    )
+
+    _LOGGER.info(f"Migration to configuration version {config_entry.version} successful")
 
     return True
 

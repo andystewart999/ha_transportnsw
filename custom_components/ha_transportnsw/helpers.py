@@ -96,8 +96,8 @@ def get_device_trackers(hass: HomeAssistant, entity_filter: str):
     return device_trackers
 
 
-def get_trips (api_key: str, name_origin: str, name_destination: str, journey_wait_time: int = 0, origin_transport_type: int = [0], destination_transport_type: int = [0],
-            strict_transport_type: bool = False, run_filter: str = '', route_filter: str = '', journeys_to_return: int = 1, include_realtime_location: bool = True, 
+def get_trips (api_key: str, name_origin: str, name_destination: str, journey_wait_time: int = 0, origin_transport_type: int = [1], destination_transport_type: int = [1],
+            strict_transport_type: bool = False, route_filter: str = '', run_filter: str = '', journeys_to_return: int = 1, include_realtime_location: bool = True, 
             include_alerts: bool = False, alert_severity: str = 'high', alert_type: str = ['all'], max_changes: int = 5):
 
     # Use the Transport NSW API to request trip information
@@ -117,19 +117,24 @@ def get_trips (api_key: str, name_origin: str, name_destination: str, journey_wa
 
         return json.loads(data)
 
-    except InvalidAPIKey:
+    except InvalidAPIKey as ex:
+        _LOGGER.error(f"{ex}")
         raise InvalidAPIKey
     
-    except APIRateLimitExceeded:
+    except APIRateLimitExceeded as ex:
+        _LOGGER.error(f"{ex}")
         raise APIRateLimitExceeded
     
-    except StopError:
+    except StopError as ex:
+        _LOGGER.error(f"{ex}")
         raise StopError
 
-    except TripError:
+    except TripError as ex:
+        _LOGGER.error(f"{ex}")
         raise TripError
     
     except Exception as ex:
+        _LOGGER.error(f"{ex}")
         raise TripError
 
 def check_stops (api_key: str, stops: List[str]):
@@ -203,7 +208,7 @@ def set_optional_sensors (sensor_creation: str):
             'destination_sensors': {CONF_DESTINATION_NAME_SENSOR: True, CONF_DESTINATION_DETAIL_SENSOR: True, CONF_LAST_LEG_RUN_NAME_SENSOR: True, CONF_LAST_LEG_LINE_NAME_SENSOR: True, CONF_LAST_LEG_LINE_NAME_SHORT_SENSOR: True, CONF_LAST_LEG_TRANSPORT_TYPE_SENSOR: True, CONF_LAST_LEG_TRANSPORT_NAME_SENSOR: True, CONF_LAST_LEG_OCCUPANCY_SENSOR: True, CONF_LAST_LEG_OCCUPANCY_DETAIL_SENSOR: True, CONF_LAST_LEG_TRAIN_SET_SENSOR: True},
             'device_trackers': {CONF_FIRST_LEG_DEVICE_TRACKER: 'always', CONF_LAST_LEG_DEVICE_TRACKER: 'always', CONF_ORIGIN_DEVICE_TRACKER: 'always', CONF_DESTINATION_DEVICE_TRACKER: 'always'}
             }
- 
+
     # These are for migration entries
     elif sensor_creation == 'basic':
         sensor_options = {
@@ -212,7 +217,7 @@ def set_optional_sensors (sensor_creation: str):
             'destination_sensors': {CONF_DESTINATION_NAME_SENSOR: False, CONF_DESTINATION_DETAIL_SENSOR: False, CONF_LAST_LEG_RUN_NAME_SENSOR: False, CONF_LAST_LEG_LINE_NAME_SENSOR: False, CONF_LAST_LEG_LINE_NAME_SHORT_SENSOR: False, CONF_LAST_LEG_TRANSPORT_TYPE_SENSOR: False, CONF_LAST_LEG_TRANSPORT_NAME_SENSOR: False, CONF_LAST_LEG_OCCUPANCY_SENSOR: False, CONF_LAST_LEG_OCCUPANCY_DETAIL_SENSOR: False, CONF_LAST_LEG_TRAIN_SET_SENSOR: False},
             'device_trackers': {CONF_FIRST_LEG_DEVICE_TRACKER: DEFAULT_FIRST_LEG_DEVICE_TRACKER, CONF_LAST_LEG_DEVICE_TRACKER: DEFAULT_LAST_LEG_DEVICE_TRACKER, CONF_ORIGIN_DEVICE_TRACKER: DEFAULT_ORIGIN_DEVICE_TRACKER, CONF_DESTINATION_DEVICE_TRACKER: DEFAULT_DESTINATION_DEVICE_TRACKER}
             }
- 
+
     elif sensor_creation == 'medium':
         sensor_options = {
             'time_and_change_sensors': {CONF_CHANGES_SENSOR: True, CONF_DELAY_SENSOR: False, CONF_FIRST_LEG_DEPARTURE_TIME_SENSOR: False, CONF_LAST_LEG_ARRIVAL_TIME_SENSOR: True, CONF_DURATION_SENSOR: True},
