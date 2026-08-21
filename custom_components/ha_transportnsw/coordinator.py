@@ -1,6 +1,7 @@
 """Transport NSW Mk II DataUpdateCoordinator."""
 
 #from dataclasses import dataclass
+from TransportNSWv2 import APIRateLimitExceeded
 from datetime import timedelta
 import logging
 
@@ -137,7 +138,7 @@ class TransportNSWCoordinator(DataUpdateCoordinator):
                         subentry.data[CONF_ROUTE_FILTER],
                         subentry.data[CONF_RUN_FILTER],
                         subentry.data[CONF_TRIPS_TO_CREATE],
-                        True,                                       # I need some of the info that's buried in this attribute, regardless of the users' requirements
+                        True,                                       # I need some of the info that's provided by this attribute, regardless of the users' requirements
                         subentry.data[CONF_ALERTS_SENSOR],
                         subentry.data[CONF_ALERT_SEVERITY],
                         subentry.data[CONF_ALERT_TYPES],
@@ -146,8 +147,13 @@ class TransportNSWCoordinator(DataUpdateCoordinator):
 
                     if journey_data is not None and 'journeys_with_data' in journey_data and journey_data['journeys_with_data'] > 0:
                         if journey_data['journeys_to_return'] > journey_data['journeys_with_data']:
-                            _LOGGER.warning (f"{journey_data['journeys_to_return']} journeys were requested but only got {journey_data['journeys_with_data']} - consider relaxing the journey restrictions.")
-        
+                            # Try for a more context-sensitive error than just 'failed'
+                            if subentry.data[CONF_ORIGIN_TRANSPORT_TYPE] == ['11']:
+                                # School-bus only trip
+                                _LOGGER.warning (f"{subentry.title}: {journey_data['journeys_to_return']} journeys were requested but only got {journey_data['journeys_with_data']}, most likely because school bus journeys only run on weekdays.")
+                            else:
+                                _LOGGER.warning (f"{subentry.title}: {journey_data['journeys_to_return']} journeys were requested but only got {journey_data['journeys_with_data']} - consider relaxing the journey restrictions.")
+
                         if 'journeys' in journey_data:
                             returned_data[subentry.subentry_id] = journey_data['journeys']
 
@@ -155,9 +161,9 @@ class TransportNSWCoordinator(DataUpdateCoordinator):
                         # No journeys were returned, but the API call itself didn't fail
                         # Offer a slightly different warning message if it's a forced train journey
                         if subentry.data[CONF_ORIGIN_TRANSPORT_TYPE]  == ['1']:
-                            _LOGGER.warning (f"No journeys returned for train-only journey {subentry.title} - there may be a bus replacement service active at the moment.")
+                            _LOGGER.warning (f"{subentry.title}: no journeys returned for this train-only journey - there may be a bus replacement service active at the moment.")
                         else:
-                            _LOGGER.warning(f"No journeys returned for '{subentry.title}' - consider relaxing the journey restrictions.")
+                            _LOGGER.warning(f"{subentry.title}: no journeys returned - consider relaxing the journey restrictions.")
 
                     # Increment the API counter if that info has been returned, and include that in the response also
                     if API_CALLS in journey_data:
@@ -170,10 +176,7 @@ class TransportNSWCoordinator(DataUpdateCoordinator):
 
                 except Exception as ex:
                     # This will show entities as unavailable by raising UpdateFailed exception
-                    # Not entirely sure how that works though TBH so I'm also checking/setting in sensor.py
-                    # _LOGGER.error(f"Coordinator/async_update_data: API error for entry {subentry.title}: {ex}")
                     raise UpdateFailed(f"Error communicating with API for entry {subentry.title}: {ex}") from ex
-                    # TODO: be more specific re exceptions - if there's an API rate limit error then do updatefailed with retry_after=60 or similar 
 
         # Update the rolling average
         if len(self.rolling_average_api_calls) < AVERAGE_API_CALLS_WINDOW:

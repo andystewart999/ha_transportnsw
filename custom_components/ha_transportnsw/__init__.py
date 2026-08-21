@@ -400,6 +400,10 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: TransportNSWConfi
         # Add the coordinator and update listener to config runtime data to make
         # it accessible throughout the integration
         config_entry.runtime_data = RuntimeData(coordinator)
+
+        # Initiate the coordinator
+        await coordinator.async_config_entry_first_refresh()
+
         _LOGGER.debug (f"Initialised coordinator for {config_entry.title}")
 
     except Exception as ex:

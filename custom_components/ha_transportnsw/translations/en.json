@@ -249,7 +249,7 @@
             "options": {
                 "none": "No additional sensors",
                 "changes_and_times": "Trip changes and arrival/departure times",
-                "verbose": "All available sensors",
+                "verbose": "All available sensors and device trackers",
                 "custom": "Custom"
             }
         }

@@ -56,10 +56,23 @@ from .const import (
 _LOGGER = logging.getLogger(__name__)
 
 
-def extract_from_hierarchy(obj, path, separator=".") -> str:
-    """Traverses a nested dict/list hierarchy using a path (e.g., 'users.0.name')."""
-    if obj is None or path is None:
+def get_journey_data(coordinator_data, subentry_id: str, journey_index: int):
+    """Check to make sure that there is in fact journey data for this specific journey, otherwise return None safely."""
+    try:
+        if coordinator_data is not None:
+            if subentry_id in coordinator_data:
+                if len(coordinator_data) >= (journey_index +1):
+                    return coordinator_data[subentry_id][journey_index]
+
         return None
+
+    except:
+        return None
+
+def extract_from_hierarchy(obj, path, separator=".", default = None) -> str | float:
+    """Traverses a nested dict/list hierarchy using a dot-separated path (e.g., 'users.0.name')."""
+    if obj is None or path is None:
+        return default
     else:
         keys = path.split(separator)
         for key in keys:
@@ -71,9 +84,9 @@ def extract_from_hierarchy(obj, path, separator=".") -> str:
                     obj = obj[int(key)]
 
                 except (ValueError, IndexError):
-                    return None
+                    return default
             else:
-                return None
+                return default
 
         return obj
 
@@ -118,23 +131,18 @@ def get_trips (api_key: str, name_origin: str, name_destination: str, journey_wa
         return json.loads(data)
 
     except InvalidAPIKey as ex:
-        _LOGGER.error(f"{ex}")
         raise InvalidAPIKey
     
     except APIRateLimitExceeded as ex:
-        _LOGGER.error(f"{ex}")
         raise APIRateLimitExceeded
     
     except StopError as ex:
-        _LOGGER.error(f"{ex}")
         raise StopError
 
     except TripError as ex:
-        _LOGGER.error(f"{ex}")
         raise TripError
     
     except Exception as ex:
-        _LOGGER.error(f"{ex}")
         raise TripError
 
 def check_stops (api_key: str, stops: List[str]):
@@ -206,7 +214,7 @@ def set_optional_sensors (sensor_creation: str):
             'time_and_change_sensors': {CONF_CHANGES_SENSOR: True, CONF_DELAY_SENSOR: True, CONF_FIRST_LEG_DEPARTURE_TIME_SENSOR: True, CONF_LAST_LEG_ARRIVAL_TIME_SENSOR: True, CONF_DURATION_SENSOR: True},
             'origin_sensors': {CONF_ORIGIN_NAME_SENSOR: True, CONF_ORIGIN_DETAIL_SENSOR: True, CONF_FIRST_LEG_RUN_NAME_SENSOR: True, CONF_FIRST_LEG_LINE_NAME_SENSOR: True, CONF_FIRST_LEG_LINE_NAME_SHORT_SENSOR: True, CONF_FIRST_LEG_TRANSPORT_TYPE_SENSOR: True, CONF_FIRST_LEG_TRANSPORT_NAME_SENSOR: True, CONF_FIRST_LEG_OCCUPANCY_SENSOR: True, CONF_FIRST_LEG_OCCUPANCY_DETAIL_SENSOR: True, CONF_FIRST_LEG_TRAIN_SET_SENSOR: True}, 
             'destination_sensors': {CONF_DESTINATION_NAME_SENSOR: True, CONF_DESTINATION_DETAIL_SENSOR: True, CONF_LAST_LEG_RUN_NAME_SENSOR: True, CONF_LAST_LEG_LINE_NAME_SENSOR: True, CONF_LAST_LEG_LINE_NAME_SHORT_SENSOR: True, CONF_LAST_LEG_TRANSPORT_TYPE_SENSOR: True, CONF_LAST_LEG_TRANSPORT_NAME_SENSOR: True, CONF_LAST_LEG_OCCUPANCY_SENSOR: True, CONF_LAST_LEG_OCCUPANCY_DETAIL_SENSOR: True, CONF_LAST_LEG_TRAIN_SET_SENSOR: True},
-            'device_trackers': {CONF_FIRST_LEG_DEVICE_TRACKER: 'always', CONF_LAST_LEG_DEVICE_TRACKER: 'always', CONF_ORIGIN_DEVICE_TRACKER: 'always', CONF_DESTINATION_DEVICE_TRACKER: 'always'}
+            'device_trackers': {CONF_FIRST_LEG_DEVICE_TRACKER: 'always', CONF_LAST_LEG_DEVICE_TRACKER: 'if_not_duplicated', CONF_ORIGIN_DEVICE_TRACKER: 'always', CONF_DESTINATION_DEVICE_TRACKER: 'always'}
             }
 
     # These are for migration entries

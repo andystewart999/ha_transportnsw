@@ -42,7 +42,11 @@ from .const import (
     TFNSW_ATTRIBUTION
 )
 from .coordinator import TransportNSWCoordinator
-from .helpers import remove_entity, extract_from_hierarchy
+from .helpers import (
+    remove_entity,
+    extract_from_hierarchy,
+    get_journey_data,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -54,73 +58,39 @@ class TransportNSWTrackerEntityDescription(TrackerEntityDescription):
     # Also stores what 'type' of tracker this is - a vehicle or a location
     
     state_path: str | None = None
+    state_fn: Callable[[Any], Any] | None = None
     attrs_path: str | None = None
     attrs_friendly: str | None = None
-    state_fn: Callable[[Any], Any] | None = None
-
-# state_fn functions
-def get_coords(location_data, sensor_key: str, location_key: str) -> float:
-    """Return the lat or lon value from the returned data."""
-
-    try:
-        # Find the key index
-        index = next((i for i, item in enumerate(location_data) if item.get("key") == sensor_key), None)
-        if index is None:
-            return None
-
-        return location_data[index]['coords'][location_key]
-
-    except:
-        return None
-
-def is_duplicate(location_data, sensor_key: str) -> bool:
-    """Is this device tracker a duplicate?"""
-
-    try:
-        # Find the key index
-        index = next((i for i, item in enumerate(location_data) if item.get("key") == sensor_key), None)
-        if index is None:
-            return False
-
-        return location_data[index]['same_as_origin']
-
-    except:
-        return False
-
 
 # Subentry-level sensor definitions
 DEVICE_TRACKER_SENSORS: tuple[TransportNSWTrackerEntityDescription, ...] = (
     TransportNSWTrackerEntityDescription(
         key=CONF_FIRST_LEG_DEVICE_TRACKER,
         name=CONF_FIRST_LEG_DEVICE_TRACKER_FRIENDLY,
-#        icon='mdi:clock-outline',
-#        device_class = SensorDeviceClass.TIMESTAMP,
-        state_fn = get_coords,
-        state_path = "vehicles",
+        state_path = "origin_transport_detail.coords",
+        attrs_path = ['origin_real_time_trip_id', 'origin_gtfs_trip_id'],
+        attrs_friendly = ['realtime trip id', 'gtfs trip id']
     ),
     TransportNSWTrackerEntityDescription(
         key=CONF_LAST_LEG_DEVICE_TRACKER,
         name=CONF_LAST_LEG_DEVICE_TRACKER_FRIENDLY,
-#        icon='mdi:clock-outline',
-#        device_class = SensorDeviceClass.TIMESTAMP,
-        state_fn = get_coords,
-        state_path = "vehicles",
+        state_path = "destination_transport_detail.coords",
+        attrs_path = ['destination_real_time_trip_id', 'destination_gtfs_trip_id'],
+        attrs_friendly = ['realtime trip id', 'gtfs trip id']
     ),
     TransportNSWTrackerEntityDescription(
         key=CONF_ORIGIN_DEVICE_TRACKER,
         name=CONF_ORIGIN_DEVICE_TRACKER_FRIENDLY,
-#        icon='mdi:clock-outline',
-#        device_class = SensorDeviceClass.TIMESTAMP,
-        state_fn = get_coords,
-        state_path = "locations",
+        state_path = "origin_detail.coords",
+        attrs_path = ['origin_detail.name', 'origin_detail.stop_id'],
+        attrs_friendly = ['name', 'stop_id']
     ),
     TransportNSWTrackerEntityDescription(
         key=CONF_DESTINATION_DEVICE_TRACKER,
         name=CONF_DESTINATION_DEVICE_TRACKER_FRIENDLY,
-#        icon='mdi:clock-outline',
-#        device_class = SensorDeviceClass.TIMESTAMP,
-        state_fn = get_coords,
-        state_path = "locations",
+        state_path = "destination_detail.coords",
+        attrs_path = ['destination_detail.name', 'destination_detail.stop_id'],
+        attrs_friendly = ['name', 'stop_id']
     ),
 )
 
@@ -142,31 +112,6 @@ def is_tracker_enabled(tracker: str, data, origin_type: str) -> bool:
         return False
 
 
-def get_location_value(data, key: str, value: str, index: int = -1) -> Tuple[any, bool]:
-    try:
-        available = False
-
-        if key in [CONF_FIRST_LEG_DEVICE_TRACKER, CONF_LAST_LEG_DEVICE_TRACKER]:
-            source = data['locations_list']['vehicles']
-        else:
-            source = data['locations_list']['locations']
-
-        result = next((item for item in source if item['key'] == key), None)
-        if result is not None:
-            available = True
-
-            if index == -1:
-                return result[value], available
-            else:
-                return result[value][index], available
-
-        else:
-            return None, False
-
-    except:
-        return None, False
-
-
 def get_device_tracker_name(key, subentry_data, journey_data, device_suffix, leg_suffix) -> str:
     # This function reserved for future naming convention changes...
 
@@ -174,7 +119,6 @@ def get_device_tracker_name(key, subentry_data, journey_data, device_suffix, leg
     name = f"{subentry_data[CONF_ORIGIN_NAME]} to {subentry_data[CONF_DESTINATION_NAME]}{device_suffix} {leg_suffix}"
 
     return name
-
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -208,21 +152,12 @@ async def async_setup_entry(
                     device_identifier = f"trip_{str(trip_index + 1)}"
 
                 for sensor in DEVICE_TRACKER_SENSORS:
-#                for tracker in [CONF_FIRST_LEG_DEVICE_TRACKER, CONF_LAST_LEG_DEVICE_TRACKER, CONF_ORIGIN_DEVICE_TRACKER, CONF_DESTINATION_DEVICE_TRACKER]:
                     if trip_index >= trips_to_create:
                         # We've finished creating sensors, now delete sensors that may have been created previously but that aren't needed any more
                         remove_entity (entity_reg, config_entry.entry_id, subentry.subentry_id, trip_index, sensor.key)
                     else:
                         if is_tracker_enabled(sensor.key, subentry.data['device_trackers'], subentry.data.get(CONF_ORIGIN_TYPE, 'stop')):
-
-                            # new_device_tracker = TrackerEntityDescription(
-                            #     key = tracker,
-                            #     name = f"{subentry.subentry_id}_{tracker}_{trip_index}"
-                            #     )
-
                             leg_suffix = DEVICE_TRACKER_LOOKUPS.get(sensor.key, '')
-
-#                            device_trackers.append(TransportNSWDeviceTracker(coordinator, sensor, subentry, trip_index, sensor_suffix, name_suffix, device_suffix, migration_suffix, device_identifier))
                             device_trackers.append(TransportNSWDeviceTracker(coordinator, sensor, subentry, trip_index, sensor_suffix, name_suffix, leg_suffix, device_suffix, migration_suffix, device_identifier))
                         else:
                             # Try and remove it - don't worry if it never existed
@@ -232,7 +167,7 @@ async def async_setup_entry(
 
 
 class TransportNSWDeviceTracker(CoordinatorEntity, TrackerEntity):
-    """device tracker."""
+    """Transport NSW Mk II device tracker."""
 
     def __init__(self, coordinator: TransportNSWCoordinator, description: TransportNSWTrackerEntityDescription, subentry: ConfigSubentry, index: int, sensor_suffix: str, name_suffix: str, leg_suffix: str, device_suffix: str, migration_suffix: str, device_identifier: str) -> None:
         """Initialise sensor."""
@@ -253,56 +188,70 @@ class TransportNSWDeviceTracker(CoordinatorEntity, TrackerEntity):
             self._attr_unique_id = f"{subentry.subentry_id}_{description.key}_{index}"
             self._attr_name = f"{subentry.data[CONF_ORIGIN_NAME]} to {subentry.data[CONF_DESTINATION_NAME]}{device_suffix} {leg_suffix}"
         else:
+            # Use the old naming convention
             self._attr_unique_id = f"{subentry.data[CONF_NAME]}{migration_suffix} {description.name}"
             self._attr_name = f"{subentry.data[CONF_NAME]}{migration_suffix} location"
 
+        if description.key == CONF_LAST_LEG_DEVICE_TRACKER:
+            # Store if we should hide the last leg device tracker for single-vehicle journeys
+            self._hide_if_duplicated = True if self.subentry.data['device_trackers'][CONF_LAST_LEG_DEVICE_TRACKER] == 'if_not_duplicated' else False
+        else:
+            self._hide_if_duplicated = False
 
     @property
     def latitude(self) -> float | None:
         """Return latitude value of the vehicle/location"""
-        try:
-            journey_data = self.coordinator.data[self.subentry.subentry_id][self.journey_index]['locations_list'][self.entity_description.state_path]
-            value = self.entity_description.state_fn(journey_data, self.entity_description.key, 'latitude')
+        if True:
+        # try:
+            # Use the extended entity_description attributes to work out where and how to return the sensor state
+            journey_data = get_journey_data(self.coordinator.data, self.subentry.subentry_id, self.journey_index)
+            if journey_data is not None:
+                # Get what's in 'state_path'
+                value = extract_from_hierarchy(obj=journey_data, path=f"{self.entity_description.state_path}.latitude")
+                return value
 
-            return value
-
-        except Exception as ex:
-            return None
+        # except Exception as ex:
+        #     _LOGGER.error(f"{self.subentry.title}: Error {ex} retrieving latitude for device tracker {self.entity_description.key}")
 
     @property
     def longitude(self) -> float | None:
         """Return latitude value of the vehicle/location"""
-        try:
-            journey_data = self.coordinator.data[self.subentry.subentry_id][self.journey_index]['locations_list'][self.entity_description.state_path]
-            value = self.entity_description.state_fn(journey_data, self.entity_description.key, 'longitude')
+        if True:
+        # try:
+            # Use the extended entity_description attributes to work out where and how to return the sensor state
+            journey_data = get_journey_data(self.coordinator.data, self.subentry.subentry_id, self.journey_index)
+            if journey_data is not None:
+                # Get what's in 'state_path'
+                value = extract_from_hierarchy(obj=journey_data, path=f"{self.entity_description.state_path}.longitude")
+                return value
 
-            return value
-
-        except Exception as ex:
-            return None
+        # except Exception as ex:
+        #     _LOGGER.error(f"{self.subentry.title}: Error {ex} retrieving latitude for device tracker {self.entity_description.key}")
 
     @property
     def available(self) -> bool:
-        """ Return if entity is available - basically check to see if there's data where it should be, not based on if we have location data or not
-            Also, for CONF_LAST_LEG_DEVICE_TRACKER we should make ourselves unavailable if it's a duplicate of CONF_LAST_LEG_DEVICE_TRACKER
+        """ Return if entity is available - basically check to see if there's data where it should be, not based on if we actually have lat/long data or not
+            Also, for CONF_LAST_LEG_DEVICE_TRACKER we should make ourselves unavailable if it's a duplicate of CONF_FIRST_LEG_DEVICE_TRACKER
         """
-        
-        # If this is CONF_LAST_LEG_DEVICE_TRACKER we care about the user display setting for it
         # For some reason I can't yet work out, returning False doesn't make the entity unavailable!  So I'm hiding it until I can work out why.
-        if self.entity_description.key == CONF_LAST_LEG_DEVICE_TRACKER:
-            hide_if_duplicated = True if self.subentry.data['device_trackers'][CONF_LAST_LEG_DEVICE_TRACKER] == 'if_not_duplicated' else False
-
-        try:
-            if self.coordinator.data is not None and self.subentry.subentry_id in self.coordinator.data:
-                if self.entity_description.key == CONF_LAST_LEG_DEVICE_TRACKER:
-                    journey_data = self.coordinator.data[self.subentry.subentry_id][self.journey_index]['locations_list'][self.entity_description.state_path]
-                    duplicated_tracker = is_duplicate(journey_data, self.entity_description.key)
-
+        if True:
+        # try:
+            # Make sure there's data in the coordinator, that there's data for this subentry and that there's data for the journey index we're looking for
+            journey_data = get_journey_data(self.coordinator.data, self.subentry.subentry_id, self.journey_index)
+            if journey_data is not None:
+                # This can only be potentially True for CONF_LAST_LEG_DEVICE_TRACKER
+                if self._hide_if_duplicated:
                     # We're going to need access to the entity registry to hide or show the device tracker
                     entity_reg = entity_registry.async_get(self.hass)
                     entity_id = entity_reg.async_get_entity_id('device_tracker', DOMAIN, self._attr_unique_id)
 
-                    if duplicated_tracker and hide_if_duplicated:
+                    # See if we are a duplicate of CONF_FIRST_LEG_DEVICE_TRACKER
+                    journey_data = self.coordinator.data[self.subentry.subentry_id][self.journey_index]
+                    #_LOGGER.error(f"state_path = {self.entity_description.state_path}.same_as_origin, journey_data = {journey_data}")
+                    duplicated_tracker = extract_from_hierarchy(obj=journey_data, path="destination_transport_detail.same_as_origin", default=False)
+
+                    _LOGGER.error(f"duplicated_tracker = {duplicated_tracker}")
+                    if duplicated_tracker and self._hide_if_duplicated:
                         hidden_by = entity_registry.RegistryEntryHider.INTEGRATION
                     else:
                         hidden_by = None
@@ -310,31 +259,28 @@ class TransportNSWDeviceTracker(CoordinatorEntity, TrackerEntity):
                     # Hide or unhide the tracker
                     entity_reg.async_update_entity(entity_id, hidden_by=hidden_by)
 
-                if duplicated_tracker and hide_if_duplicated:
-                    return False
-                else:
-                    return super().available and True
+                return True
+
             else:
                 return False
 
-        except:
-            return False
+        # except Exception as ex:
+        #     _LOGGER.error(f"{self.subentry.title}: Error {ex} setting availability for device tracker {self.entity_description.key} index {self.journey_index}")
+        #     return False
 
     @property
     def icon(self) -> str:
-
     # Return the appropriate icon based on transport type
         try:
-            if self.coordinator.data is not None and self.subentry.subentry_id in self.coordinator.data:
-                journey_data = self.coordinator.data[self.subentry.subentry_id][self.journey_index]
-    
-                if journey_data is not None:
-                    # Apply the appropriate icons to a subset of the sensors.  All but two are aligned to the transport type
-                    if 'origin'in self.entity_description.key or 'first' in self.entity_description.key:
-                        transport_type = extract_from_hierarchy(journey_data, 'origin_transport_detail.type')
-                    else:
-                        transport_type = extract_from_hierarchy(journey_data, 'destination_transport_detail.type')
-                    return JOURNEY_ICONS.get(transport_type, 'mdi:train')
+            journey_data = get_journey_data(self.coordinator.data, self.subentry.subentry_id, self.journey_index)
+            if journey_data is not None:
+                # Apply the appropriate icon
+                if 'origin'in self.entity_description.key or 'first' in self.entity_description.key:
+                    transport_type = extract_from_hierarchy(obj=journey_data, path='origin_transport_detail.type')
+                else:
+                    transport_type = extract_from_hierarchy(obj=journey_data, path='destination_transport_detail.type')
+
+                return JOURNEY_ICONS.get(transport_type, 'mdi:train')
     
         except:
             return 'mdi:train'
@@ -342,51 +288,67 @@ class TransportNSWDeviceTracker(CoordinatorEntity, TrackerEntity):
 
     @property
     def device_info(self):
+        """ Return appropriate device info."""
+        if True:
+        # try:
+            journey_data = get_journey_data(self.coordinator.data, self.subentry.subentry_id, self.journey_index)
+            if journey_data is not None:
+                if self.entity_description.key in [CONF_FIRST_LEG_DEVICE_TRACKER, CONF_LAST_LEG_DEVICE_TRACKER]:
+                    # Change the name on the fly, if required.  May be required in the future if TripView-type naming conventions are enabled
+                    entity_reg = entity_registry.async_get(self.hass)
+                    entity_id = entity_reg.async_get_entity_id('device_tracker', DOMAIN, self._attr_unique_id)
 
-        try:
-            if self.coordinator.data is not None and self.subentry.subentry_id in self.coordinator.data:
-                journey_data = self.coordinator.data[self.subentry.subentry_id][self.journey_index]
-    
-                if journey_data is not None:
-                    if self.entity_description.key in [CONF_FIRST_LEG_DEVICE_TRACKER, CONF_LAST_LEG_DEVICE_TRACKER]:
-                        # Change the name on the fly, if required.
-                        entity_reg = entity_registry.async_get(self.hass)
-                        entity_id = entity_reg.async_get_entity_id('device_tracker', DOMAIN, self._attr_unique_id)
+                    new_name = get_device_tracker_name (self.entity_description.key, self.subentry.data, journey_data, self.device_suffix, self.leg_suffix)
 
-                        new_name = get_device_tracker_name (self.entity_description.key, journey_data, self.subentry.data, self.device_suffix, self.leg_suffix)
+            identifiers = {
+            "identifiers": {(DOMAIN, f"{self.subentry.subentry_id}_{self.subentry.data[CONF_ORIGIN_ID]}_{self.subentry.data[CONF_DESTINATION_ID]}_{self.device_identifier}")
+            },
+            "name": f"{self.subentry.data[CONF_ORIGIN_NAME]} to {self.subentry.data[CONF_DESTINATION_NAME]}{self.device_suffix}",
+            "manufacturer": "Transport for NSW"
+            }
 
-        except Exception as ex:
-            _LOGGER.error(f"error {ex} in device_tracker.py/device_info")
+            return identifiers
 
-        """Return device info for this sensor."""
-        identifiers = {
-        "identifiers": {(DOMAIN, f"{self.subentry.subentry_id}_{self.subentry.data[CONF_ORIGIN_ID]}_{self.subentry.data[CONF_DESTINATION_ID]}_{self.device_identifier}")
-        },
-        "name": f"{self.subentry.data[CONF_ORIGIN_NAME]} to {self.subentry.data[CONF_DESTINATION_NAME]}{self.device_suffix}",
-        "manufacturer": "Transport for NSW"
-        }
-
-        return identifiers
+        # except Exception as ex:
+        #     _LOGGER.error(f"error {ex} in device_tracker.py/device_info")
 
 
     @property
     def extra_state_attributes(self):
         """Return the extra state attributes."""
         attrs = {}
-        attrs['attribution'] = TFNSW_ATTRIBUTION
 
         try:
-            if self.coordinator.data is not None and self.subentry.subentry_id in self.coordinator.data:
-                journey_data = self.coordinator.data[self.subentry.subentry_id][self.journey_index]
+            journey_data = get_journey_data(self.coordinator.data, self.subentry.subentry_id, self.journey_index)
+            if journey_data is not None:
+                # Attributes for all device_trackers - none in this case
+                # attrs["origin_id"] = extract_from_hierarchy(obj=journey_data, path='origin_detail.stop_id')
+                # attrs["destination_id"] = extract_from_hierarchy(obj=journey_data, path='destination_detail.stop_id')
+    
+                # Key-specific attributes
+                if self.entity_description.attrs_path:
+                    if not isinstance(self.entity_description.attrs_path, list):
+                        attrs_path = [self.entity_description.attrs_path]
+                    else:
+                        attrs_path = self.entity_description.attrs_path
 
-                attrs["name"], available = get_location_value(journey_data, self.entity_description.key, 'name')
-                attrs["stop_id"], available = get_location_value(journey_data, self.entity_description.key, 'id')
+                    if not isinstance(self.entity_description.attrs_friendly, list):
+                        attrs_friendly = [self.entity_description.attrs_friendly]
+                    else:
+                        attrs_friendly = self.entity_description.attrs_friendly
 
-        except:
-            pass
+
+                    # Handle multiple attributes being set for a single sensor
+                    for index, path in enumerate(attrs_path):
+                        attr_friendly = attrs_friendly[index]
+                        attr_value = extract_from_hierarchy(obj=journey_data, path=path)
+
+                        attrs[attr_friendly] = attr_value
+
+        finally:
+            # Always make sure there's the appropriate attribution
+            attrs['attribution'] = TFNSW_ATTRIBUTION
 
         return attrs
-
-
 
 

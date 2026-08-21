@@ -32,7 +32,12 @@ from homeassistant.util import dt as dt_util
 from . import TransportNSWConfigEntry
 from .const import *
 from .coordinator import TransportNSWCoordinator
-from .helpers import remove_entity, remove_device, extract_from_hierarchy
+from .helpers import (
+    remove_entity,
+    remove_device,
+    extract_from_hierarchy,
+    get_journey_data,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -40,7 +45,6 @@ def get_daily_api_calls(coordinator: TransportNSWCoordinator) -> int:
     """ Return the current daily API calls total. """
 
     return coordinator.daily_api_calls
-
 
 def get_average_api_calls(coordinator: TransportNSWCoordinator) -> int | None:
     """ Return the average from rolling_average_api_calls. """
@@ -51,7 +55,6 @@ def get_average_api_calls(coordinator: TransportNSWCoordinator) -> int | None:
 
     # Round the result, but don't use Banker's Rounding
     return round(average + 0.1)
-
 
 def get_highest_alert(alerts) -> str:
     # Search the alerts and return the highest
@@ -69,11 +72,9 @@ def get_highest_alert(alerts) -> str:
 
     return highest_alert_text.capitalize()
 
-
 def get_occupancy_friendly(occupancy) -> str:
     # Convert the basic occupancy name (eg MANY_SEATS) into a more friendly version
     return OCCUPANCY_ICONS.get(occupancy, ["mdi:account-question", "Fail"])[1]
-
 
 def get_occupancy_detail(occupancy_detail) -> str:
     # Generate a list of glyphs showing per-carriage occupancy, if we have it
@@ -96,7 +97,6 @@ def get_occupancy_detail(occupancy_detail) -> str:
 
     return occupancy_glyphs
 
-
 def convert_date(utc_string) -> datetime:
 
     utc_dt = dt_util.parse_datetime(utc_string)
@@ -110,12 +110,11 @@ def convert_date(utc_string) -> datetime:
 class TransportNSWSensorEntityDescription(SensorEntityDescription):
     # Custom extension adding a value path for retrieving simple values from the data returned by DataUpdateCoordinator
     # or a callable function for more complex returns
-    
+
     state_path: str | None = None
+    state_fn: Callable[[Any], Any] | None = None
     attrs_path: str | None = None
     attrs_friendly: str | None = None
-    state_fn: Callable[[Any], Any] | None = None
-
 
 # Config_entry-level sensor definitions
 DEFAULT_ENTRY_SENSORS: tuple[TransportNSWSensorEntityDescription, ...] = (
@@ -187,8 +186,8 @@ TIME_AND_CHANGE_SENSORS: tuple[TransportNSWSensorEntityDescription, ...] = (
         icon='mdi:map-marker-path',
         native_unit_of_measurement = 'changes',
         state_path = 'changes',
-        attrs_path = ['changes_simple', 'locations_list'],
-        attrs_friendly = ['changes', 'locations']
+        attrs_path = ['changes_simple', 'stop_list'],
+        attrs_friendly = ['stops', 'detailed_stops']
     )
 )
 
@@ -509,14 +508,13 @@ class TransportNSWSubentrySensor(CoordinatorEntity, SensorEntity):
 
         try:
             # Use the extended entity_description attributes to work out where and how to return the sensor state
-            if self.coordinator.data is not None and self.subentry.subentry_id in self.coordinator.data:
-                journey_data = self.coordinator.data[self.subentry.subentry_id][self.journey_index]
-                
+            journey_data = get_journey_data(self.coordinator.data, self.subentry.subentry_id, self.journey_index)
+            if journey_data is not None:
                 # Get what's in 'state_path' first
-                value = extract_from_hierarchy(journey_data, self.entity_description.state_path)
+                value = extract_from_hierarchy(obj=journey_data, path=self.entity_description.state_path)
 
                 # Now either return it, or pass it through an associated function first
-                value = extract_from_hierarchy(journey_data, self.entity_description.state_path)
+                value = extract_from_hierarchy(obj=journey_data, path=self.entity_description.state_path)
                 if self.entity_description.state_fn:
                     return self.entity_description.state_fn(value)
                 else:
@@ -524,37 +522,35 @@ class TransportNSWSubentrySensor(CoordinatorEntity, SensorEntity):
                     return value
 
         except Exception as ex:
-            _LOGGER.error(f"Error {ex} retrieving sensor state for sensor {key}")
+            _LOGGER.error(f"Error {ex} retrieving sensor state for sensor {self.entity_description.key}")
 
 
     @property
     def icon(self) -> str:
         try:
-            if self.coordinator.data is not None and self.subentry.subentry_id in self.coordinator.data:
-                journey_data = self.coordinator.data[self.subentry.subentry_id][self.journey_index]
+            journey_data = get_journey_data(self.coordinator.data, self.subentry.subentry_id, self.journey_index)
+            if journey_data is not None:
+                # Apply the appropriate icons to a subset of the sensors.  All but a handful are aligned to the transport type
+                if 'origin' in self.entity_description.key:
+                    transport_type = extract_from_hierarchy(obj=journey_data, path='origin_transport_detail.type')
+                else:
+                    transport_type = extract_from_hierarchy(obj=journey_data, path='destination_transport_detail.type')
 
-                if journey_data is not None:
-                    # Apply the appropriate icons to a subset of the sensors.  All but two are aligned to the transport type
-                    if 'origin' in self.entity_description.key:
-                        transport_type = extract_from_hierarchy(journey_data, 'origin_transport_detail.type')
+                if self.entity_description.key in [CONF_FIRST_LEG_OCCUPANCY_SENSOR, CONF_FIRST_LEG_OCCUPANCY_DETAIL_SENSOR]:
+                    occupancy = extract_from_hierarchy(obj=journey_data, path='origin_transport_detail.occupancy')
+                    return OCCUPANCY_ICONS.get(occupancy, ["mdi:account-question", "Unknown"])[0]
+
+                elif self.entity_description.key in [CONF_LAST_LEG_OCCUPANCY_SENSOR, CONF_LAST_LEG_OCCUPANCY_DETAIL_SENSOR]:
+                    occupancy = extract_from_hierarchy(obj=journey_data, path='destination_transport_detail.occupancy')
+                    return OCCUPANCY_ICONS.get(occupancy, ["mdi:account-question", "Unknown"])[0]
+
+                else:
+                    # Only use the transport_type icon for sensors that don't have an icon pre-defined
+                    if self.entity_description.icon is None:
+                        return JOURNEY_ICONS.get(transport_type, 'mdi:train')
                     else:
-                        transport_type = extract_from_hierarchy(journey_data, 'destination_transport_detail.type')
-
-                    if self.entity_description.key in [CONF_FIRST_LEG_OCCUPANCY_SENSOR, CONF_FIRST_LEG_OCCUPANCY_DETAIL_SENSOR]:
-                        occupancy = extract_from_hierarchy(journey_data, 'origin_transport_detail.occupancy')
-                        return OCCUPANCY_ICONS.get(occupancy, ["mdi:account-question", "Unknown"])[0]
-
-                    elif self.entity_description.key in [CONF_LAST_LEG_OCCUPANCY_SENSOR, CONF_LAST_LEG_OCCUPANCY_DETAIL_SENSOR]:
-                        occupancy = extract_from_hierarchy(journey_data, 'destination_transport_detail.occupancy')
-                        return OCCUPANCY_ICONS.get(occupancy, ["mdi:account-question", "Unknown"])[0]
-
-                    else:
-                        # Only use the transport_type icon for sensors that don't have an icon pre-defined
-                        if self.entity_description.icon is None:
-                            return JOURNEY_ICONS.get(transport_type, 'mdi:train')
-                        else:
-                            # Curious why we have to keep re-returning the same icon?
-                            return self.entity_description.icon
+                        # Curious why we have to keep re-returning the same icon?
+                        return self.entity_description.icon
 
         except:
             return 'mdi:train'
@@ -563,17 +559,14 @@ class TransportNSWSubentrySensor(CoordinatorEntity, SensorEntity):
     def available(self) -> bool:
         """Return if entity is available - basically check to see if there's data where it should be"""
         try:
-            if self.coordinator.data is not None and self.subentry.subentry_id in self.coordinator.data:
-                journey_data = self.coordinator.data[self.subentry.subentry_id][self.journey_index]
-                
-                if journey_data is not None:
-                    return True
-                else:
-                    return False
+            journey_data = get_journey_data(self.coordinator.data, self.subentry.subentry_id, self.journey_index)
+            if journey_data is not None:
+                return True
+            else:
+                return False
 
         except:
             return False
-
 
     @property
     def extra_state_attributes(self):
@@ -582,12 +575,11 @@ class TransportNSWSubentrySensor(CoordinatorEntity, SensorEntity):
         attrs = {}
 
         try:
-            if self.coordinator.data is not None and self.subentry.subentry_id in self.coordinator.data:
-                journey_data = self.coordinator.data[self.subentry.subentry_id][self.journey_index]
-
+            journey_data = get_journey_data(self.coordinator.data, self.subentry.subentry_id, self.journey_index)
+            if journey_data is not None:
                 # Attributes for all sensors
-                attrs["origin_id"] = extract_from_hierarchy(journey_data, 'origin_detail.stop_id')
-                attrs["destination_id"] = extract_from_hierarchy(journey_data, 'destination_detail.stop_id')
+                attrs["origin_id"] = extract_from_hierarchy(obj=journey_data, path='origin_detail.stop_id')
+                attrs["destination_id"] = extract_from_hierarchy(obj=journey_data, path='destination_detail.stop_id')
     
                 # Key-specific attributes
                 if self.entity_description.attrs_path:
@@ -605,11 +597,12 @@ class TransportNSWSubentrySensor(CoordinatorEntity, SensorEntity):
                     # Handle multiple attributes being set for a single sensor
                     for index, path in enumerate(attrs_path):
                         attr_friendly = attrs_friendly[index]
-                        attr_value = extract_from_hierarchy(journey_data, path)
+                        attr_value = extract_from_hierarchy(obj=journey_data, path=path)
 
                         attrs[attr_friendly] = attr_value
 
         finally:
+            # Always make sure there's the appropriate attribution
             attrs['attribution'] = TFNSW_ATTRIBUTION
-        
+
         return attrs
