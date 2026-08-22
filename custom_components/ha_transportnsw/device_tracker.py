@@ -201,8 +201,7 @@ class TransportNSWDeviceTracker(CoordinatorEntity, TrackerEntity):
     @property
     def latitude(self) -> float | None:
         """Return latitude value of the vehicle/location"""
-        if True:
-        # try:
+        try:
             # Use the extended entity_description attributes to work out where and how to return the sensor state
             journey_data = get_journey_data(self.coordinator.data, self.subentry.subentry_id, self.journey_index)
             if journey_data is not None:
@@ -210,14 +209,13 @@ class TransportNSWDeviceTracker(CoordinatorEntity, TrackerEntity):
                 value = extract_from_hierarchy(obj=journey_data, path=f"{self.entity_description.state_path}.latitude")
                 return value
 
-        # except Exception as ex:
-        #     _LOGGER.error(f"{self.subentry.title}: Error {ex} retrieving latitude for device tracker {self.entity_description.key}")
+        except Exception as ex:
+            _LOGGER.error(f"{self.subentry.title}: Error {ex} retrieving latitude for device tracker {self.entity_description.key}")
 
     @property
     def longitude(self) -> float | None:
         """Return latitude value of the vehicle/location"""
-        if True:
-        # try:
+        try:
             # Use the extended entity_description attributes to work out where and how to return the sensor state
             journey_data = get_journey_data(self.coordinator.data, self.subentry.subentry_id, self.journey_index)
             if journey_data is not None:
@@ -225,17 +223,15 @@ class TransportNSWDeviceTracker(CoordinatorEntity, TrackerEntity):
                 value = extract_from_hierarchy(obj=journey_data, path=f"{self.entity_description.state_path}.longitude")
                 return value
 
-        # except Exception as ex:
-        #     _LOGGER.error(f"{self.subentry.title}: Error {ex} retrieving latitude for device tracker {self.entity_description.key}")
+        except Exception as ex:
+            _LOGGER.error(f"{self.subentry.title}: Error {ex} retrieving latitude for device tracker {self.entity_description.key}")
 
     @property
     def available(self) -> bool:
         """ Return if entity is available - basically check to see if there's data where it should be, not based on if we actually have lat/long data or not
-            Also, for CONF_LAST_LEG_DEVICE_TRACKER we should make ourselves unavailable if it's a duplicate of CONF_FIRST_LEG_DEVICE_TRACKER
+            Also, for CONF_LAST_LEG_DEVICE_TRACKER we should make it hidden if it's a duplicate of CONF_FIRST_LEG_DEVICE_TRACKER
         """
-        # For some reason I can't yet work out, returning False doesn't make the entity unavailable!  So I'm hiding it until I can work out why.
-        if True:
-        # try:
+        try:
             # Make sure there's data in the coordinator, that there's data for this subentry and that there's data for the journey index we're looking for
             journey_data = get_journey_data(self.coordinator.data, self.subentry.subentry_id, self.journey_index)
             if journey_data is not None:
@@ -247,11 +243,9 @@ class TransportNSWDeviceTracker(CoordinatorEntity, TrackerEntity):
 
                     # See if we are a duplicate of CONF_FIRST_LEG_DEVICE_TRACKER
                     journey_data = self.coordinator.data[self.subentry.subentry_id][self.journey_index]
-                    #_LOGGER.error(f"state_path = {self.entity_description.state_path}.same_as_origin, journey_data = {journey_data}")
                     duplicated_tracker = extract_from_hierarchy(obj=journey_data, path="destination_transport_detail.same_as_origin", default=False)
 
-                    _LOGGER.error(f"duplicated_tracker = {duplicated_tracker}")
-                    if duplicated_tracker and self._hide_if_duplicated:
+                    if duplicated_tracker:
                         hidden_by = entity_registry.RegistryEntryHider.INTEGRATION
                     else:
                         hidden_by = None
@@ -264,9 +258,9 @@ class TransportNSWDeviceTracker(CoordinatorEntity, TrackerEntity):
             else:
                 return False
 
-        # except Exception as ex:
-        #     _LOGGER.error(f"{self.subentry.title}: Error {ex} setting availability for device tracker {self.entity_description.key} index {self.journey_index}")
-        #     return False
+        except Exception as ex:
+            _LOGGER.error(f"{self.subentry.title}: Error {ex} setting availability for device tracker {self.entity_description.key} index {self.journey_index}")
+            return False
 
     @property
     def icon(self) -> str:
@@ -289,8 +283,7 @@ class TransportNSWDeviceTracker(CoordinatorEntity, TrackerEntity):
     @property
     def device_info(self):
         """ Return appropriate device info."""
-        if True:
-        # try:
+        try:
             journey_data = get_journey_data(self.coordinator.data, self.subentry.subentry_id, self.journey_index)
             if journey_data is not None:
                 if self.entity_description.key in [CONF_FIRST_LEG_DEVICE_TRACKER, CONF_LAST_LEG_DEVICE_TRACKER]:
@@ -309,8 +302,8 @@ class TransportNSWDeviceTracker(CoordinatorEntity, TrackerEntity):
 
             return identifiers
 
-        # except Exception as ex:
-        #     _LOGGER.error(f"error {ex} in device_tracker.py/device_info")
+        except Exception as ex:
+            _LOGGER.error(f"error {ex} in device_tracker.py/device_info")
 
 
     @property
