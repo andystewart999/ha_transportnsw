@@ -3,21 +3,24 @@ from TransportNSWv2 import TransportNSWv2, InvalidAPIKey, APIRateLimitExceeded, 
 import logging
 from typing import List
 import json
-from pathlib import Path
-#import pytz
-#import tzlocal
-#import time
+#from pathlib import Path
+import os
 
-from datetime import date, datetime
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import (
     entity_registry as er,
     selector
 )
+from datetime import time, datetime, timedelta 
 from homeassistant.util import dt as dt_util
+from homeassistant.const import (
+        CONF_API_KEY,
+)
 
 from .const import (
     API_CALLS,
+    API_DAILY_LIMIT,
+    AVERAGE_CALLS_PER_JOURNEY,
     CONF_CHANGES_SENSOR,
     CONF_DELAY_SENSOR,
     CONF_DESTINATION_DETAIL_SENSOR,
@@ -47,17 +50,70 @@ from .const import (
     CONF_ORIGIN_DETAIL_SENSOR,
     CONF_ORIGIN_DEVICE_TRACKER,
     CONF_ORIGIN_NAME_SENSOR,
+    CONF_START_TIME,
+    CONF_END_TIME,
     DEFAULT_DESTINATION_DEVICE_TRACKER,
     DEFAULT_FIRST_LEG_DEVICE_TRACKER,
     DEFAULT_LAST_LEG_DEVICE_TRACKER,
     DEFAULT_ORIGIN_DEVICE_TRACKER,
-    DOMAIN
+    DEFAULT_START_TIME,
+    DEFAULT_END_TIME,
+    DOMAIN,
+    MIN_AUTO_SCAN_INTERVAL,
 )
 _LOGGER = logging.getLogger(__name__)
 
 
+def within_poll_time(subentry):
+    """ Are we within the start/stop times for this subentry? """
+    now = dt_util.now().time()
+
+    start_time = time.fromisoformat(
+        subentry.data.get(CONF_START_TIME, DEFAULT_START_TIME)
+    )
+
+    end_time = time.fromisoformat(
+        subentry.data.get(CONF_END_TIME, DEFAULT_END_TIME)
+    )
+
+    if not start_time <= now <= end_time:
+        # We are outside of the poll time - return False, plus when the polling will start
+        return False, start_time
+    else:
+        # We are inside the poll time - return True, plus when the polling will stop unless it's the default
+        if end_time == time.fromisoformat(DEFAULT_END_TIME):
+            return True, None
+        else:
+            return True, end_time
+
+
+def get_auto_poll_interval(coordinator, percent_available: int, end_time: str = DEFAULT_END_TIME) -> int:
+    """ Return how often we can poll based on the current average API calls
+        per poll and how far through the day we are - with 5% headroom. """
+
+    # How many API calls do we have left for the day?
+    remaining_api_calls = API_DAILY_LIMIT - coordinator.daily_api_calls
+    average_api_calls = coordinator.rolling_average_api_calls if coordinator.rolling_average_api_calls is not None else AVERAGE_CALLS_PER_JOURNEY
+
+    # How long do we have until midnight, or we stop polling for the day (whichever happens first?
+    now = dt_util.now()
+    target_time = datetime.strptime(end_time, "%H:%M:%S").time()
+    end_time_tz = datetime.combine(
+        now.date(),
+        target_time,
+        tzinfo=now.tzinfo,
+    )
+    minutes_until_last_window = (end_time_tz - now).total_seconds() /60
+
+    # How many polls can we do based on the current per-poll API call average?  Factor in the percent of the daily allocation that's available to this Integration
+    max_polls = int((remaining_api_calls / coordinator.rolling_average_api_calls) * percent_available)
+    min_refresh_rate_secs = int((minutes_until_last_window / max_polls) * 60) + 1
+
+    return min_refresh_rate_secs if min_refresh_rate_secs > MIN_AUTO_SCAN_INTERVAL else MIN_AUTO_SCAN_INTERVAL
+
+
 def get_journey_data(coordinator_data, subentry_id: str, journey_index: int):
-    """Check to make sure that there is in fact journey data for this specific journey, otherwise return None safely."""
+    """Check to make sure that there is in fact journey data for this specific journey, otherwise return None."""
     try:
         if coordinator_data is not None:
             if subentry_id in coordinator_data:
@@ -244,52 +300,63 @@ def set_optional_sensors (sensor_creation: str):
 
     return sensor_options
 
-def get_api_calls (file_path: str) -> int:
-    # Get the current data first
+def delete_legacy_storage(base_path: str, config_entry):
+    """ Delete the old persistent API storage file.
+        We've moved to using the Store helpers instead. """
+    file_path = f'{base_path}/custom_components/{DOMAIN}/.{DOMAIN}_{config_entry.data[CONF_API_KEY]}.json'
+
     try:
-        api_info = json.loads(
-                Path(file_path).read_text(encoding="utf8")
-            )
-
-        return api_info[API_CALLS]
-
+        if os.path.exists(file_path):
+            os.remove(file_path)
     except Exception as ex:
-        return 0
+        pass
+
+# def get_api_calls (file_path: str) -> int:
+#     # Get the current data first
+#     try:
+#         api_info = json.loads(
+#                 Path(file_path).read_text(encoding="utf8")
+#             )
+
+#         return api_info[API_CALLS]
+
+#     except Exception as ex:
+#         return 0
 
 
-def set_api_calls (file_path: str, api_calls: int) -> int:
-    # Get the current data
-    try:
-        api_info = json.loads(
-                Path(file_path).read_text(encoding="utf8")
-            )
+# def set_api_calls (file_path: str, api_calls: int) -> int:
+#     # Get the current data
+#     try:
+#         api_info = json.loads(
+#                 Path(file_path).read_text(encoding="utf8")
+#             )
     
-    except:
-        api_info = {}
+#     except:
+#         api_info = {}
 
-    current_date = dt_util.now().date()
+#     current_date = dt_util.now().date()
 
-    # Do we need to reset the API counter?
-    if 'last_reset_date' in api_info:
-        # Check the date
-        last_reset_date = datetime.strptime(api_info['last_reset_date'], '%Y-%m-%d').date()
+#     # Do we need to reset the API counter?
+    # if 'last_reset_date' in api_info:
+    #     # Check the date
+    #     last_reset_date = datetime.strptime(api_info['last_reset_date'], '%Y-%m-%d').date()
 
-        if current_date > last_reset_date:
-            api_calls = 0
-            last_reset_date = current_date
-    else:
-        # Assume it's the first time starting up
-        last_reset_date = current_date
+    #     if current_date > last_reset_date:
+    #         api_calls = 0
+    #         last_reset_date = current_date
+    # else:
+    #     # Assume it's the first time starting up
+    #     last_reset_date = current_date
 
-    data = {
-        API_CALLS: api_calls,
-        'last_reset_date': str(last_reset_date)
-    }
+    # data = {
+    #     API_CALLS: api_calls,
+    #     'last_reset_date': str(last_reset_date)
+    # }
 
-    # Store the current API calls value peristently
-    Path(file_path).write_text(json.dumps(data), encoding="utf8")
+#     # Store the current API calls value peristently
+#     Path(file_path).write_text(json.dumps(data), encoding="utf8")
 
-    return api_calls
+#     return api_calls
 
 def remove_entity(entity_reg, configentry_id, subentry_id, trip_index, key):
     # Search for and remove a sensor that's no longer needed

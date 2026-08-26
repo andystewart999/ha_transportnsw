@@ -28,16 +28,21 @@
         }
     },
     "options": {
+        "error": {
+            "bad_update_interval": "The update interval must either be 0 (for automatic) or above {min_scan_interval}."
+        },
         "step": {
             "init": {
                 "title": "Options",
                 "description": "These optional settings impact all of your journeys.",
                 "data": {
-                    "scan_interval": "Sensor update interval",
-                    "request_location_update": "Attempt to request a device tracker location update at each poll"
+                    "scan_interval": "Sensor update interval (s)",
+                    "auto_interval_api_percent": "Available daily API allocation (%)",
+                    "request_location_update": "Device tracker location update at each poll"
                 },
                 "data_description": {
-                    "scan_interval": "The sensor update interval in seconds",
+                    "scan_interval": "The sensor update interval in seconds.  0 means the update interval will be calculated based on the API calls used per update and how many API calls remain from the daily limit.",
+                    "auto_interval_api_percent": "If the update interval is being calculated automatically, what percentage of the total daily allowance (currently {api_daily_limit}) is available to this Integration.  Useful if you have multiple Integrations sharing the same API key.",
                     "request_location_update": "If the journey origin is a device tracker (e.g. a mobile phone), attempt to request a location update at each poll.  Note that this could impact the battery life of the device being polled."
                 }
             }
@@ -82,6 +87,7 @@
                 "already_configured": "You have already added that journey.",
                 "outbound_already_configured": "You have already added the outbound journey.",
                 "return_already_configured": "You have alreadty added the return part of that journey",
+                "end_time_before_start_time": "Polling end time must be after start time",
                 "unknown": "Unexpected error."
             },
             "initiate_flow": {
@@ -117,19 +123,27 @@
                         "route_filter": "Filter out journeys whose origin 'line name' or 'short line name' don't contain this text",
                         "run_filter": "Filter out journeys whose origin 'run name' doesn't contain this text",
                         "max_changes": "Maximum permitted trip changes",
-                        "trip_wait_time": "The minimum time from now to wait before the journey starts",
-                        "trips_to_create": "How many trips to create for the journey, ordered by the destination arrival time"
+                        "trip_wait_time": "The minimum time from now to wait before the journey starts"
                     },
                     "description": "Select the appropriate transport types, the minimum departure time from now and optional route/max changes filters.\n\n{journey_description}\n\nIf you specify a route filter, only journeys with that text in the line name (eg T9 Northern Line) or short line name (eg T9) will be shown - similarly with the run filter, which filters on a journey's run name.",
                     "title": "{journey_name}"
                 },
                 "sensors": {
                     "data": {
+                        "alerts": "Include alerts?",
+                        "trips_to_create": "Trips to create",
+                        "sensor_creation": "Optional sensors",
+                        "start_time": "Poll start time",
+                        "end_time": "Poll end time"
+                    },
+                    "data_description": {
                         "alerts": "Include alerts related to each journey",
                         "trips_to_create": "How many trips should be shown (1 to 3)",
-                        "sensor_creation": "Sensors to create"
+                        "sensor_creation": "Which optional sensors to create",
+                        "start_time": "The time of day that journey polling should start",
+                        "end_time": "The time of day that journey polling should stop"
                     },
-                    "description": "Here you can choose if an alerts sensor should be created, how many consecutive journeys should be created and what types of sensors each journey should include - by default only the 'due' sensor and origin/destination device trackers will be created.{multi_destination_suggestion}",
+                    "description": "Here you can choose if an alerts sensor should be created, when journey polling should be active, how many consecutive journeys should be created and what types of sensors each journey should include - by default only the 'due' sensor and origin/destination device trackers will be created.{multi_destination_suggestion}",
                     "title": "{journey_name}"
                 },
                 "alerts": {

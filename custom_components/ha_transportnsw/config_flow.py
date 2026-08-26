@@ -1,17 +1,28 @@
 """Config flow for Transport NSW Mk II integration."""
 from __future__ import annotations
-from TransportNSWv2 import InvalidAPIKey, APIRateLimitExceeded, StopError, TripError
+from TransportNSWv2 import (
+    InvalidAPIKey,
+    APIRateLimitExceeded,
+    StopError,
+    TripError
+)
 
 import logging
 from typing import Any
 
 import voluptuous as vol
+from homeassistant.helpers.selector import (
+    NumberSelector,
+    NumberSelectorConfig,
+    NumberSelectorMode,
+)
 from homeassistant.config_entries import (
     ConfigEntry,
     ConfigFlow,
     ConfigFlowResult,
     ConfigSubentryFlow,
     OptionsFlow,
+    OptionsFlowWithReload,
     SOURCE_RECONFIGURE,
     SOURCE_IMPORT
 )
@@ -22,14 +33,17 @@ from homeassistant.const import (
 )
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
-#from homeassistant.components import persistent_notification
 from homeassistant.components.persistent_notification import async_create as async_create_notification
 
 from .const import (
+    API_DAILY_LIMIT,
+    CONF_API_PERCENT,
     CONF_REQUEST_LOCATION_UPDATE,
+    DEFAULT_API_PERCENT,
     DEFAULT_REQUEST_LOCATION_UPDATE,
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
+    MIN_SCAN_INTERVAL,
     STOP_TEST_ID,
     SUBENTRY_TYPE_JOURNEY,
     TFNSW_REGISTRATION,
@@ -51,18 +65,9 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> None:
             [STOP_TEST_ID]
         )
 
-    # Testing simpler exception code
+    # Testing simpler exception type
     except (InvalidAPIKey, APIRateLimitExceeded, StopError):
         raise
-
-    # except InvalidAPIKey:
-    #     raise InvalidAPIKey
-    
-    # except APIRateLimitExceeded:
-    #     raise APIRateLimitExceeded
-    
-    # except StopError:
-    #     raise StopError
 
     except Exception as ex:
         raise StopError from ex
@@ -116,7 +121,6 @@ class TransportNSWConfigFlowHandler(ConfigFlow, domain=DOMAIN):
             
                 except Exception as err:
                     errors["base"] = "unknown"
-
 
             if not errors:
                 # The API key is confirmed to be valid so set the entry unique ID based on the API key - we'll check for uniqueness shortly
@@ -179,7 +183,6 @@ class TransportNSWConfigFlowHandler(ConfigFlow, domain=DOMAIN):
                     # The data for the config entry is a subset of what we've been provided via the import process
                     self._input_data = {
                         CONF_API_KEY: user_input[CONF_API_KEY],
-                        #CONF_SCAN_INTERVAL: user_input[CONF_SCAN_INTERVAL]
                         
                     }
                     subentry_data = user_input['subentry_data']
@@ -249,72 +252,44 @@ class TransportNSWConfigFlowHandler(ConfigFlow, domain=DOMAIN):
     def async_get_options_flow(config_entry: ConfigEntry) -> TransportNSWOptionsFlowHandler:
         return TransportNSWOptionsFlowHandler()
 
-class TransportNSWOptionsFlowHandler(OptionsFlow):
-    """TransportNSW config flow options handler - we don't have an options change listener so at the end we'll always force a reload"""
+class TransportNSWOptionsFlowHandler(OptionsFlowWithReload):
+    """TransportNSW config flow options handler - we don't have an options change listener hence using OptionsFlowWithReload"""
 
-    async def async_step_init(self, user_input=None) -> FlowResult:
+    async def async_step_init(
+        self,
+        user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
         """Handle the options flow"""
+
+        errors: dict[str, str] = {}
+        description_placeholders: dict[str, str] = {}
 
         OPTIONS_SCHEMA = vol.Schema(
             {
-                vol.Optional(CONF_SCAN_INTERVAL, default = self.config_entry.data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)): int,
+                vol.Required(CONF_SCAN_INTERVAL, default = self.config_entry.options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)): int,
+                vol.Required(CONF_API_PERCENT, default = self.config_entry.options.get(CONF_API_PERCENT, DEFAULT_API_PERCENT)): NumberSelector(NumberSelectorConfig(min=1, max=100, step=1, mode=NumberSelectorMode.BOX,)),
                 vol.Optional(CONF_REQUEST_LOCATION_UPDATE, default = self.config_entry.options.get(CONF_REQUEST_LOCATION_UPDATE, DEFAULT_REQUEST_LOCATION_UPDATE)): bool,
             }
         )
 
-        # TODO - as part of the schema migraton to v3, move scan_interval into 'options' and get rid of all of this!   as well as converting transport_type into strings
-
         if user_input is not None:
-            # This caters for there possibly being more options in the future without me having to remember to incorporate them!
-            new_data = {key: value for key, value in user_input.items() if key == CONF_SCAN_INTERVAL}
-            new_options = {key: value for key, value in user_input.items() if key != CONF_SCAN_INTERVAL}
+            # Check for errors
+            update_interval = user_input[CONF_SCAN_INTERVAL]
+            if update_interval != 0 and update_interval < MIN_SCAN_INTERVAL:
+                errors['base'] = 'bad_update_interval'
+                description_placeholders['min_scan_interval'] = MIN_SCAN_INTERVAL
 
-            # We want to save these settings into both data AND options, not just options, even though this is an OptionsFlow
-            # So we have to do it via both async_update_entry and async_create_entry, and merge in the existing .data and .options values otherwise they'll be lost
-            current_data = dict(self.config_entry.data)
-            combined_data = {
-                **current_data,
-                **new_data
-            }
+            if 'base' not in errors:
+                return self.async_create_entry(data=user_input)
 
-            current_options = dict(self.config_entry.options)
-            combined_options = {
-                **current_options,
-                **new_options
-            }
-
-            # Check if ANY values actually changed across both dictionaries
-            data_changed = current_data != combined_data
-            options_changed = current_options != combined_options
-
-            if data_changed:
-                # Update the scan interval, stored under config_entry.data
-                self.hass.config_entries.async_update_entry(
-                    self.config_entry,
-                    data=combined_data
-                )
-
-            # And then return async_create_entry with the updated config_entry.options to finish the flow
-            # But we have to hold off actually returning for the moment as we may need to force a reload at the end of the process
-            result = self.async_create_entry(title="", data=combined_options)
-
-            # Schedule an integration reload if we need to - we can't use OptionsFlowWithReload as that only monitors changes to the options, not the data
-            if data_changed or options_changed:
-                self.hass.async_create_task(
-                    self.hass.config_entries.async_reload(
-                        self.config_entry.entry_id
-                    )
-                )
-
-            # Finally, actually return from the OptionsFlow
-            return result
-
-
-
+        description_placeholders['api_daily_limit'] = API_DAILY_LIMIT
+        
         # Show the options form
         return self.async_show_form(
             step_id="init",
-            data_schema=OPTIONS_SCHEMA
+            errors=errors,
+            data_schema=OPTIONS_SCHEMA,
+            description_placeholders=description_placeholders,
             )
 
 class CannotConnect(HomeAssistantError):

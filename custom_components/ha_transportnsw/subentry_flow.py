@@ -5,9 +5,10 @@ from TransportNSWv2 import InvalidAPIKey, APIRateLimitExceeded, StopError, TripE
 import logging
 import copy
 from typing import Any
+from datetime import time
 
 import voluptuous as vol
-from homeassistant.helpers.selector import selector #, BooleanSelector, BooleanSelectorConfig  #TODO standardise on selector use
+from homeassistant.helpers.selector import selector
 from homeassistant.helpers.selector import (
     SelectSelector,
     SelectSelectorConfig,
@@ -15,16 +16,14 @@ from homeassistant.helpers.selector import (
     TextSelector,
     TextSelectorConfig,
     TextSelectorType,
+    TimeSelector,
 )
 from homeassistant.data_entry_flow import section
 from homeassistant.config_entries import (
-    #ConfigEntry,
-    #ConfigFlow,
     ConfigFlowResult,
     ConfigSubentry,
     ConfigSubentryFlow,
     SubentryFlowResult,
-    #OptionsFlow,
     SOURCE_RECONFIGURE
 )
 
@@ -37,7 +36,96 @@ from homeassistant.const import (
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
 
-from .const import *
+from .const import (
+    ALERT_PRIORITIES,
+    ALL_TRANSPORT_TYPE_STRING,
+    CONF_ALERT_SEVERITY,
+    CONF_ALERT_TYPES,
+    CONF_ALERTS_SENSOR,
+    CONF_CHANGES_SENSOR,
+    CONF_CREATE_REVERSE_TRIP,
+    CONF_DELAY_SENSOR,
+    CONF_FIRST_LEG_DEPARTURE_TIME_SENSOR,
+    CONF_DESTINATION_DETAIL_SENSOR,
+    CONF_DESTINATION_DEVICE_TRACKER,
+    CONF_DESTINATION_ID,
+    CONF_DESTINATION_NAME,
+    CONF_DESTINATION_NAME_SENSOR,
+    CONF_DESTINATION_TRANSPORT_TYPE,
+    CONF_DURATION_SENSOR,
+    CONF_END_TIME,
+    CONF_FIRST_LEG_DEVICE_TRACKER,
+    CONF_FIRST_LEG_LINE_NAME_SENSOR,
+    CONF_FIRST_LEG_LINE_NAME_SHORT_SENSOR,
+    CONF_FIRST_LEG_OCCUPANCY_DETAIL_SENSOR,
+    CONF_FIRST_LEG_OCCUPANCY_SENSOR,
+    CONF_FIRST_LEG_RUN_NAME_SENSOR,
+    CONF_FIRST_LEG_TRAIN_SET_SENSOR,
+    CONF_INCLUDE_REALTIME_LOCATION,
+    CONF_LAST_LEG_ARRIVAL_TIME_SENSOR,
+    CONF_LAST_LEG_DEVICE_TRACKER,
+    CONF_LAST_LEG_LINE_NAME_SENSOR,
+    CONF_LAST_LEG_LINE_NAME_SHORT_SENSOR,
+    CONF_LAST_LEG_OCCUPANCY_SENSOR,
+    CONF_LAST_LEG_OCCUPANCY_DETAIL_SENSOR,
+    CONF_LAST_LEG_RUN_NAME_SENSOR,
+    CONF_LAST_LEG_TRAIN_SET_SENSOR,
+    CONF_MAX_CHANGES,
+    CONF_ORIGIN_DETAIL_SENSOR,
+    CONF_ORIGIN_DETAIL_FRIENDLY,
+    CONF_ORIGIN_DEVICE_TRACKER,
+    CONF_ORIGIN_ID,
+    CONF_ORIGIN_NAME,
+    CONF_ORIGIN_NAME_SENSOR,
+    CONF_ORIGIN_TRANSPORT_TYPE,
+    CONF_ORIGIN_TYPE,
+    CONF_ROUTE_FILTER,
+    CONF_RUN_FILTER,
+    CONF_SENSOR_CREATION,
+    CONF_START_TIME,
+    CONF_TRIP_WAIT_TIME,
+    CONF_TRIPS_TO_CREATE,
+    DEFAULT_ALERT_SEVERITY,
+    DEFAULT_ALERT_TYPES,
+    DEFAULT_ALERTS_SENSOR,
+    DEFAULT_DESTINATION_DETAIL_SENSOR,
+    DEFAULT_CHANGES_SENSOR,
+    DEFAULT_CREATE_REVERSE_TRIP,
+    DEFAULT_DELAY_SENSOR,
+    DEFAULT_DESTINATION_DEVICE_TRACKER,
+    DEFAULT_DESTINATION_NAME_SENSOR,
+    DEFAULT_DURATION_SENSOR,
+    DEFAULT_END_TIME,
+    DEFAULT_LAST_LEG_ARRIVAL_TIME_SENSOR,
+    DEFAULT_FIRST_LEG_DEPARTURE_TIME_SENSOR,
+    DEFAULT_FIRST_LEG_DEVICE_TRACKER,
+    DEFAULT_FIRST_LEG_LINE_NAME_SENSOR,
+    DEFAULT_FIRST_LEG_LINE_NAME_SHORT_SENSOR,
+    DEFAULT_FIRST_LEG_OCCUPANCY_SENSOR,
+    DEFAULT_FIRST_LEG_OCCUPANCY_DETAIL_SENSOR,
+    DEFAULT_FIRST_LEG_RUN_NAME_SENSOR,
+    DEFAULT_FIRST_LEG_TRAIN_SET_SENSOR,
+    DEFAULT_LAST_LEG_DEVICE_TRACKER,
+    DEFAULT_LAST_LEG_LINE_NAME_SENSOR,
+    DEFAULT_LAST_LEG_LINE_NAME_SHORT_SENSOR,
+    DEFAULT_LAST_LEG_OCCUPANCY_SENSOR,
+    DEFAULT_LAST_LEG_OCCUPANCY_DETAIL_SENSOR,
+    DEFAULT_LAST_LEG_RUN_NAME_SENSOR,
+    DEFAULT_LAST_LEG_TRAIN_SET_SENSOR,
+    DEFAULT_MAX_CHANGES,
+    DEFAULT_ORIGIN_DETAIL_SENSOR,
+    DEFAULT_ORIGIN_DEVICE_TRACKER,
+    DEFAULT_ORIGIN_NAME_SENSOR,
+    DEFAULT_SENSOR_CREATION,
+    DEFAULT_START_TIME,
+    DEFAULT_TRANSPORT_TYPE,
+    DEFAULT_TRIP_WAIT_TIME,
+    DEFAULT_TRIPS_TO_CREATE,
+    MAX_MAX_CHANGES,
+    MAX_TRIP_WAIT_TIME,
+    SUBENTRY_TYPE_JOURNEY,
+    TFNSW_STOPFINDER,
+)
 from .helpers import (
     get_trips,
     check_stops,
@@ -47,36 +135,19 @@ from .helpers import (
 
 _LOGGER = logging.getLogger(__name__)
 
-def convert_transport_types_numeric_to_friendly(transport_type_list: dict[str]) -> dict[int]:
-    # Convert the numeric-transport types to their friendly name equivalents
-    # If empty, just use the default
-    if not transport_type_list:
-        return DEFAULT_TRANSPORT_TYPE_SELECTOR
+# def convert_transport_types_friendly_to_numeric(transport_type_list: dict[str]) -> dict[str]:
+#     # Convert the text-based transport types to their numeric equivalents
+#     # If empty, just use 0 'all transport types'
+#     if not transport_type_list:
+#         return DEFAULT_TRANSPORT_TYPE_NUMERIC
 
-    if transport_type_list == [0]:
-        transport_type_list = ALL_TRANSPORT_TYPE_NUMERIC
+#     temp_list = []
+#     for transport_type in transport_type_list:
+#         # Find the key that suits this value
+#         keys = [key for key, value in TRANSPORT_TYPE.items() if value == transport_type]
+#         temp_list.append(keys[0])
 
-    temp_list = []
-    for transport_type in transport_type_list:
-        value = TRANSPORT_TYPE.get(transport_type)
-        if value is not None:
-            temp_list.append(value)
-
-    return temp_list
-
-def convert_transport_types_friendly_to_numeric(transport_type_list: dict[str]) -> dict[str]:
-    # Convert the text-based transport types to their numeric equivalents
-    # If empty, just use 0 'all transport types'
-    if not transport_type_list:
-        return DEFAULT_TRANSPORT_TYPE_NUMERIC
-
-    temp_list = []
-    for transport_type in transport_type_list:
-        # Find the key that suits this value
-        keys = [key for key, value in TRANSPORT_TYPE.items() if value == transport_type]
-        temp_list.append(keys[0])
-
-    return temp_list
+#     return temp_list
 
 def create_subentries(self, config_entry, input_data):
 
@@ -379,13 +450,6 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
             if CONF_ROUTE_FILTER not in user_input:
                 user_input[CONF_ROUTE_FILTER] = ''
 
-            # Convert the selected transport types to their numerical equivalents for the API
-            #user_input[CONF_ORIGIN_TRANSPORT_TYPE] = [int(transport_type) for transport_type in user_input[CONF_ORIGIN_TRANSPORT_TYPE]]
-            #user_input[CONF_DESTINATION_TRANSPORT_TYPE] = [int(transport_type) for transport_type in user_input[CONF_DESTINATION_TRANSPORT_TYPE]]
-
-#            user_input[CONF_ORIGIN_TRANSPORT_TYPE] = convert_transport_types_friendly_to_numeric(user_input[CONF_ORIGIN_TRANSPORT_TYPE])
-#            user_input[CONF_DESTINATION_TRANSPORT_TYPE] = convert_transport_types_friendly_to_numeric(user_input[CONF_DESTINATION_TRANSPORT_TYPE])
-
             self._input_data.update(user_input)
 
             return await self.async_step_sensors()     
@@ -402,12 +466,6 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
                     )
 
                 self._input_data = user_input
-
-                # Fix this - it's a test
-#                default_origin_type = user_input[CONF_ORIGIN_TRANSPORT_TYPE]
-#                default_destination_type = user_input[CONF_DESTINATION_TRANSPORT_TYPE]
-#                default_origin_type = convert_transport_types_numeric_to_friendly(user_input[CONF_ORIGIN_TRANSPORT_TYPE])
-#                default_destination_type = convert_transport_types_numeric_to_friendly(user_input[CONF_DESTINATION_TRANSPORT_TYPE])
 
             else:
                 # Create the initial defaults
@@ -494,47 +552,53 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
                 # Add to the options
                 self._input_data.update(sensor_options)
 
-            # We may need to go to the alerts selection page, the custom sensors selection page, or both
-            if self._input_data[CONF_ALERTS_SENSOR]:
-                # Show the alerts form - it will then show the custom sensors form if required
-                return await self.async_step_alerts()
-            else:
-                self._input_data.update(
-                    {
-                    CONF_ALERT_SEVERITY: 'none',
-                    CONF_ALERT_TYPES: []
-                    }
-                )
+            # Check for errors
+            start_time = time.fromisoformat(user_input[CONF_START_TIME])
+            end_time = time.fromisoformat(user_input[CONF_END_TIME])
+            if start_time >= end_time:
+                errors['base'] = "end_time_before_start_time"
 
-            if self._input_data[CONF_SENSOR_CREATION] == 'custom':
-                # Show the next form so the user can select which sensors to create
-                return await self.async_step_custom_sensors()
+            if 'base' not in errors:
+                # We may need to go to the alerts selection page, the custom sensors selection page, or both
+                if self._input_data[CONF_ALERTS_SENSOR]:
+                    # Show the alerts form - it will then show the custom sensors form if required
+                    return await self.async_step_alerts()
+                else:
+                    self._input_data.update(
+                        {
+                        CONF_ALERT_SEVERITY: 'none',
+                        CONF_ALERT_TYPES: []
+                        }
+                    )
 
-            # No more flows to process so we can create/update the subentries as required
-            if self.source == SOURCE_RECONFIGURE:
-                # We don't need to recreate the subentry, just refresh and reload the one we're reconfiguring
-                unique_id_destination = '_'.join(self._input_data[CONF_DESTINATION_ID])
-                
-                # Continue to use the existing title, in case the user has renamed it
-                return self.async_update_reload_and_abort(
-                    self._get_entry(),
-                    self._get_reconfigure_subentry(),
-                    unique_id = f"{self._input_data[CONF_ORIGIN_ID]}_{unique_id_destination}",
-                    data = self._input_data,
-                    title = self._input_data["user_title"]
-                )
+                if self._input_data[CONF_SENSOR_CREATION] == 'custom':
+                    # Show the next form so the user can select which sensors to create
+                    return await self.async_step_custom_sensors()
 
-            else:
-                description_placeholders = create_subentries(self, self._get_entry(), self._input_data)
-
-                # We don't have an update listener in place, it causes issues if adding multiple subentries in one go, so we force an update here
-                await self.hass.config_entries.async_reload(self._get_entry().entry_id)
-
-                return self.async_abort(
-                    reason="subentries_created",
-                    description_placeholders=description_placeholders
-                )
+                # No more flows to process so we can create/update the subentries as required
+                if self.source == SOURCE_RECONFIGURE:
+                    # We don't need to recreate the subentry, just refresh and reload the one we're reconfiguring
+                    unique_id_destination = '_'.join(self._input_data[CONF_DESTINATION_ID])
                     
+                    # Continue to use the existing title, in case the user has renamed it
+                    return self.async_update_reload_and_abort(
+                        self._get_entry(),
+                        self._get_reconfigure_subentry(),
+                        unique_id = f"{self._input_data[CONF_ORIGIN_ID]}_{unique_id_destination}",
+                        data = self._input_data,
+                        title = self._input_data["user_title"]
+                    )
+
+                else:
+                    description_placeholders = create_subentries(self, self._get_entry(), self._input_data)
+
+                    # We don't have an update listener in place, it causes issues if adding multiple subentries in one go, so we force an update here
+                    await self.hass.config_entries.async_reload(self._get_entry().entry_id)
+
+                    return self.async_abort(
+                        reason="subentries_created",
+                        description_placeholders=description_placeholders
+                    )
 
         if user_input is None:
             if self.source == SOURCE_RECONFIGURE:
@@ -548,36 +612,38 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
             else:
                 user_input = {}
 
-            STEP_SENSORS_SCHEMA = vol.Schema(
-                {
-                    vol.Required(
-                        CONF_ALERTS_SENSOR, default=user_input.get(CONF_ALERTS_SENSOR, DEFAULT_ALERTS_SENSOR),
-                    ): bool,
-                    vol.Required(CONF_TRIPS_TO_CREATE, default = user_input.get(CONF_TRIPS_TO_CREATE, DEFAULT_TRIPS_TO_CREATE)): vol.All(vol.Coerce(int), vol.Range(min=1, max=3)),
-                    vol.Required(CONF_SENSOR_CREATION, default = user_input.get(CONF_SENSOR_CREATION, DEFAULT_SENSOR_CREATION),): selector (
-                            {
-                                "select": {
-                                    "options": ['none', 'changes_and_times', 'verbose', 'custom'],
-                                    "mode": 'dropdown',
-                                    "translation_key": 'sensor_creation_selector',
-                            }
+        STEP_SENSORS_SCHEMA = vol.Schema(
+            {
+                vol.Required(
+                    CONF_ALERTS_SENSOR, default=user_input.get(CONF_ALERTS_SENSOR, DEFAULT_ALERTS_SENSOR),
+                ): bool,
+                vol.Required(CONF_TRIPS_TO_CREATE, default = user_input.get(CONF_TRIPS_TO_CREATE, DEFAULT_TRIPS_TO_CREATE)): vol.All(vol.Coerce(int), vol.Range(min=1, max=3)),
+                vol.Required(CONF_START_TIME, default = user_input.get(CONF_START_TIME, DEFAULT_START_TIME)): TimeSelector(),
+                vol.Required(CONF_END_TIME, default = user_input.get(CONF_END_TIME, DEFAULT_END_TIME)): TimeSelector(),
+                vol.Required(CONF_SENSOR_CREATION, default = user_input.get(CONF_SENSOR_CREATION, DEFAULT_SENSOR_CREATION),): selector (
+                        {
+                            "select": {
+                                "options": ['none', 'changes_and_times', 'verbose', 'custom'],
+                                "mode": 'dropdown',
+                                "translation_key": 'sensor_creation_selector',
                         }
-                    ),
-                }
-            )
+                    }
+                ),
+            }
+        )
 
-            multi_destination_suggestion = "\n\nAs this journey has multiple potential destinations you may want to include one of the 'destination name' sensors, otherwise it won't be obvious which destination each journey is using" if len(self._input_data[CONF_DESTINATION_ID]) > 1 else ""
-                
-            return self.async_show_form(
-                step_id="sensors",
-                data_schema=STEP_SENSORS_SCHEMA,
-                errors=errors,
-                last_step=False,
-                description_placeholders = {
-                    "journey_name": f"{self._input_data[CONF_ORIGIN_NAME]} to {self._input_data[CONF_DESTINATION_NAME]}",
-                    "multi_destination_suggestion": multi_destination_suggestion
-                }
-            )
+        multi_destination_suggestion = "\n\nAs this journey has multiple potential destinations you may want to include one of the 'destination name' sensors, otherwise it won't be obvious which destination each journey is using" if len(self._input_data[CONF_DESTINATION_ID]) > 1 else ""
+
+        return self.async_show_form(
+            step_id="sensors",
+            data_schema=STEP_SENSORS_SCHEMA,
+            errors=errors,
+            last_step=False,
+            description_placeholders = {
+                "journey_name": f"{self._input_data[CONF_ORIGIN_NAME]} to {self._input_data[CONF_DESTINATION_NAME]}",
+                "multi_destination_suggestion": multi_destination_suggestion
+            }
+        )
 
     async def async_step_alerts(self, user_input=None):
         # Handle alerts if requested
@@ -815,7 +881,7 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
     ) -> SubentryFlowResult:
         """User flow to modify an existing location."""
         
-        return await self.async_step_settings()     #TODO - support going to async_step_users (with all that that implies re total changes)
+        return await self.async_step_settings()
 
 
 class CannotConnect(HomeAssistantError):

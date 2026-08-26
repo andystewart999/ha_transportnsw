@@ -30,31 +30,103 @@ from homeassistant.const import EntityCategory
 from homeassistant.util import dt as dt_util
 
 from . import TransportNSWConfigEntry
-from .const import *
+from .const import (
+    ALERT_PRIORITIES,
+    API_CALLS,
+    API_CALLS_NAME,
+    API_DAILY_LIMIT,
+    AVERAGE_API_CALLS,
+    AVERAGE_API_CALLS_NAME,
+    AVERAGE_API_CALLS_WINDOW,
+    CONF_ALERTS_FRIENDLY,
+    CONF_ALERTS_SENSOR,
+    CONF_CHANGES_FRIENDLY,
+    CONF_CHANGES_SENSOR,
+    CONF_DELAY_FRIENDLY,
+    CONF_DELAY_SENSOR,
+    CONF_DESTINATION_DETAIL_FRIENDLY,
+    CONF_DESTINATION_DETAIL_SENSOR,
+    CONF_DESTINATION_ID,
+    CONF_DESTINATION_NAME,
+    CONF_DESTINATION_NAME_FRIENDLY,
+    CONF_DESTINATION_NAME_SENSOR,
+    CONF_DUE_FRIENDLY,
+    CONF_DUE_SENSOR,
+    CONF_DURATION_FRIENDLY,
+    CONF_DURATION_SENSOR,
+    CONF_FIRST_LEG_DEPARTURE_TIME_FRIENDLY,
+    CONF_FIRST_LEG_DEPARTURE_TIME_SENSOR,
+    CONF_FIRST_LEG_LINE_NAME_FRIENDLY,
+    CONF_FIRST_LEG_LINE_NAME_SENSOR,
+    CONF_FIRST_LEG_LINE_NAME_SHORT_FRIENDLY,
+    CONF_FIRST_LEG_LINE_NAME_SHORT_SENSOR,
+    CONF_FIRST_LEG_OCCUPANCY_DETAIL_FRIENDLY,
+    CONF_FIRST_LEG_OCCUPANCY_DETAIL_SENSOR,
+    CONF_FIRST_LEG_OCCUPANCY_FRIENDLY,
+    CONF_FIRST_LEG_OCCUPANCY_SENSOR,
+    CONF_FIRST_LEG_RUN_NAME_FRIENDLY,
+    CONF_FIRST_LEG_RUN_NAME_SENSOR,
+    CONF_FIRST_LEG_TRAIN_SET_FRIENDLY,
+    CONF_FIRST_LEG_TRAIN_SET_SENSOR,
+    CONF_FIRST_LEG_TRANSPORT_NAME_FRIENDLY,
+    CONF_FIRST_LEG_TRANSPORT_NAME_SENSOR,
+    CONF_FIRST_LEG_TRANSPORT_TYPE_FRIENDLY,
+    CONF_FIRST_LEG_TRANSPORT_TYPE_SENSOR,
+    CONF_LAST_LEG_ARRIVAL_TIME_FRIENDLY,
+    CONF_LAST_LEG_ARRIVAL_TIME_SENSOR,
+    CONF_LAST_LEG_LINE_NAME_FRIENDLY,
+    CONF_LAST_LEG_LINE_NAME_SENSOR,
+    CONF_LAST_LEG_LINE_NAME_SHORT_FRIENDLY,
+    CONF_LAST_LEG_LINE_NAME_SHORT_SENSOR,
+    CONF_LAST_LEG_OCCUPANCY_DETAIL_FRIENDLY,
+    CONF_LAST_LEG_OCCUPANCY_DETAIL_SENSOR,
+    CONF_LAST_LEG_OCCUPANCY_FRIENDLY,
+    CONF_LAST_LEG_OCCUPANCY_SENSOR,
+    CONF_LAST_LEG_RUN_NAME_FRIENDLY,
+    CONF_LAST_LEG_RUN_NAME_SENSOR,
+    CONF_LAST_LEG_TRAIN_SET_FRIENDLY,
+    CONF_LAST_LEG_TRAIN_SET_SENSOR,
+    CONF_LAST_LEG_TRANSPORT_NAME_FRIENDLY,
+    CONF_LAST_LEG_TRANSPORT_NAME_SENSOR,
+    CONF_LAST_LEG_TRANSPORT_TYPE_FRIENDLY,
+    CONF_LAST_LEG_TRANSPORT_TYPE_SENSOR,
+    CONF_ORIGIN_DETAIL_FRIENDLY,
+    CONF_ORIGIN_DETAIL_SENSOR,
+    CONF_ORIGIN_ID,
+    CONF_ORIGIN_NAME,
+    CONF_ORIGIN_NAME_FRIENDLY,
+    CONF_ORIGIN_NAME_SENSOR,
+    CONF_POLLING_FRIENDLY,
+    CONF_POLLING_SENSOR,
+    CONF_TRIPS_TO_CREATE,
+    DOMAIN,
+    JOURNEY_ICONS,
+    OCCUPANCY_DETAIL_GLYPHS,
+    OCCUPANCY_ICONS,
+    SUBENTRY_TYPE_JOURNEY,
+    TFNSW_ATTRIBUTION,
+)
 from .coordinator import TransportNSWCoordinator
 from .helpers import (
     remove_entity,
     remove_device,
     extract_from_hierarchy,
     get_journey_data,
+    get_auto_poll_interval,
+    within_poll_time,
 )
 
 _LOGGER = logging.getLogger(__name__)
 
 def get_daily_api_calls(coordinator: TransportNSWCoordinator) -> int:
     """ Return the current daily API calls total. """
-
     return coordinator.daily_api_calls
 
-def get_average_api_calls(coordinator: TransportNSWCoordinator) -> int | None:
-    """ Return the average from rolling_average_api_calls. """
-    if len(coordinator.rolling_average_api_calls) < AVERAGE_API_CALLS_WINDOW:
-        return None
 
-    average = sum(coordinator.rolling_average_api_calls) / len(coordinator.rolling_average_api_calls)
+def get_average_api_calls(coordinator: TransportNSWCoordinator) -> int | str:
+    """ Return the current API rolling average . """
+    return coordinator.rolling_average_api_calls
 
-    # Round the result, but don't use Banker's Rounding
-    return round(average + 0.1)
 
 def get_highest_alert(alerts) -> str:
     # Search the alerts and return the highest
@@ -72,9 +144,11 @@ def get_highest_alert(alerts) -> str:
 
     return highest_alert_text.capitalize()
 
+
 def get_occupancy_friendly(occupancy) -> str:
     # Convert the basic occupancy name (eg MANY_SEATS) into a more friendly version
     return OCCUPANCY_ICONS.get(occupancy, ["mdi:account-question", "Fail"])[1]
+
 
 def get_occupancy_detail(occupancy_detail) -> str:
     # Generate a list of glyphs showing per-carriage occupancy, if we have it
@@ -96,6 +170,7 @@ def get_occupancy_detail(occupancy_detail) -> str:
         occupancy_glyphs = 'Unknown'
 
     return occupancy_glyphs
+
 
 def convert_date(utc_string) -> datetime:
 
@@ -136,7 +211,7 @@ DEFAULT_ENTRY_SENSORS: tuple[TransportNSWSensorEntityDescription, ...] = (
     ),
 )
 
-# Sub_entry-level sensor definitions
+# Default subentry-level sensor definitions
 DEFAULT_SUBENTRY_SENSORS: tuple[TransportNSWSensorEntityDescription, ...] = (
     TransportNSWSensorEntityDescription(
         key=CONF_DUE_SENSOR,
@@ -144,6 +219,12 @@ DEFAULT_SUBENTRY_SENSORS: tuple[TransportNSWSensorEntityDescription, ...] = (
         icon='mdi:clock-outline',
         native_unit_of_measurement=UnitOfTime.MINUTES,
         state_path = 'due'
+    ),
+    TransportNSWSensorEntityDescription(
+        key=CONF_POLLING_SENSOR,
+        name=CONF_POLLING_FRIENDLY,
+        icon='mdi:clock-check-outline',
+        entity_category=EntityCategory.DIAGNOSTIC,
     ),
 )
 
@@ -322,7 +403,6 @@ ALERT_SENSORS: tuple[TransportNSWSensorEntityDescription, ...] = (
     ),
 )
 
-
 async def async_setup_entry(
     hass: HomeAssistant,
     config_entry: TransportNSWConfigEntry,
@@ -440,6 +520,18 @@ class TransportNSWSensor(CoordinatorEntity, SensorEntity):
         self.async_write_ha_state()
 
     @property
+    def device_info(self) -> DeviceInfo:
+        """Return device info for this sensor."""
+        identifiers = {
+        "identifiers": {(DOMAIN, f"{self.config_entry.entry_id}_API_details")
+        },
+        "name": f"{self.config_entry.title} Integration",
+        "manufacturer": "Transport for NSW"
+        }
+
+        return identifiers
+
+    @property
     def native_value(self) -> StateType:
         """Return the value of the sensor."""
         try:
@@ -448,6 +540,23 @@ class TransportNSWSensor(CoordinatorEntity, SensorEntity):
 
         except Exception as ex:
             return None
+
+    @property
+    def extra_state_attributes(self):
+        """Return the extra state attributes."""
+
+        attrs = {}
+
+        try:
+            # Key-specific attributes
+            if self.entity_description.key == AVERAGE_API_CALLS:
+                attrs['update_interval_secs'] = self.coordinator.update_interval.total_seconds()
+
+        finally:
+            # Always make sure there's the appropriate attribution
+            attrs['attribution'] = TFNSW_ATTRIBUTION
+
+        return attrs
 
 
 class TransportNSWSubentrySensor(CoordinatorEntity, SensorEntity):
@@ -507,6 +616,14 @@ class TransportNSWSubentrySensor(CoordinatorEntity, SensorEntity):
         """Return the state of the entity."""
 
         try:
+            # The 'polling' sensor is a special case - it doesn't require access to journey_data
+            if self.entity_description.key == CONF_POLLING_SENSOR:
+                is_polling, next_change = within_poll_time(self.subentry)
+                if is_polling:
+                    return f"Active until {next_change}" if next_change is not None else "Active"
+                else:
+                    return f"Inactive until {next_change}" if next_change is not None else "Inactive"
+
             # Use the extended entity_description attributes to work out where and how to return the sensor state
             journey_data = get_journey_data(self.coordinator.data, self.subentry.subentry_id, self.journey_index)
             if journey_data is not None:
@@ -528,6 +645,11 @@ class TransportNSWSubentrySensor(CoordinatorEntity, SensorEntity):
     @property
     def icon(self) -> str:
         try:
+            # The 'polling' sensor is a special case - it doesn't require access to journey_data
+            if self.entity_description.key == CONF_POLLING_SENSOR:
+                is_polling = within_poll_time(self.subentry)[0]
+                return "mdi:clock-check-outline" if is_polling else "mdi:clock-remove-outline"
+
             journey_data = get_journey_data(self.coordinator.data, self.subentry.subentry_id, self.journey_index)
             if journey_data is not None:
                 # Apply the appropriate icons to a subset of the sensors.  All but a handful are aligned to the transport type
@@ -559,6 +681,10 @@ class TransportNSWSubentrySensor(CoordinatorEntity, SensorEntity):
     def available(self) -> bool:
         """Return if entity is available - basically check to see if there's data where it should be"""
         try:
+            # The 'polling' sensor is a special case - it doesn't require access to journey_data
+            if self.entity_description.key == CONF_POLLING_SENSOR:
+                return True
+
             journey_data = get_journey_data(self.coordinator.data, self.subentry.subentry_id, self.journey_index)
             if journey_data is not None:
                 return True

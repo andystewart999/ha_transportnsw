@@ -3,14 +3,30 @@
 from pathlib import Path
 import json
 
-
 DOMAIN = "ha_transportnsw"
+DEFAULT_SCAN_INTERVAL = 60
+MIN_SCAN_INTERVAL = 30
+MIN_AUTO_SCAN_INTERVAL = 5
+
+# API stuff
+API_DAILY_LIMIT = 60000
+AVERAGE_CALLS_PER_JOURNEY = 3
+AVERAGE_API_CALLS_WINDOW = 5
+STORAGE_VERSION = 1
+
+# API sensors
+API_CALLS = 'api_calls'
+API_CALLS_NAME = 'API calls'
+AVERAGE_API_CALLS = 'average_api_calls'
+AVERAGE_API_CALLS_NAME = 'Average API calls per poll'
 
 # Optional config entry settings
+CONF_API_PERCENT = 'auto_interval_api_percent'
+DEFAULT_API_PERCENT = 95
 CONF_REQUEST_LOCATION_UPDATE = 'request_location_update'
 
 # Mandatory subentry data
-CONF_ORIGIN_TYPE = 'origin_type'  # New
+CONF_ORIGIN_TYPE = 'origin_type'
 CONF_ORIGIN_ID = 'origin_id'
 CONF_ORIGIN_NAME = 'origin_name'
 CONF_DESTINATION_ID = 'destination_id'
@@ -28,9 +44,14 @@ CONF_MAX_CHANGES = 'max_changes'
 CONF_ALERT_SEVERITY = 'alert_severity'
 CONF_ALERT_TYPES = 'alert_types'
 CONF_TRIPS_TO_CREATE = 'trips_to_create'
+CONF_START_TIME = 'start_time'
+CONF_END_TIME = 'end_time'
+DEFAULT_START_TIME = "00:00:00"
+DEFAULT_END_TIME = "23:59:59"
 
 # Sensor key names
 CONF_DUE_SENSOR = 'due'
+CONF_POLLING_SENSOR = 'polling'
 CONF_CHANGES_SENSOR = 'changes'
 CONF_DELAY_SENSOR = 'delay'
 CONF_DURATION_SENSOR = 'duration'
@@ -64,6 +85,7 @@ CONF_DESTINATION_END_OF_LINE = 'destination_end_of_line'
 
 # Sensor friendly names
 CONF_DUE_FRIENDLY = 'due'
+CONF_POLLING_FRIENDLY = 'polling'
 CONF_CHANGES_FRIENDLY = 'changes'
 CONF_DELAY_FRIENDLY = 'delay'
 CONF_DURATION_FRIENDLY = 'duration'
@@ -101,17 +123,15 @@ CONF_ORIGIN_DEVICE_TRACKER_FRIENDLY = 'Origin location'
 CONF_DESTINATION_DEVICE_TRACKER = 'destination_device_tracker'
 CONF_DESTINATION_DEVICE_TRACKER_FRIENDLY = 'Destination location'
 
-ORIGIN_TRANSPORT_TYPE_LIST = ['Train', 'Metro', 'Light rail', 'Bus', 'Coach', 'Ferry', 'School bus', 'Walk']
-DESTINATION_TRANSPORT_TYPE_LIST = ['Train', 'Metro', 'Light rail', 'Bus', 'Coach', 'Ferry', 'School bus', 'Walk']
-ALL_TRANSPORT_TYPE_NUMERIC = [1, 2, 4, 5, 7, 9, 11, 99]
-ALL_TRANSPORT_TYPE_STRING = ['1', '2', '4', '5', '7', '9', '11', '99']
+ORIGIN_TRANSPORT_TYPE_LIST = ['Train', 'Metro', 'Light rail', 'Bus', 'Coach', 'Ferry', 'School bus', 'Walk',]
+DESTINATION_TRANSPORT_TYPE_LIST = ['Train', 'Metro', 'Light rail', 'Bus', 'Coach', 'Ferry', 'School bus', 'Walk',]
+ALL_TRANSPORT_TYPE_STRING = ['1', '2', '4', '5', '7', '9', '11', '99',]
 
 # Changes info
 ATTR_CHANGES_LIST = 'changes_list'
 ATTR_LOCATIONS_LIST = 'locations_list'
 
 # Sensor defaults
-DEFAULT_SCAN_INTERVAL = 120
 DEFAULT_CREATE_REVERSE_TRIP = False
 DEFAULT_REQUEST_LOCATION_UPDATE = False
 DEFAULT_FIRST_LEG_DEVICE_TRACKER = 'never'
@@ -152,11 +172,8 @@ DEFAULT_LAST_LEG_OCCUPANCY_DETAIL_SENSOR = False
 DEFAULT_LAST_LEG_TRAIN_SET_SENSOR = False
 
 # SubentryFlow defaults
-MIN_SCAN_INTERVAL = 30
 MAX_TRIP_WAIT_TIME = 60
 MAX_MAX_CHANGES = 5
-
-
 
 # Misc
 ORIGIN_LATITUDE = 'origin_latitude'
@@ -189,11 +206,6 @@ TFNSW_STOPFINDER = "https://transportnsw.info/routes/"
 
 # Subentry stuff
 SUBENTRY_TYPE_JOURNEY = 'subentry_journey'
-API_CALLS = 'api_calls'
-AVERAGE_API_CALLS = 'average_api_calls'
-API_CALLS_NAME = 'API calls'
-AVERAGE_API_CALLS_NAME = 'Average API calls per poll'
-AVERAGE_API_CALLS_WINDOW = 10
 STOP_TEST_ID = '200060' # Central station
 
 # Lookups and mapping dictionaries
@@ -210,14 +222,14 @@ JOURNEY_ICONS = {
     "Walk": "mdi:walk",
     "n/a": "mdi:train",
     "unavailable": "mdi:train",
-    None: "mdi:train"
+    None: "mdi:train",
 }
 
 DEVICE_TRACKER_LOOKUPS = {
     CONF_FIRST_LEG_DEVICE_TRACKER : 'first leg vehicle',
     CONF_LAST_LEG_DEVICE_TRACKER: 'last leg vehicle',
     CONF_ORIGIN_DEVICE_TRACKER: 'first stop',
-    CONF_DESTINATION_DEVICE_TRACKER: 'last stop'
+    CONF_DESTINATION_DEVICE_TRACKER: 'last stop',
 }
 
 # Oh I wish TfNSW would be more consistent with their constants...
@@ -232,14 +244,14 @@ OCCUPANCY_ICONS = {
     "FULL": ["mdi:account-group","Full"],
     "Unknown": ["mdi:account-question", "Unknown"],
     "Unavailable": ["mdi:account-question", "Unavailable"],
-    None: ["mdi:account-question", "Unknown"]
+    None: ["mdi:account-question", "Unknown"],
 }
 
 OCCUPANCY_DETAIL_GLYPHS = {
     0: "⬜", 
     1: "🟩",
     2: "🟨",
-    3: "🟥"
+    3: "🟥",
 }
 
 TRANSPORT_TYPE = {
@@ -252,32 +264,33 @@ TRANSPORT_TYPE = {
     9:   "Ferry",
     11:  "School bus",
     99:  "Walk",
-    100: "Walk"
+    100: "Walk",
 }
 
 ALERT_PRIORITIES = {
+    "none"     : 0,
     "verylow"  : 1,
     "low"      : 2,
     "normal"   : 3,
     "high"     : 4,
-    "veryhigh" : 5
+    "veryhigh" : 5,
 }
 
-TRAIN_SETS = {
-    "A": "Waratah",
-    "B": "Waratah Series 2",
-    "C": "C-set",
-    "D": "Mariyung",
-    "H": "Oscar",
-    "J": "Hunter",
-    "K": "K-set",
-    "M": "Millennium",
-    "N": "Endeavour",
-    "P": "Xplorer",
-    "T": "Tangara",
-    "V": "V-set",
-    "X": "XPT"
-}
+# TRAIN_SETS = {
+#     "A": "Waratah",
+#     "B": "Waratah Series 2",
+#     "C": "C-set",
+#     "D": "Mariyung",
+#     "H": "Oscar",
+#     "J": "Hunter",
+#     "K": "K-set",
+#     "M": "Millennium",
+#     "N": "Endeavour",
+#     "P": "Xplorer",
+#     "T": "Tangara",
+#     "V": "V-set",
+#     "X": "XPT",
+# }
 
 __all__ = [
     name

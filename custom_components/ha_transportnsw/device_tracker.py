@@ -56,7 +56,6 @@ class TransportNSWTrackerEntityDescription(TrackerEntityDescription):
     # Custom extension adding a value path for retrieving simple values from the data returned by DataUpdateCoordinator
     # or a callable function for more complex returns
     # Also stores what 'type' of tracker this is - a vehicle or a location
-    
     state_path: str | None = None
     state_fn: Callable[[Any], Any] | None = None
     attrs_path: str | None = None
@@ -137,7 +136,7 @@ async def async_setup_entry(
             device_trackers = []
 
             # Create/remove the device trackers
-            for trip_index in range (0, 3, 1):   # TODO - save the previous trip count and only delete extra sensors if needed
+            for trip_index in range (0, 3, 1):
                 if trips_to_create == 1:
                     sensor_suffix = ""
                     name_suffix = ""
@@ -168,6 +167,7 @@ async def async_setup_entry(
 
 class TransportNSWDeviceTracker(CoordinatorEntity, TrackerEntity):
     """Transport NSW Mk II device tracker."""
+    # _attr_entity_category = None
 
     def __init__(self, coordinator: TransportNSWCoordinator, description: TransportNSWTrackerEntityDescription, subentry: ConfigSubentry, index: int, sensor_suffix: str, name_suffix: str, leg_suffix: str, device_suffix: str, migration_suffix: str, device_identifier: str) -> None:
         """Initialise sensor."""
@@ -201,6 +201,7 @@ class TransportNSWDeviceTracker(CoordinatorEntity, TrackerEntity):
     @property
     def latitude(self) -> float | None:
         """Return latitude value of the vehicle/location"""
+
         try:
             # Use the extended entity_description attributes to work out where and how to return the sensor state
             journey_data = get_journey_data(self.coordinator.data, self.subentry.subentry_id, self.journey_index)
@@ -291,7 +292,7 @@ class TransportNSWDeviceTracker(CoordinatorEntity, TrackerEntity):
                     entity_reg = entity_registry.async_get(self.hass)
                     entity_id = entity_reg.async_get_entity_id('device_tracker', DOMAIN, self._attr_unique_id)
 
-                    new_name = get_device_tracker_name (self.entity_description.key, self.subentry.data, journey_data, self.device_suffix, self.leg_suffix)
+                    new_name = get_device_tracker_name(self.entity_description.key, self.subentry.data, journey_data, self.device_suffix, self.leg_suffix)
 
             identifiers = {
             "identifiers": {(DOMAIN, f"{self.subentry.subentry_id}_{self.subentry.data[CONF_ORIGIN_ID]}_{self.subentry.data[CONF_DESTINATION_ID]}_{self.device_identifier}")
@@ -314,10 +315,6 @@ class TransportNSWDeviceTracker(CoordinatorEntity, TrackerEntity):
         try:
             journey_data = get_journey_data(self.coordinator.data, self.subentry.subentry_id, self.journey_index)
             if journey_data is not None:
-                # Attributes for all device_trackers - none in this case
-                # attrs["origin_id"] = extract_from_hierarchy(obj=journey_data, path='origin_detail.stop_id')
-                # attrs["destination_id"] = extract_from_hierarchy(obj=journey_data, path='destination_detail.stop_id')
-    
                 # Key-specific attributes
                 if self.entity_description.attrs_path:
                     if not isinstance(self.entity_description.attrs_path, list):
@@ -329,7 +326,6 @@ class TransportNSWDeviceTracker(CoordinatorEntity, TrackerEntity):
                         attrs_friendly = [self.entity_description.attrs_friendly]
                     else:
                         attrs_friendly = self.entity_description.attrs_friendly
-
 
                     # Handle multiple attributes being set for a single sensor
                     for index, path in enumerate(attrs_path):
