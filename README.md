@@ -37,8 +37,13 @@ If you provide multiple destinations for a journey you will get the earliest jou
 
 ![Alt text of the image](https://github.com/andystewart999/ha_integration_resources/blob/main/documentation/ha_transportnsw/2b_subentryoriginanddestination.png)
 
-### Journey filters
-On a per-journey basis you can specify the transport type options that are applicable, and, to give you time to get to the origin, how far in the future a journey departure time must be to be considered valid.  You can also filter how many changes you're willing to make, and finally there's an optional text filter on the full and short line name (e.g 'T1 North Shore & Western Line', '195').
+### Journey filters - transport types
+On a per-journey basis you can specify the transport type options that you want to include, for both the first and last legs.. for journeys without a change the last leg is obviously also the first leg and still needs appropriate filters settings.
+
+![Alt text of the image](https://github.com/andystewart999/ha_integration_resources/blob/main/documentation/ha_transportnsw/3_subentryfilters.png)
+
+### Journey filters - changes and run/route filters
+To give you time to get to the origin you can specify how far in the future a journey departure time must be to be considered valid.  You can also filter how many changes you're willing to make, and finally there's an optional text filter on the full and short line name (e.g 'T1 North Shore & Western Line', '195').
 
 ![Alt text of the image](https://github.com/andystewart999/ha_integration_resources/blob/main/documentation/ha_transportnsw/3b_subentryfilters.png)
 
@@ -47,8 +52,10 @@ Up to 3 trips per journey can be created, which are basically the next 3 departu
 
 ![Alt text of the image](https://github.com/andystewart999/ha_integration_resources/blob/main/documentation/ha_transportnsw/4_subentryalertsandtrips.png)
 
+This is where you can also specify if the journey should only be updated between two periods.  This allows you to potentially reduce your daily API usage quite significantly, with the knock-on benefit that the integration can update more regularly.
+
 ### Default sensors
-To keep things simple the default sensors comprise only of the 'due' sensor, showing minutes until departure time, and device tracker sensors for the origin and destination vehicles (assuming the API returns that information).  If the origin is itself a device tracker an additional device tracker sensor showing the location of the first leg is also shown by default.
+To keep things simple the default sensors comprise only of the 'due' sensor, showing minutes until departure time.  If the origin is itself a device tracker a device tracker sensor showing the location of the first leg is also shown by default.  There are many other sensors that you can select... if you intend to use the Lovelace card you need to make sure that you at least include ```first/last leg occupancy detail```.
 
 ### Alerts
 You can choose to include an alerts sensor based on various filters.  If the journey has any alerts that meet your filter, the highest alert is shown.
@@ -63,9 +70,9 @@ There are many additional sensors that are available if required, which can be s
 ### Attributes 
 Some of the sensors have their own additional attributes:
 
-- Changes: The state of this sensor is the number of changes within the journey.  The ```changes``` attribute contains a simple comma-separated list of origin, destination and stations where there is a change.  The ```locations``` attribute is a dictlist that includes every relevant (origin, changes, destination) stop on the journey, plus the locations of the first leg and last leg vehicles (if available).
+- Changes: The state of this sensor is the number of changes within the journey.  The ```stops``` attribute contains a simple comma-separated list of origin, destination and stations where there is a change.  The ```detailed stops``` attribute is a dictlist that includes every relevant (origin, changes, destination) stop on the journey, plus the locations of the first leg and last leg vehicles (if available).
 - Occupancy:  The state of this sensor is the general vehicle occupancy level, if available.  The ```occupancy detail``` attribute contains a dictlist of per-carriage occupancy detail, if available.
-- Occuppancy detail:  The state of this sensor is a glyph-based representation of the per-carriage occupancy, if available.  The ```occupancy detail``` attribute contains the same information as the Occupancy sensor's ```occupancy detail``` attribute.
+- Occupancy detail:  The state of this sensor is a glyph-based representation of the per-carriage occupancy, if available.  The ```occupancy detail``` attribute contains the same information as the Occupancy sensor's ```occupancy detail``` attribute.
 - Alerts: The state of this sensor is the highest alert returned by the API.  The attributes are the full JSON dump of the alert details, which can be processed by your automations or template sensors as required.
 - Device tracker: The stop name and ID are included.
 
