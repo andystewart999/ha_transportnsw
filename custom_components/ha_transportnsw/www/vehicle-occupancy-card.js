@@ -1,4 +1,4 @@
-const CARD_VERSION = '3.1.0b5'
+const CARD_VERSION = '3.1.1'
 
 class VehicleOccupancyCard extends HTMLElement {
   constructor() {
