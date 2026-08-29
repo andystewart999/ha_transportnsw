@@ -76,6 +76,13 @@ Some of the sensors have their own additional attributes:
 - Alerts: The state of this sensor is the highest alert returned by the API.  The attributes are the full JSON dump of the alert details, which can be processed by your automations or template sensors as required.
 - Device tracker: The stop name and ID are included.
 
+## Automatic update interval
+At the config entry level you can set the update interval in the traditional fashion, or set it to `automatic`.  The integration maintains a rolling average of how many API calls are used at each poll - when on automatic that information, along with how many API calls are left from the daily allocation and how far through the day it is, to determine an appropriate update interval.  If new journeys are created or removed they will be catered for automatically.
+
+![Alt text of the image](https://github.com/andystewart999/ha_integration_resources/blob/main/documentation/ha_transportnsw/1_config_entry_options.png)
+
+When running on `automatic` you can tell the integration how much of the daily allocation it's allowed to use... this can be helpful if you're using the same API key in multiple Home Assistant deployments, where each deployment can be allowed to consume, for example, 48% of the daily allowance.
+
 ## Lovelace card
 A custom Lovelace card is included for your dashboards.  It shows per-carriage detailed occupancy in the same style as the Transport NSW train information boards, and scales automatically depending on the length of the vehicle and the number of carriages or equivalent that it has.  As well as showing occupancy detail you can optionally select one or more sensor states to show in the top-right corner of the card, rotating through each one at a rate of your choosing:
 
