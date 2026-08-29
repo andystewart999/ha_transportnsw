@@ -111,13 +111,30 @@ def is_tracker_enabled(tracker: str, data, origin_type: str) -> bool:
         return False
 
 
-def get_device_tracker_name(key, subentry_data, journey_data, device_suffix, leg_suffix) -> str:
-    # This function reserved for future naming convention changes...
+def get_tripview_name(key, subentry_data, journey_data, device_suffix, leg_suffix) -> str:
+    # Use TripView-style naming - find out what the transport type is
 
-    # Generate the default name
-    name = f"{subentry_data[CONF_ORIGIN_NAME]} to {subentry_data[CONF_DESTINATION_NAME]}{device_suffix} {leg_suffix}"
+    try:
+        if key == CONF_FIRST_LEG_DEVICE_TRACKER:
+            key_base = 'origin_transport_detail'
+        else:
+            key_base = 'destination_transport_detail'
 
-    return name
+        transport_type = extract_from_hierarchy(obj=journey_data, path=f'{key_base}.type')
+
+        # For train and metro we want 'end_of_line', otherwise it's 'line_name_short'
+        if transport_type in ['Train', 'Metro']:
+            name_path = f'{key_base}.end_of_line'
+        else:
+            name_path = f'{key_base}.line_name_short'
+
+        # Get the new name, but we only want up to the first three characters
+        tripview_name = extract_from_hierarchy(obj=journey_data, path=name_path)[:3].upper()
+
+        return tripview_name
+
+    except Exception as ex:
+        return 'Unknown'
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -270,7 +287,7 @@ class TransportNSWDeviceTracker(CoordinatorEntity, TrackerEntity):
             journey_data = get_journey_data(self.coordinator.data, self.subentry.subentry_id, self.journey_index)
             if journey_data is not None:
                 # Apply the appropriate icon
-                if 'origin'in self.entity_description.key or 'first' in self.entity_description.key:
+                if any(substring in self.entity_description.key for substring in ['origin', 'first']):
                     transport_type = extract_from_hierarchy(obj=journey_data, path='origin_transport_detail.type')
                 else:
                     transport_type = extract_from_hierarchy(obj=journey_data, path='destination_transport_detail.type')
@@ -284,16 +301,8 @@ class TransportNSWDeviceTracker(CoordinatorEntity, TrackerEntity):
     @property
     def device_info(self):
         """ Return appropriate device info."""
+
         try:
-            journey_data = get_journey_data(self.coordinator.data, self.subentry.subentry_id, self.journey_index)
-            if journey_data is not None:
-                if self.entity_description.key in [CONF_FIRST_LEG_DEVICE_TRACKER, CONF_LAST_LEG_DEVICE_TRACKER]:
-                    # Change the name on the fly, if required.  May be required in the future if TripView-type naming conventions are enabled
-                    entity_reg = entity_registry.async_get(self.hass)
-                    entity_id = entity_reg.async_get_entity_id('device_tracker', DOMAIN, self._attr_unique_id)
-
-                    new_name = get_device_tracker_name(self.entity_description.key, self.subentry.data, journey_data, self.device_suffix, self.leg_suffix)
-
             identifiers = {
             "identifiers": {(DOMAIN, f"{self.subentry.subentry_id}_{self.subentry.data[CONF_ORIGIN_ID]}_{self.subentry.data[CONF_DESTINATION_ID]}_{self.device_identifier}")
             },
@@ -304,8 +313,7 @@ class TransportNSWDeviceTracker(CoordinatorEntity, TrackerEntity):
             return identifiers
 
         except Exception as ex:
-            _LOGGER.error(f"error {ex} in device_tracker.py/device_info")
-
+            return None
 
     @property
     def extra_state_attributes(self):
@@ -315,6 +323,10 @@ class TransportNSWDeviceTracker(CoordinatorEntity, TrackerEntity):
         try:
             journey_data = get_journey_data(self.coordinator.data, self.subentry.subentry_id, self.journey_index)
             if journey_data is not None:
+                # Type-specific attributes
+                if self.entity_description.key in [CONF_FIRST_LEG_DEVICE_TRACKER, CONF_LAST_LEG_DEVICE_TRACKER]:
+                    attrs['tripview_name'] = get_tripview_name(self.entity_description.key, self.subentry.data, journey_data, self.device_suffix, self.leg_suffix)
+
                 # Key-specific attributes
                 if self.entity_description.attrs_path:
                     if not isinstance(self.entity_description.attrs_path, list):

@@ -106,8 +106,11 @@ def get_auto_poll_interval(coordinator, percent_available: int, end_time: str = 
     minutes_until_last_window = (end_time_tz - now).total_seconds() /60
 
     # How many polls can we do based on the current per-poll API call average?  Factor in the percent of the daily allocation that's available to this Integration
-    max_polls = int((remaining_api_calls / coordinator.rolling_average_api_calls) * percent_available)
-    min_refresh_rate_secs = int((minutes_until_last_window / max_polls) * 60) + 1
+    if coordinator.rolling_average_api_calls > 0:
+        max_polls = int((remaining_api_calls / coordinator.rolling_average_api_calls) * percent_available)
+        min_refresh_rate_secs = int((minutes_until_last_window / max_polls) * 60) + 1
+    else:
+        min_refresh_rate_secs = MIN_AUTO_SCAN_INTERVAL
 
     return min_refresh_rate_secs if min_refresh_rate_secs > MIN_AUTO_SCAN_INTERVAL else MIN_AUTO_SCAN_INTERVAL
 

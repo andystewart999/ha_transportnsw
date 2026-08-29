@@ -113,21 +113,20 @@ class TransportNSWCoordinator(DataUpdateCoordinator):
             # Try and load it from the store
             try:
                 api_data = await self.config_entry.runtime_data.api_store.async_load()
-
-                if api_data is None:
+                if api_data is None or api_data.get(API_CALLS, None) is None:
                     # Create and save a new empty store - fake the api_calls number based on how far we are through the day to avoid running out if auto-poll-rate is enabled
                     now = dt_util.now()
                     minutes_remaining = 1440 - ((now.hour * 60) + now.minute)
-                    prorated_api_use = int( (1-(minutes_remaining / 1440)) * API_DAILY_LIMIT)
+                    prorated_api_calls = int( (1-(minutes_remaining / 1440)) * API_DAILY_LIMIT)
 
                     current_date = dt_util.now().date()
                     api_data = {
-                        API_CALLS: prorated_api_use,
+                        API_CALLS: prorated_api_calls,
                         'last_reset_date': current_date
                     }
 
                     await self.config_entry.runtime_data.api_store.async_save(api_data)
-                    self.daily_api_calls = 0
+                    self.daily_api_calls = prorated_api_calls
                 else:
                     self.daily_api_calls = api_data[API_CALLS]
 
@@ -235,7 +234,7 @@ class TransportNSWCoordinator(DataUpdateCoordinator):
 
                     except Exception as ex:
                         # This will show entities as unavailable by raising UpdateFailed exception
-                        raise UpdateFailed(f"Error communicating with API for entry {subentry.title}: {ex}") from ex
+                        raise UpdateFailed(f"Error communicating with API for entry {subentry.title}: {type(ex).__name__}") from ex
 
         # Update the rolling average
         if len(self._rolling_average_api_calls_list) < AVERAGE_API_CALLS_WINDOW:

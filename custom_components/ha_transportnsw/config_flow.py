@@ -54,8 +54,8 @@ from .subentry_flow import JourneySubEntryFlowHandler
 _LOGGER = logging.getLogger(__name__)
 
 async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> None:
-    #Validate the user input is correct
-    # Check that the API key is valid by calling the quick and easy 'stops' API with a hard-coded, known good station ID (Central Station)
+    """ Validate the user input is correct
+        Check that the API key is valid by calling the quick and easy 'stops' API with a hard-coded, known good station ID (Central Station). """
 
     try:
         # We don't actually care about the returned value, just need to force a check and see if any errors are raised

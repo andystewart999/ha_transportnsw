@@ -123,7 +123,7 @@ def get_daily_api_calls(coordinator: TransportNSWCoordinator) -> int:
     return coordinator.daily_api_calls
 
 
-def get_average_api_calls(coordinator: TransportNSWCoordinator) -> int | str:
+def get_average_api_calls(coordinator: TransportNSWCoordinator) -> int:
     """ Return the current API rolling average . """
     return coordinator.rolling_average_api_calls
 

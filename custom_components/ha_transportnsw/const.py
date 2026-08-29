@@ -24,6 +24,7 @@ AVERAGE_API_CALLS_NAME = 'Average API calls per poll'
 CONF_API_PERCENT = 'auto_interval_api_percent'
 DEFAULT_API_PERCENT = 95
 CONF_REQUEST_LOCATION_UPDATE = 'request_location_update'
+DEFAULT_REQUEST_LOCATION_UPDATE = False
 
 # Mandatory subentry data
 CONF_ORIGIN_TYPE = 'origin_type'
@@ -85,7 +86,7 @@ CONF_DESTINATION_END_OF_LINE = 'destination_end_of_line'
 
 # Sensor friendly names
 CONF_DUE_FRIENDLY = 'due'
-CONF_POLLING_FRIENDLY = 'polling'
+CONF_POLLING_FRIENDLY = 'poll status'
 CONF_CHANGES_FRIENDLY = 'changes'
 CONF_DELAY_FRIENDLY = 'delay'
 CONF_DURATION_FRIENDLY = 'duration'
@@ -133,7 +134,6 @@ ATTR_LOCATIONS_LIST = 'locations_list'
 
 # Sensor defaults
 DEFAULT_CREATE_REVERSE_TRIP = False
-DEFAULT_REQUEST_LOCATION_UPDATE = False
 DEFAULT_FIRST_LEG_DEVICE_TRACKER = 'never'
 DEFAULT_LAST_LEG_DEVICE_TRACKER = 'never'
 DEFAULT_ORIGIN_DEVICE_TRACKER = 'if_device_tracker_journey'

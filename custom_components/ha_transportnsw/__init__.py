@@ -195,7 +195,7 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: TransportNSWCon
 
     if config_entry.version < 2:
         # Migrate to version 2
-        _LOGGER.info(f"Interim configuration migration from version {config_entry.version} to version 2")
+        _LOGGER.info(f"Interim migration of configuration to version 2")
 
         # Migrate all subentries to the version 2 data schema
         for subentry in config_entry.subentries.values():
@@ -254,12 +254,18 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: TransportNSWCon
                 new_subentry_data[CONF_ORIGIN_TRANSPORT_TYPE] = strings = [str(transport_type) for transport_type in new_subentry_data[CONF_ORIGIN_TRANSPORT_TYPE]]
                 new_subentry_data[CONF_DESTINATION_TRANSPORT_TYPE] = strings = [str(transport_type) for transport_type in new_subentry_data[CONF_DESTINATION_TRANSPORT_TYPE]]
 
-                # Make sure that CONF_RUN_FILTER and CONF_MAX_CHANGES are present
+                # Make sure that recent options such as CONF_RUN_FILTER and CONF_MAX_CHANGES are present
                 if CONF_RUN_FILTER not in new_subentry_data:
                     new_subentry_data[CONF_RUN_FILTER] = DEFAULT_RUN_FILTER
                 
                 if CONF_MAX_CHANGES not in new_subentry_data:
                     new_subentry_data[CONF_MAX_CHANGES] = DEFAULT_MAX_CHANGES
+
+                if CONF_START_TIME not in new_subentry_data:
+                    new_subentry_data[CONF_START_TIME] = DEFAULT_START_TIME
+
+                if CONF_END_TIME not in new_subentry_data:
+                    new_subentry_data[CONF_END_TIME] = DEFAULT_END_TIME
 
                 # Update the subentry
                 hass.config_entries.async_update_subentry(
@@ -352,9 +358,9 @@ async def async_setup(hass: HomeAssistant, config_entry: TransportNSWConfigEntry
 async def async_setup_entry(hass: HomeAssistant, config_entry: TransportNSWConfigEntry) -> bool:
     """Set up the ha_transportnsw integration from a config entry."""
 
-    """ We need to register the Frontend .JS module, which will be unloaded if the Integration is itself unloaded or reloaded by the user
-        We have to do this here as async_setup is only ever called at HA startup, never again for an Integration reload
-        As there could potentially be multiple config entries (unlikely, to be fair) we need to cater for that """
+    # We need to register the Frontend .JS module, which will be unloaded if the Integration is itself unloaded or reloaded by the user
+    # We have to do this here as async_setup is only ever called at HA startup, never again for an Integration reload
+    # As there could potentially be multiple config entries (unlikely, to be fair) we need to cater for that
 
     # Initialize our cross-entry tracking container if missing
     try:
@@ -430,7 +436,6 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: TransportNSWConfi
 
         # Initiate the coordinator
         await coordinator.async_config_entry_first_refresh()
-
         _LOGGER.debug (f"Initialised coordinator for {config_entry.title}")
 
     except Exception as ex:
