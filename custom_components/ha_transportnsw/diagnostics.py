@@ -1,14 +1,19 @@
+"""Diagnostics module."""
+
+from __future__ import annotations
+
 from typing import Any
 
 from homeassistant.components.diagnostics import async_redact_data
 from homeassistant.const import CONF_API_KEY
+from homeassistant.core import HomeAssistant
 
 from . import TransportNSWConfigEntry
 from .const import (
     CONF_DESTINATION_ID,
     CONF_DESTINATION_NAME,
     CONF_ORIGIN_ID,
-    CONF_ORIGIN_NAME
+    CONF_ORIGIN_NAME,
 )
 
 TO_REDACT = [
@@ -29,7 +34,9 @@ async def async_get_config_entry_diagnostics(
 
     subentry_data = {}
     for subentry in config_entry.subentries.values():
-        subentry_data[subentry.subentry_id] = async_redact_data(subentry.data, TO_REDACT)
+        subentry_data[subentry.subentry_id] = async_redact_data(
+            subentry.data, TO_REDACT
+        )
 
     return {
         "entry_data": async_redact_data(
