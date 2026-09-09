@@ -814,14 +814,7 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
         # Handle custom sensors if requested
 
         if user_input is not None:
-            if (user_input["device_trackers"][CONF_FIRST_LEG_DEVICE_TRACKER]) or (
-                user_input["device_trackers"][CONF_LAST_LEG_DEVICE_TRACKER]
-                in ["if_not_duplicated", "always"]
-            ):
-                user_input[CONF_INCLUDE_REALTIME_LOCATION] = True
-            else:
-                user_input[CONF_INCLUDE_REALTIME_LOCATION] = False
-
+            user_input[CONF_INCLUDE_REALTIME_LOCATION] = True
             self._input_data.update(user_input)
 
             # This is the last step so create the subentries, unless we're
@@ -1015,77 +1008,78 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
                 }
             )
 
-            DEVICE_TRACKER_SENSORS_SCHEMA = vol.Schema(
-                {
-                    vol.Required(
-                        CONF_FIRST_LEG_DEVICE_TRACKER,
-                        default=user_input["device_trackers"].get(
-                            CONF_FIRST_LEG_DEVICE_TRACKER,
-                            DEFAULT_FIRST_LEG_DEVICE_TRACKER,
-                        ),
-                    ): selector(
-                        {
-                            "select": {
-                                "options": ["never", "always"],
-                                "mode": "dropdown",
-                                "translation_key": "transport_device_tracker_selector",
-                            }
-                        }
-                    ),
-                    vol.Required(
-                        CONF_LAST_LEG_DEVICE_TRACKER,
-                        default=user_input["device_trackers"].get(
-                            CONF_LAST_LEG_DEVICE_TRACKER,
-                            DEFAULT_LAST_LEG_DEVICE_TRACKER,
-                        ),
-                    ): selector(
-                        {
-                            "select": {
-                                "options": ["never", "if_not_duplicated", "always"],
-                                "mode": "dropdown",
-                                "translation_key": "transport_device_tracker_selector",
-                            }
-                        }
-                    ),
-                    vol.Required(
-                        CONF_ORIGIN_DEVICE_TRACKER,
-                        default=user_input["device_trackers"].get(
-                            CONF_ORIGIN_DEVICE_TRACKER, DEFAULT_ORIGIN_DEVICE_TRACKER
-                        ),
-                    ): selector(
-                        {
-                            "select": {
-                                "options": [
-                                    "never",
-                                    "if_device_tracker_journey",
-                                    "always",
-                                ],
-                                "mode": "dropdown",
-                                "translation_key": "stops_device_tracker_selector",
-                            }
-                        }
-                    ),
-                    vol.Required(
-                        CONF_DESTINATION_DEVICE_TRACKER,
-                        default=user_input["device_trackers"].get(
-                            CONF_DESTINATION_DEVICE_TRACKER,
-                            DEFAULT_DESTINATION_DEVICE_TRACKER,
-                        ),
-                    ): selector(
-                        {
-                            "select": {
-                                "options": [
-                                    "never",
-                                    "if_device_tracker_journey",
-                                    "always",
-                                ],
-                                "mode": "dropdown",
-                                "translation_key": "stops_device_tracker_selector",
-                            }
-                        }
-                    ),
-                }
-            )
+            ### Temporarily removed to simplify initial core submission review - will be re-added in a future PR
+            # DEVICE_TRACKER_SENSORS_SCHEMA = vol.Schema(
+            #     {
+            #         vol.Required(
+            #             CONF_FIRST_LEG_DEVICE_TRACKER,
+            #             default=user_input["device_trackers"].get(
+            #                 CONF_FIRST_LEG_DEVICE_TRACKER,
+            #                 DEFAULT_FIRST_LEG_DEVICE_TRACKER,
+            #             ),
+            #         ): selector(
+            #             {
+            #                 "select": {
+            #                     "options": ["never", "always"],
+            #                     "mode": "dropdown",
+            #                     "translation_key": "transport_device_tracker_selector",
+            #                 }
+            #             }
+            #         ),
+            #         vol.Required(
+            #             CONF_LAST_LEG_DEVICE_TRACKER,
+            #             default=user_input["device_trackers"].get(
+            #                 CONF_LAST_LEG_DEVICE_TRACKER,
+            #                 DEFAULT_LAST_LEG_DEVICE_TRACKER,
+            #             ),
+            #         ): selector(
+            #             {
+            #                 "select": {
+            #                     "options": ["never", "if_not_duplicated", "always"],
+            #                     "mode": "dropdown",
+            #                     "translation_key": "transport_device_tracker_selector",
+            #                 }
+            #             }
+            #         ),
+            #         vol.Required(
+            #             CONF_ORIGIN_DEVICE_TRACKER,
+            #             default=user_input["device_trackers"].get(
+            #                 CONF_ORIGIN_DEVICE_TRACKER, DEFAULT_ORIGIN_DEVICE_TRACKER
+            #             ),
+            #         ): selector(
+            #             {
+            #                 "select": {
+            #                     "options": [
+            #                         "never",
+            #                         "if_device_tracker_journey",
+            #                         "always",
+            #                     ],
+            #                     "mode": "dropdown",
+            #                     "translation_key": "stops_device_tracker_selector",
+            #                 }
+            #             }
+            #         ),
+            #         vol.Required(
+            #             CONF_DESTINATION_DEVICE_TRACKER,
+            #             default=user_input["device_trackers"].get(
+            #                 CONF_DESTINATION_DEVICE_TRACKER,
+            #                 DEFAULT_DESTINATION_DEVICE_TRACKER,
+            #             ),
+            #         ): selector(
+            #             {
+            #                 "select": {
+            #                     "options": [
+            #                         "never",
+            #                         "if_device_tracker_journey",
+            #                         "always",
+            #                     ],
+            #                     "mode": "dropdown",
+            #                     "translation_key": "stops_device_tracker_selector",
+            #                 }
+            #             }
+            #         ),
+            #     }
+            # )
 
             custom_schema = {
                 vol.Required("time_and_change_sensors"): section(
@@ -1100,10 +1094,11 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
                     DESTINATION_SENSORS_SCHEMA,
                     {"collapsed": True},
                 ),
-                vol.Required("device_trackers"): section(
-                    DEVICE_TRACKER_SENSORS_SCHEMA,
-                    {"collapsed": True},
-                ),
+                ### Temporarily removed to simplify initial core submission review - will be re-added in a future PR
+                # vol.Required("device_trackers"): section(
+                #     DEVICE_TRACKER_SENSORS_SCHEMA,
+                #     {"collapsed": True},
+                # ),
             }
             description_placeholders = {
                 "journey_name": f"{self._input_data[CONF_ORIGIN_NAME]} to {self._input_data[CONF_DESTINATION_NAME]}"
@@ -1118,7 +1113,9 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
     async def async_step_reconfigure(
         self, user_input: dict[str, Any] | None = None
     ) -> SubentryFlowResult:
-        """User flow to modify an existing location."""
+        """User flow to modify an existing location.
+           I've left reconfigure in for this initial submission as for subentries
+           it's effectively their version of OptionsFlow, which IS permitted in the PR guidelines."""
 
         return await self.async_step_settings()
 
