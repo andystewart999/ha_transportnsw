@@ -13,7 +13,7 @@ from homeassistant.components.persistent_notification import (
 )
 from homeassistant.config_entries import (
     SOURCE_IMPORT,
-    SOURCE_RECONFIGURE,
+    # SOURCE_RECONFIGURE,
     ConfigEntry,
     ConfigFlow,
     ConfigFlowResult,
@@ -125,76 +125,76 @@ class TransportNSWConfigFlowHandler(ConfigFlow, domain=DOMAIN):
                     user_input[CONF_API_KEY]
                 )
 
-                if self.source == SOURCE_RECONFIGURE:
-                    if user_input[CONF_API_KEY] != self._previous_key:
-                        # We're reconfiguring and the API key is changing.  Make sure there isn't already an entry with the same key
-                        self._abort_if_unique_id_configured()
+                # if self.source == SOURCE_RECONFIGURE:
+                #     if user_input[CONF_API_KEY] != self._previous_key:
+                #         # We're reconfiguring and the API key is changing.  Make sure there isn't already an entry with the same key
+                #         self._abort_if_unique_id_configured()
 
-                        # Still here?  There's no existing integration with the new API key
-                        # Or we haven't actually changed the API key
-                        reason = f"reconfigure_successful_api_change_{str(user_input[CONF_API_KEY] != self._previous_key).lower()}"
-                    else:
-                        # The API key hasn't changed - and with no other options we can just abort
-                        return self.async_abort(
-                            reason="reconfigure_successful_no_change"
-                        )
+                #         # Still here?  There's no existing integration with the new API key
+                #         # Or we haven't actually changed the API key
+                #         reason = f"reconfigure_successful_api_change_{str(user_input[CONF_API_KEY] != self._previous_key).lower()}"
+                #     else:
+                #         # The API key hasn't changed - and with no other options we can just abort
+                #         return self.async_abort(
+                #             reason="reconfigure_successful_no_change"
+                #         )
 
-                    # Get a reference to the config entry that's being reconfigured
-                    config_entry = self._get_reconfigure_entry()
+                #     # Get a reference to the config entry that's being reconfigured
+                #     config_entry = self._get_reconfigure_entry()
 
-                    # Get the scan_interval value now otherwise it will be lost
-                    current_data = dict(config_entry.data)
-                    combined_data = {**current_data, **user_input}
+                #     # Get the scan_interval value now otherwise it will be lost
+                #     current_data = dict(config_entry.data)
+                #     combined_data = {**current_data, **user_input}
 
-                    # We don't have an update listener in place (it causes problems when adding multiple subentries in one go) so we need to force a reload ourselves, rather than just doing the entry update and having a listener catch it
-                    return self.async_update_reload_and_abort(
-                        config_entry,
-                        title=f"Transport NSW Mk II ({user_input[CONF_API_KEY][-4:]})",
-                        unique_id=user_input[CONF_API_KEY],
-                        data=combined_data,
-                        reload_even_if_entry_is_unchanged=False,
-                        reason=reason,
-                    )
+                #     # We don't have an update listener in place (it causes problems when adding multiple subentries in one go) so we need to force a reload ourselves, rather than just doing the entry update and having a listener catch it
+                #     return self.async_update_reload_and_abort(
+                #         config_entry,
+                #         title=f"Transport NSW Mk II ({user_input[CONF_API_KEY][-4:]})",
+                #         unique_id=user_input[CONF_API_KEY],
+                #         data=combined_data,
+                #         reload_even_if_entry_is_unchanged=False,
+                #         reason=reason,
+                #     )
 
-                elif self.source == SOURCE_IMPORT:
-                    if existing_entry is not None:
-                        # Looks like we're trying to re-import an existing entry, so create a persistent notification and abort
-                        async_create_notification(
-                            self.hass,
-                            f"Skipping the migration of legacy configuration.yaml entries for API key ending `{user_input[CONF_API_KEY][-4:]}` as they've already been imported, or there's already a config entry with the same key.\n\nPlease remove those entries from configuration.yaml.",
-                            title="Transport NSW Mk II",
-                            notification_id=f"{DOMAIN}_{user_input[CONF_API_KEY]}_unique_check",
-                        )
+                # elif self.source == SOURCE_IMPORT:
+                #     if existing_entry is not None:
+                #         # Looks like we're trying to re-import an existing entry, so create a persistent notification and abort
+                #         async_create_notification(
+                #             self.hass,
+                #             f"Skipping the migration of legacy configuration.yaml entries for API key ending `{user_input[CONF_API_KEY][-4:]}` as they've already been imported, or there's already a config entry with the same key.\n\nPlease remove those entries from configuration.yaml.",
+                #             title="Transport NSW Mk II",
+                #             notification_id=f"{DOMAIN}_{user_input[CONF_API_KEY]}_unique_check",
+                #         )
 
-                        self._abort_if_unique_id_configured()
+                #         self._abort_if_unique_id_configured()
 
-                else:
-                    # It's a brand new config entry, but we still need to check for a unique id conflict
-                    self._abort_if_unique_id_configured()
+                # else:
+                # It's a brand new config entry, but we still need to check for a unique id conflict
+                self._abort_if_unique_id_configured()
 
                 # If we're here we're creating a new config entry, either via an import or via the user's ConfigFlow
                 # Set our title variable here for use later
 
-                if self.source == SOURCE_IMPORT:
-                    # We want to create the config entry and then as many subentries as we've been provided
-                    # The data for the config entry is a subset of what we've been provided via the import process
-                    self._input_data = {
-                        CONF_API_KEY: user_input[CONF_API_KEY],
-                    }
-                    subentry_data = user_input["subentry_data"]
+                # if self.source == SOURCE_IMPORT:
+                #     # We want to create the config entry and then as many subentries as we've been provided
+                #     # The data for the config entry is a subset of what we've been provided via the import process
+                #     self._input_data = {
+                #         CONF_API_KEY: user_input[CONF_API_KEY],
+                #     }
+                #     subentry_data = user_input["subentry_data"]
 
-                    # Create a persistent notification now, we won't have a chance later
-                    async_create_notification(
-                        self.hass,
-                        f"Successfully imported legacy configuration.yaml entries for API key ending `{user_input[CONF_API_KEY][-4:]}` - please remove those entries from configuration.yaml.",
-                        title="Transport NSW Mk II",
-                        notification_id=f"{DOMAIN}_{user_input[CONF_API_KEY]}",
-                    )
+                #     # Create a persistent notification now, we won't have a chance later
+                #     async_create_notification(
+                #         self.hass,
+                #         f"Successfully imported legacy configuration.yaml entries for API key ending `{user_input[CONF_API_KEY][-4:]}` - please remove those entries from configuration.yaml.",
+                #         title="Transport NSW Mk II",
+                #         notification_id=f"{DOMAIN}_{user_input[CONF_API_KEY]}",
+                #     )
 
-                else:
-                    self._input_data = user_input
-                    # We're just creating a brand new config entry
-                    subentry_data = None
+                # else:
+                self._input_data = user_input
+                # We're just creating a brand new config entry
+                subentry_data = None
 
                 # Actually create the config entry (and optionally the subentries if we're importing)
                 return self.async_create_entry(
@@ -204,14 +204,14 @@ class TransportNSWConfigFlowHandler(ConfigFlow, domain=DOMAIN):
                 )
 
         if user_input is None:
-            if self.source == SOURCE_RECONFIGURE:
-                config_entry = self._get_reconfigure_entry()
-                user_input = dict(config_entry.data)
-                self._input_data = user_input
-                self._previous_key = user_input[CONF_API_KEY]
-            else:
-                user_input = {}
-                self._previous_key = ""
+            # if self.source == SOURCE_RECONFIGURE:
+            #     config_entry = self._get_reconfigure_entry()
+            #     user_input = dict(config_entry.data)
+            #     self._input_data = user_input
+            #     self._previous_key = user_input[CONF_API_KEY]
+            # else:
+            user_input = {}
+            self._previous_key = ""
 
         USER_DATA_SCHEMA = vol.Schema(
             {
@@ -232,14 +232,14 @@ class TransportNSWConfigFlowHandler(ConfigFlow, domain=DOMAIN):
             description_placeholders=description_placeholders,
         )
 
-    async def async_step_import(self, user_input: dict[str, Any]) -> ConfigFlowResult:
-        # We're here so the config entry for this import hasn't been created already
-        # We've been passed a complete subentry data-set, plus what we need to set up the initial config entry as well
-        return await self.async_step_user(user_input=user_input)
+    # async def async_step_import(self, user_input: dict[str, Any]) -> ConfigFlowResult:
+    #     # We're here so the config entry for this import hasn't been created already
+    #     # We've been passed a complete subentry data-set, plus what we need to set up the initial config entry as well
+    #     return await self.async_step_user(user_input=user_input)
 
-    async def async_step_reconfigure(self, user_input: dict[str, Any] | None = None):
-        # Deliberately not passing user_input through, so the 'show form' code will run - there's specific SOURCE_RECONFIGURE to handle getting the current info
-        return await self.async_step_user()
+    # async def async_step_reconfigure(self, user_input: dict[str, Any] | None = None):
+    #     # Deliberately not passing user_input through, so the 'show form' code will run - there's specific SOURCE_RECONFIGURE to handle getting the current info
+    #     return await self.async_step_user()
 
     @staticmethod
     @callback
