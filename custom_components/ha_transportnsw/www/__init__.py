@@ -8,13 +8,9 @@ from homeassistant.components.http import StaticPathConfig
 from homeassistant.components.lovelace import LOVELACE_DATA
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.event import async_call_later
-from homeassistant.helpers.storage import Store
 
-from ..const import (
-    JSMODULES,
-    URL_BASE,
-    INTEGRATION_VERSION
-)
+# from homeassistant.helpers.storage import Store
+from ..const import JSMODULES, URL_BASE  # noqa: TID252
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -25,15 +21,23 @@ class JSModuleRegistration:
     def __init__(self, hass: HomeAssistant) -> None:
         """Initialize the registrar."""
         self.hass = hass
-        self.lovelace = self.hass.data.get("lovelace")
+        self.lovelace = self.hass.data.get(LOVELACE_DATA)
 
     async def async_register(self) -> None:
         """Register frontend resources."""
         await self._async_register_path()
 
         # Only register modules if Lovelace is in storage mode
-        if self.hass.data.get(LOVELACE_DATA).resource_mode == "storage":
-            await self._async_wait_for_lovelace_resources()
+        if self.lovelace is not None:
+            if hasattr(self.lovelace, "resource_mode"):
+                # This is the current object model
+                storage_mode = self.lovelace.resource_mode
+            else:
+                # This is the deprecated object model
+                storage_mode = self.lovelace.mode
+
+            if storage_mode == "storage":
+                await self._async_wait_for_lovelace_resources()
 
     async def _async_register_path(self) -> None:
         """Register the static HTTP path."""
@@ -42,6 +46,7 @@ class JSModuleRegistration:
                 [StaticPathConfig(URL_BASE, Path(__file__).parent, False)]
             )
             _LOGGER.debug("Path registered: %s -> %s", URL_BASE, Path(__file__).parent)
+
         except RuntimeError:
             _LOGGER.debug("Path already registered: %s", URL_BASE)
 
@@ -58,15 +63,16 @@ class JSModuleRegistration:
         await _check_loaded(0)
 
     async def _async_register_modules(self) -> None:
-        """ Register or update JavaScript modules.
-            Remove any duplicate modules while we're doing this """
-            
+        """Register or update JavaScript modules.
+        Remove any duplicate modules while we're doing this"""
+
         _LOGGER.debug("Registering JavaScript modules")
 
         # Get existing resources from this integration
         existing_resources = [
-            r for r in self.lovelace.resources.async_items()
-            if r["url"].startswith(URL_BASE)
+            resource
+            for resource in self.lovelace.resources.async_items()
+            if resource["url"].startswith(URL_BASE)
         ]
         for module in JSMODULES:
             url = f"{URL_BASE}/{module['filename']}"
@@ -77,10 +83,7 @@ class JSModuleRegistration:
                     # Remove duplicates, if any
                     if found_module:
                         # Just go ahead and delete the registration
-                        _LOGGER.info(
-                            "Removing duplicate - %s",
-                            resource["url"]
-                        )
+                        _LOGGER.info("Removing duplicate - %s", resource["url"])
                         await self.lovelace.resources.async_delete_item(resource["id"])
                     else:
                         found_module = True
@@ -88,7 +91,8 @@ class JSModuleRegistration:
                         if self._get_version(resource["url"]) != module["version"]:
                             _LOGGER.info(
                                 "Updating %s to version %s",
-                                module["name"], module["version"]
+                                module["name"],
+                                module["version"],
                             )
                             await self.lovelace.resources.async_update_item(
                                 resource["id"],
@@ -101,8 +105,7 @@ class JSModuleRegistration:
             if not found_module:
                 # No existing module registration found - register it
                 _LOGGER.info(
-                    "Registering %s version %s",
-                    module["name"], module["version"]
+                    "Registering %s version %s", module["name"], module["version"]
                 )
                 await self.lovelace.resources.async_create_item(
                     {
@@ -129,8 +132,9 @@ class JSModuleRegistration:
                 url = f"{URL_BASE}/{module['filename']}"
 
                 resources = [
-                    r for r in self.lovelace.resources.async_items()
-                    if r["url"].startswith(url)
+                    resource
+                    for resource in self.lovelace.resources.async_items()
+                    if resource["url"].startswith(url)
                 ]
 
                 for resource in resources:

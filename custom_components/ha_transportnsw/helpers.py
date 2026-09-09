@@ -125,18 +125,14 @@ def get_auto_poll_interval(
 
 def get_journey_data(coordinator_data, subentry_id: str, journey_index: int):
     """Check to make sure that there is in fact journey data for this specific journey, otherwise return None."""
-    try:
-        if (
-            coordinator_data is not None
-            and subentry_id in coordinator_data
-            and len(coordinator_data) >= (journey_index + 1)
-        ):
-            return coordinator_data[subentry_id][journey_index]
+    if (
+        coordinator_data is not None
+        and subentry_id in coordinator_data
+        and len(coordinator_data[subentry_id]) >= (journey_index + 1)
+    ):
+        return coordinator_data[subentry_id][journey_index]
 
-        return None
-
-    except Exception:
-        return None
+    return None
 
 
 def extract_from_hierarchy(obj, path, separator=".", default=None) -> str | float:
@@ -515,7 +511,8 @@ def delete_legacy_storage(base_path: str, config_entry):
         if os.path.exists(file_path):
             os.remove(file_path)
 
-    except Exception:
+    except PermissionError:
+        # Not much we can do about that - just ignore it
         pass
 
 
@@ -562,17 +559,32 @@ def remove_device(
 ):
     # Search for and remove a device that's no longer needed
     try:
-        device = device_reg.async_get_device_by_identifier(
-            (
-                DOMAIN,
-                f"{subentry_id}_{origin_id}_{destination_id}_{device_identifier}",
-            ),
-            entry_id,
-        )
+        if hasattr(device_reg, "async_get_device_by_identifier"):
+            # This is the current way of accessing devices
+            device = device_reg.async_get_device_by_identifier(
+                (
+                    DOMAIN,
+                    f"{subentry_id}_{origin_id}_{destination_id}_{device_identifier}",
+                ),
+                entry_id,
+            )
+        else:
+            # This is the deprecated way, or for older versions of HA the only way.
+            # TODO: Remove this section when HA 2027.8 is released.
+            device = device_reg.async_get_device(
+                identifiers={
+                    (
+                        DOMAIN,
+                        f"{subentry_id}_{origin_id}_{destination_id}_{device_identifier}",
+                    )
+                }
+            )
+
         if device is not None:
             device_reg.async_remove_device(
                 device_id=device.id,
             )
 
     finally:
+        # If the device can't be deleted for some reason it's unlikely that we'll be able to do anything about that here, unfortunately
         pass
