@@ -281,7 +281,8 @@ def get_optional_sensors(subentry_data: str):
         "time_and_change_sensors",
         "origin_sensors",
         "destination_sensors",
-        "device_trackers",
+        ### Temporarily removed to simplify initial core submission review - will be re-added in a future PR
+        # "device_trackers",
     ]:
         if option_group in subentry_data:
             optional_sensors[option_group] = subentry_data[option_group]
@@ -326,11 +327,18 @@ def set_optional_sensors(sensor_creation: str):
                 CONF_LAST_LEG_OCCUPANCY_DETAIL_SENSOR: False,
                 CONF_LAST_LEG_TRAIN_SET_SENSOR: False,
             },
+            ### Temporarily removed to simplify initial core submission review - will be re-added in a future PR
+            # "device_trackers": {
+            #     CONF_FIRST_LEG_DEVICE_TRACKER: DEFAULT_FIRST_LEG_DEVICE_TRACKER,
+            #     CONF_LAST_LEG_DEVICE_TRACKER: DEFAULT_FIRST_LEG_DEVICE_TRACKER,
+            #     CONF_ORIGIN_DEVICE_TRACKER: DEFAULT_ORIGIN_DEVICE_TRACKER,
+            #     CONF_DESTINATION_DEVICE_TRACKER: DEFAULT_DESTINATION_DEVICE_TRACKER,
+            # },
             "device_trackers": {
-                CONF_FIRST_LEG_DEVICE_TRACKER: DEFAULT_FIRST_LEG_DEVICE_TRACKER,
-                CONF_LAST_LEG_DEVICE_TRACKER: DEFAULT_FIRST_LEG_DEVICE_TRACKER,
-                CONF_ORIGIN_DEVICE_TRACKER: DEFAULT_ORIGIN_DEVICE_TRACKER,
-                CONF_DESTINATION_DEVICE_TRACKER: DEFAULT_DESTINATION_DEVICE_TRACKER,
+                CONF_FIRST_LEG_DEVICE_TRACKER: "never",
+                CONF_LAST_LEG_DEVICE_TRACKER: "never",
+                CONF_ORIGIN_DEVICE_TRACKER: "never",
+                CONF_DESTINATION_DEVICE_TRACKER: "never",
             },
         }
 
@@ -367,11 +375,18 @@ def set_optional_sensors(sensor_creation: str):
                 CONF_LAST_LEG_OCCUPANCY_DETAIL_SENSOR: True,
                 CONF_LAST_LEG_TRAIN_SET_SENSOR: True,
             },
+            ### Temporarily removed to simplify initial core submission review - will be re-added in a future PR
+            # "device_trackers": {
+            #     CONF_FIRST_LEG_DEVICE_TRACKER: "always",
+            #     CONF_LAST_LEG_DEVICE_TRACKER: "if_not_duplicated",
+            #     CONF_ORIGIN_DEVICE_TRACKER: "always",
+            #     CONF_DESTINATION_DEVICE_TRACKER: "always",
+            # },
             "device_trackers": {
-                CONF_FIRST_LEG_DEVICE_TRACKER: "always",
-                CONF_LAST_LEG_DEVICE_TRACKER: "if_not_duplicated",
-                CONF_ORIGIN_DEVICE_TRACKER: "always",
-                CONF_DESTINATION_DEVICE_TRACKER: "always",
+                CONF_FIRST_LEG_DEVICE_TRACKER: "never",
+                CONF_LAST_LEG_DEVICE_TRACKER: "never",
+                CONF_ORIGIN_DEVICE_TRACKER: "never",
+                CONF_DESTINATION_DEVICE_TRACKER: "never",
             },
         }
 
@@ -409,11 +424,18 @@ def set_optional_sensors(sensor_creation: str):
                 CONF_LAST_LEG_OCCUPANCY_DETAIL_SENSOR: False,
                 CONF_LAST_LEG_TRAIN_SET_SENSOR: False,
             },
+            ### Temporarily removed to simplify initial core submission review - will be re-added in a future PR
+            # "device_trackers": {
+            #     CONF_FIRST_LEG_DEVICE_TRACKER: DEFAULT_FIRST_LEG_DEVICE_TRACKER,
+            #     CONF_LAST_LEG_DEVICE_TRACKER: DEFAULT_LAST_LEG_DEVICE_TRACKER,
+            #     CONF_ORIGIN_DEVICE_TRACKER: DEFAULT_ORIGIN_DEVICE_TRACKER,
+            #     CONF_DESTINATION_DEVICE_TRACKER: DEFAULT_DESTINATION_DEVICE_TRACKER,
+            # },
             "device_trackers": {
-                CONF_FIRST_LEG_DEVICE_TRACKER: DEFAULT_FIRST_LEG_DEVICE_TRACKER,
-                CONF_LAST_LEG_DEVICE_TRACKER: DEFAULT_LAST_LEG_DEVICE_TRACKER,
-                CONF_ORIGIN_DEVICE_TRACKER: DEFAULT_ORIGIN_DEVICE_TRACKER,
-                CONF_DESTINATION_DEVICE_TRACKER: DEFAULT_DESTINATION_DEVICE_TRACKER,
+                CONF_FIRST_LEG_DEVICE_TRACKER: "never",
+                CONF_LAST_LEG_DEVICE_TRACKER: "never",
+                CONF_ORIGIN_DEVICE_TRACKER: "never",
+                CONF_DESTINATION_DEVICE_TRACKER: "never",
             },
         }
 
@@ -450,11 +472,18 @@ def set_optional_sensors(sensor_creation: str):
                 CONF_LAST_LEG_OCCUPANCY_DETAIL_SENSOR: False,
                 CONF_LAST_LEG_TRAIN_SET_SENSOR: False,
             },
+            ### Temporarily removed to simplify initial core submission review - will be re-added in a future PR
+            # "device_trackers": {
+            #     CONF_FIRST_LEG_DEVICE_TRACKER: DEFAULT_FIRST_LEG_DEVICE_TRACKER,
+            #     CONF_LAST_LEG_DEVICE_TRACKER: DEFAULT_LAST_LEG_DEVICE_TRACKER,
+            #     CONF_ORIGIN_DEVICE_TRACKER: DEFAULT_ORIGIN_DEVICE_TRACKER,
+            #     CONF_DESTINATION_DEVICE_TRACKER: DEFAULT_DESTINATION_DEVICE_TRACKER,
+            # },
             "device_trackers": {
-                CONF_FIRST_LEG_DEVICE_TRACKER: DEFAULT_FIRST_LEG_DEVICE_TRACKER,
-                CONF_LAST_LEG_DEVICE_TRACKER: DEFAULT_LAST_LEG_DEVICE_TRACKER,
-                CONF_ORIGIN_DEVICE_TRACKER: DEFAULT_ORIGIN_DEVICE_TRACKER,
-                CONF_DESTINATION_DEVICE_TRACKER: DEFAULT_DESTINATION_DEVICE_TRACKER,
+                CONF_FIRST_LEG_DEVICE_TRACKER: "never",
+                CONF_LAST_LEG_DEVICE_TRACKER: "never",
+                CONF_ORIGIN_DEVICE_TRACKER: "never",
+                CONF_DESTINATION_DEVICE_TRACKER: "never",
             },
         }
 
@@ -491,11 +520,18 @@ def set_optional_sensors(sensor_creation: str):
                 CONF_LAST_LEG_OCCUPANCY_DETAIL_SENSOR: False,
                 CONF_LAST_LEG_TRAIN_SET_SENSOR: False,
             },
+            ### Temporarily removed to simplify initial core submission review - will be re-added in a future PR
+            # "device_trackers": {
+            #     CONF_FIRST_LEG_DEVICE_TRACKER: DEFAULT_FIRST_LEG_DEVICE_TRACKER,
+            #     CONF_LAST_LEG_DEVICE_TRACKER: DEFAULT_LAST_LEG_DEVICE_TRACKER,
+            #     CONF_ORIGIN_DEVICE_TRACKER: DEFAULT_ORIGIN_DEVICE_TRACKER,
+            #     CONF_DESTINATION_DEVICE_TRACKER: DEFAULT_DESTINATION_DEVICE_TRACKER,
+            # },
             "device_trackers": {
-                CONF_FIRST_LEG_DEVICE_TRACKER: DEFAULT_FIRST_LEG_DEVICE_TRACKER,
-                CONF_LAST_LEG_DEVICE_TRACKER: DEFAULT_LAST_LEG_DEVICE_TRACKER,
-                CONF_ORIGIN_DEVICE_TRACKER: DEFAULT_ORIGIN_DEVICE_TRACKER,
-                CONF_DESTINATION_DEVICE_TRACKER: DEFAULT_DESTINATION_DEVICE_TRACKER,
+                CONF_FIRST_LEG_DEVICE_TRACKER: "never",
+                CONF_LAST_LEG_DEVICE_TRACKER: "never",
+                CONF_ORIGIN_DEVICE_TRACKER: "never",
+                CONF_DESTINATION_DEVICE_TRACKER: "never",
             },
         }
 
