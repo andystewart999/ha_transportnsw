@@ -82,7 +82,7 @@ CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 async def async_migrate_entry(
     hass: HomeAssistant, config_entry: TransportNSWConfigEntry
 ):
-    """ Schema migrations.""""
+    """ Schema migrations."""
 
     if config_entry.version > 3:
         # This means the user has downgraded from a future version
