@@ -8,34 +8,34 @@ DEFAULT_SCAN_INTERVAL = 60
 MIN_SCAN_INTERVAL = 30
 MIN_AUTO_SCAN_INTERVAL = 5
 
-# API stuff
+# API-related constants
 API_DAILY_LIMIT = 60000
 AVERAGE_CALLS_PER_JOURNEY = 3
 AVERAGE_API_CALLS_WINDOW = 5
 STORAGE_VERSION = 1
 
-# API sensors
-API_CALLS = "api_calls"
-API_CALLS_NAME = "API calls"
-AVERAGE_API_CALLS = "average_api_calls"
-AVERAGE_API_CALLS_NAME = "Average API calls per poll"
+# Config-entry sensor names
+API_CALLS_SENSOR = "api_calls"
+API_CALLS_FRIENDLY = "API calls"
+AVERAGE_API_CALLS_SENSOR = "average_api_calls"
+AVERAGE_API_CALLS_FRIENDLY = "Average API calls per poll"
 
-# Optional config entry settings
+# Config entry settings
 CONF_API_PERCENT = "auto_interval_api_percent"
 DEFAULT_API_PERCENT = 95
 CONF_REQUEST_LOCATION_UPDATE = "request_location_update"
 DEFAULT_REQUEST_LOCATION_UPDATE = False
 
-# Mandatory subentry data
+# Subentry settings
 CONF_ORIGIN_TYPE = "origin_type"
 CONF_ORIGIN_ID = "origin_id"
 CONF_ORIGIN_NAME = "origin_name"
 CONF_DESTINATION_ID = "destination_id"
 CONF_DESTINATION_NAME = "destination_name"
 CONF_TRIP_WAIT_TIME = "trip_wait_time"
+DEFAULT_TRIP_WAIT_TIME = 10
 CONF_CREATE_REVERSE_TRIP = "create_reverse_trip"
-
-# Optional subentry settings
+DEFAULT_CREATE_REVERSE_TRIP = False
 CONF_RETURN_INFO = "return_info"
 CONF_ORIGIN_TRANSPORT_TYPE = "origin_transport_type"
 CONF_DESTINATION_TRANSPORT_TYPE = "destination_transport_type"
@@ -46,83 +46,71 @@ CONF_ALERT_SEVERITY = "alert_severity"
 CONF_ALERT_TYPES = "alert_types"
 CONF_TRIPS_TO_CREATE = "trips_to_create"
 CONF_START_TIME = "start_time"
-CONF_END_TIME = "end_time"
 DEFAULT_START_TIME = "00:00:00"
+CONF_END_TIME = "end_time"
 DEFAULT_END_TIME = "23:59:59"
 
-# Sensor key names
-CONF_DUE_SENSOR = "due"
-CONF_POLLING_SENSOR = "polling"
-CONF_CHANGES_SENSOR = "changes"
-CONF_DELAY_SENSOR = "delay"
-CONF_DURATION_SENSOR = "duration"
-CONF_ALERTS_SENSOR = "alerts"
-CONF_FIRST_LEG_DEPARTURE_TIME_SENSOR = "departure_time"
-CONF_LAST_LEG_ARRIVAL_TIME_SENSOR = "arrival_time"
-CONF_ORIGIN_NAME_SENSOR = "origin_name"
-CONF_ORIGIN_DETAIL_SENSOR = "origin_detail"
-CONF_FIRST_LEG_LINE_NAME_SENSOR = "origin_line_name"
-CONF_FIRST_LEG_LINE_NAME_SHORT_SENSOR = "origin_line_name_short"
-CONF_FIRST_LEG_RUN_NAME_SENSOR = "origin_run_name"
-CONF_FIRST_LEG_TRANSPORT_TYPE_SENSOR = "origin_transport_type"
-CONF_FIRST_LEG_TRANSPORT_NAME_SENSOR = "origin_transport_name"
-CONF_FIRST_LEG_OCCUPANCY_SENSOR = "origin_occupancy"
-CONF_FIRST_LEG_OCCUPANCY_DETAIL_SENSOR = "origin_occupancy_detail"
-CONF_FIRST_LEG_TRAIN_SET_SENSOR = "origin_train_set"
-CONF_DESTINATION_NAME_SENSOR = "destination_name"
-CONF_DESTINATION_DETAIL_SENSOR = "destination_detail"
-CONF_LAST_LEG_LINE_NAME_SENSOR = "destination_line_name"
-CONF_LAST_LEG_LINE_NAME_SHORT_SENSOR = "destination_line_name_short"
-CONF_LAST_LEG_RUN_NAME_SENSOR = "destination_run_name"
-CONF_LAST_LEG_TRANSPORT_TYPE_SENSOR = "destination_transport_type"
-CONF_LAST_LEG_TRANSPORT_NAME_SENSOR = "destination_transport_name"
-CONF_LAST_LEG_OCCUPANCY_SENSOR = "destination_occupancy"
-CONF_LAST_LEG_OCCUPANCY_DETAIL_SENSOR = "destination_occupancy_detail"
-CONF_LAST_LEG_TRAIN_SET_SENSOR = "destination_train_set"
-CONF_INCLUDE_REALTIME_LOCATION = "include_realtime_location"
-CONF_SENSOR_CREATION = "sensor_creation"
-CONF_ORIGIN_END_OF_LINE = "origin_end_of_line"
-CONF_DESTINATION_END_OF_LINE = "destination_end_of_line"
-
-# Sensor friendly names
-CONF_DUE_FRIENDLY = "due"
-CONF_POLLING_FRIENDLY = "poll status"
-CONF_CHANGES_FRIENDLY = "changes"
-CONF_DELAY_FRIENDLY = "delay"
-CONF_DURATION_FRIENDLY = "duration"
-CONF_ALERTS_FRIENDLY = "alerts"
-CONF_FIRST_LEG_DEPARTURE_TIME_FRIENDLY = "departure from origin"
-CONF_LAST_LEG_ARRIVAL_TIME_FRIENDLY = "arrival at destination"
-CONF_ORIGIN_NAME_FRIENDLY = "origin name"
-CONF_ORIGIN_DETAIL_FRIENDLY = "origin detail"
-CONF_FIRST_LEG_LINE_NAME_FRIENDLY = "first leg line name"
-CONF_FIRST_LEG_LINE_NAME_SHORT_FRIENDLY = "first leg line name (short)"
-CONF_FIRST_LEG_RUN_NAME_FRIENDLY = "first leg run name"
-CONF_FIRST_LEG_OCCUPANCY_FRIENDLY = "first leg occupancy"
-CONF_FIRST_LEG_OCCUPANCY_DETAIL_FRIENDLY = "first leg occupancy detail"
-CONF_FIRST_LEG_TRAIN_SET_FRIENDLY = "first leg vehicle set"
-CONF_FIRST_LEG_TRANSPORT_TYPE_FRIENDLY = "first leg transport type"
-CONF_FIRST_LEG_TRANSPORT_NAME_FRIENDLY = "first leg transport name"
-CONF_DESTINATION_NAME_FRIENDLY = "destination name"
-CONF_DESTINATION_DETAIL_FRIENDLY = "destination detail"
-CONF_LAST_LEG_LINE_NAME_FRIENDLY = "last leg line name"
-CONF_LAST_LEG_LINE_NAME_SHORT_FRIENDLY = "last leg line name (short)"
-CONF_LAST_LEG_RUN_NAME_FRIENDLY = "last leg run name"
-CONF_LAST_LEG_OCCUPANCY_FRIENDLY = "last leg occupancy"
-CONF_LAST_LEG_OCCUPANCY_DETAIL_FRIENDLY = "last leg occupancy detail"
-CONF_LAST_LEG_TRAIN_SET_FRIENDLY = "last leg vehicle set"
-CONF_LAST_LEG_TRANSPORT_TYPE_FRIENDLY = "last leg transport type"
-CONF_LAST_LEG_TRANSPORT_NAME_FRIENDLY = "last leg transport name"
-
-# Device tracker options
-CONF_FIRST_LEG_DEVICE_TRACKER = "first_leg_device_tracker"
-CONF_FIRST_LEG_DEVICE_TRACKER_FRIENDLY = "First leg transport"
-CONF_LAST_LEG_DEVICE_TRACKER = "last_leg_device_tracker"
-CONF_LAST_LEG_DEVICE_TRACKER_FRIENDLY = "Last leg transport"
-CONF_ORIGIN_DEVICE_TRACKER = "origin_device_tracker"
-CONF_ORIGIN_DEVICE_TRACKER_FRIENDLY = "Origin location"
-CONF_DESTINATION_DEVICE_TRACKER = "destination_device_tracker"
-CONF_DESTINATION_DEVICE_TRACKER_FRIENDLY = "Destination location"
+# Subentry sensor names
+DUE_SENSOR = "due"
+DUE_FRIENDLY = "due"
+POLLING_SENSOR = "polling"
+POLLING_FRIENDLY = "poll status"
+CHANGES_SENSOR = "changes"
+CHANGES_FRIENDLY = "changes"
+DELAY_SENSOR = "delay"
+DELAY_FRIENDLY = "delay"
+DURATION_SENSOR = "duration"
+DURATION_FRIENDLY = "duration"
+ALERTS_SENSOR = "alerts"
+ALERTS_FRIENDLY = "alerts"
+FIRST_LEG_DEPARTURE_TIME_SENSOR = "departure_time"
+FIRST_LEG_DEPARTURE_TIME_FRIENDLY = "departure from origin"
+LAST_LEG_ARRIVAL_TIME_SENSOR = "arrival_time"
+LAST_LEG_ARRIVAL_TIME_FRIENDLY = "arrival at destination"
+ORIGIN_NAME_SENSOR = "origin_name"
+ORIGIN_NAME_FRIENDLY = "origin name"
+ORIGIN_DETAIL_SENSOR = "origin_detail"
+ORIGIN_DETAIL_FRIENDLY = "origin detail"
+FIRST_LEG_LINE_NAME_SENSOR = "origin_line_name"
+FIRST_LEG_LINE_NAME_FRIENDLY = "first leg line name"
+FIRST_LEG_LINE_NAME_SHORT_SENSOR = "origin_line_name_short"
+FIRST_LEG_LINE_NAME_SHORT_FRIENDLY = "first leg line name (short)"
+FIRST_LEG_RUN_NAME_SENSOR = "origin_run_name"
+FIRST_LEG_RUN_NAME_FRIENDLY = "first leg run name"
+FIRST_LEG_TRANSPORT_TYPE_SENSOR = "origin_transport_type"
+FIRST_LEG_TRANSPORT_TYPE_FRIENDLY = "first leg transport type"
+FIRST_LEG_TRANSPORT_NAME_SENSOR = "origin_transport_name"
+FIRST_LEG_TRANSPORT_NAME_FRIENDLY = "first leg transport name"
+FIRST_LEG_OCCUPANCY_SENSOR = "origin_occupancy"
+FIRST_LEG_OCCUPANCY_FRIENDLY = "first leg occupancy"
+FIRST_LEG_OCCUPANCY_DETAIL_SENSOR = "origin_occupancy_detail"
+FIRST_LEG_OCCUPANCY_DETAIL_FRIENDLY = "first leg occupancy detail"
+FIRST_LEG_TRAIN_SET_SENSOR = "origin_train_set"
+FIRST_LEG_TRAIN_SET_FRIENDLY = "first leg vehicle set"
+DESTINATION_NAME_SENSOR = "destination_name"
+DESTINATION_NAME_FRIENDLY = "destination name"
+DESTINATION_DETAIL_SENSOR = "destination_detail"
+DESTINATION_DETAIL_FRIENDLY = "destination detail"
+LAST_LEG_LINE_NAME_SENSOR = "destination_line_name"
+LAST_LEG_LINE_NAME_FRIENDLY = "last leg line name"
+LAST_LEG_LINE_NAME_SHORT_SENSOR = "destination_line_name_short"
+LAST_LEG_LINE_NAME_SHORT_FRIENDLY = "last leg line name (short)"
+LAST_LEG_RUN_NAME_SENSOR = "destination_run_name"
+LAST_LEG_RUN_NAME_FRIENDLY = "last leg run name"
+LAST_LEG_TRANSPORT_TYPE_SENSOR = "destination_transport_type"
+LAST_LEG_TRANSPORT_TYPE_FRIENDLY = "last leg transport type"
+LAST_LEG_TRANSPORT_NAME_SENSOR = "destination_transport_name"
+LAST_LEG_TRANSPORT_NAME_FRIENDLY = "last leg transport name"
+LAST_LEG_OCCUPANCY_SENSOR = "destination_occupancy"
+LAST_LEG_OCCUPANCY_FRIENDLY = "last leg occupancy"
+LAST_LEG_OCCUPANCY_DETAIL_SENSOR = "destination_occupancy_detail"
+LAST_LEG_OCCUPANCY_DETAIL_FRIENDLY = "last leg occupancy detail"
+LAST_LEG_TRAIN_SET_SENSOR = "destination_train_set"
+LAST_LEG_TRAIN_SET_FRIENDLY = "last leg vehicle set"
+INCLUDE_REALTIME_LOCATION = "include_realtime_location"
+SENSOR_CREATION = "sensor_creation"
+ORIGIN_END_OF_LINE = "origin_end_of_line"
+DESTINATION_END_OF_LINE = "destination_end_of_line"
 
 ORIGIN_TRANSPORT_TYPE_LIST = [
     "Train",
@@ -160,12 +148,10 @@ ATTR_CHANGES_LIST = "changes_list"
 ATTR_LOCATIONS_LIST = "locations_list"
 
 # Sensor defaults
-DEFAULT_CREATE_REVERSE_TRIP = False
 DEFAULT_FIRST_LEG_DEVICE_TRACKER = "never"
 DEFAULT_LAST_LEG_DEVICE_TRACKER = "never"
 DEFAULT_ORIGIN_DEVICE_TRACKER = "if_device_tracker_journey"
 DEFAULT_DESTINATION_DEVICE_TRACKER = "never"
-DEFAULT_TRIP_WAIT_TIME = 10
 DEFAULT_TRANSPORT_TYPE_SELECTOR = ["Train", "Metro", "Light rail", "Bus", "Ferry"]
 DEFAULT_TRANSPORT_TYPE = ["1", "2", "4", "5", "9"]
 DEFAULT_RUN_FILTER = ""
@@ -258,12 +244,6 @@ JOURNEY_ICONS = {
     None: "mdi:train",
 }
 
-DEVICE_TRACKER_LOOKUPS = {
-    CONF_FIRST_LEG_DEVICE_TRACKER: "first leg vehicle",
-    CONF_LAST_LEG_DEVICE_TRACKER: "last leg vehicle",
-    CONF_ORIGIN_DEVICE_TRACKER: "first stop",
-    CONF_DESTINATION_DEVICE_TRACKER: "last stop",
-}
 
 # Oh I wish TfNSW would be more consistent with their constants...
 OCCUPANCY_ICONS = {
@@ -288,7 +268,6 @@ OCCUPANCY_DETAIL_GLYPHS = {
 }
 
 TRANSPORT_TYPE = {
-    #    0:   "All",
     1: "Train",
     2: "Metro",
     4: "Light rail",
