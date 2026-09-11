@@ -26,70 +26,70 @@ from homeassistant.util import dt as dt_util
 from . import TransportNSWConfigEntry
 from .const import (
     ALERT_PRIORITIES,
-    API_CALLS,
-    API_CALLS_NAME,
-    AVERAGE_API_CALLS,
-    AVERAGE_API_CALLS_NAME,
-    CONF_ALERTS_FRIENDLY,
-    CONF_ALERTS_SENSOR,
-    CONF_CHANGES_FRIENDLY,
-    CONF_CHANGES_SENSOR,
-    CONF_DELAY_FRIENDLY,
-    CONF_DELAY_SENSOR,
-    CONF_DESTINATION_DETAIL_FRIENDLY,
-    CONF_DESTINATION_DETAIL_SENSOR,
+    API_CALLS_SENSOR,
+    API_CALLS_FRIENDLY,
+    AVERAGE_API_CALLS_SENSOR,
+    AVERAGE_API_CALLS_FRIENDLY,
+    ALERTS_FRIENDLY,
+    ALERTS_SENSOR,
+    CHANGES_FRIENDLY,
+    CHANGES_SENSOR,
+    DELAY_FRIENDLY,
+    DELAY_SENSOR,
+    DESTINATION_DETAIL_FRIENDLY,
+    DESTINATION_DETAIL_SENSOR,
     CONF_DESTINATION_ID,
     CONF_DESTINATION_NAME,
-    CONF_DESTINATION_NAME_FRIENDLY,
-    CONF_DESTINATION_NAME_SENSOR,
-    CONF_DUE_FRIENDLY,
-    CONF_DUE_SENSOR,
-    CONF_DURATION_FRIENDLY,
-    CONF_DURATION_SENSOR,
-    CONF_FIRST_LEG_DEPARTURE_TIME_FRIENDLY,
-    CONF_FIRST_LEG_DEPARTURE_TIME_SENSOR,
-    CONF_FIRST_LEG_LINE_NAME_FRIENDLY,
-    CONF_FIRST_LEG_LINE_NAME_SENSOR,
-    CONF_FIRST_LEG_LINE_NAME_SHORT_FRIENDLY,
-    CONF_FIRST_LEG_LINE_NAME_SHORT_SENSOR,
-    CONF_FIRST_LEG_OCCUPANCY_DETAIL_FRIENDLY,
-    CONF_FIRST_LEG_OCCUPANCY_DETAIL_SENSOR,
-    CONF_FIRST_LEG_OCCUPANCY_FRIENDLY,
-    CONF_FIRST_LEG_OCCUPANCY_SENSOR,
-    CONF_FIRST_LEG_RUN_NAME_FRIENDLY,
-    CONF_FIRST_LEG_RUN_NAME_SENSOR,
-    CONF_FIRST_LEG_TRAIN_SET_FRIENDLY,
-    CONF_FIRST_LEG_TRAIN_SET_SENSOR,
-    CONF_FIRST_LEG_TRANSPORT_NAME_FRIENDLY,
-    CONF_FIRST_LEG_TRANSPORT_NAME_SENSOR,
-    CONF_FIRST_LEG_TRANSPORT_TYPE_FRIENDLY,
-    CONF_FIRST_LEG_TRANSPORT_TYPE_SENSOR,
-    CONF_LAST_LEG_ARRIVAL_TIME_FRIENDLY,
-    CONF_LAST_LEG_ARRIVAL_TIME_SENSOR,
-    CONF_LAST_LEG_LINE_NAME_FRIENDLY,
-    CONF_LAST_LEG_LINE_NAME_SENSOR,
-    CONF_LAST_LEG_LINE_NAME_SHORT_FRIENDLY,
-    CONF_LAST_LEG_LINE_NAME_SHORT_SENSOR,
-    CONF_LAST_LEG_OCCUPANCY_DETAIL_FRIENDLY,
-    CONF_LAST_LEG_OCCUPANCY_DETAIL_SENSOR,
-    CONF_LAST_LEG_OCCUPANCY_FRIENDLY,
-    CONF_LAST_LEG_OCCUPANCY_SENSOR,
-    CONF_LAST_LEG_RUN_NAME_FRIENDLY,
-    CONF_LAST_LEG_RUN_NAME_SENSOR,
-    CONF_LAST_LEG_TRAIN_SET_FRIENDLY,
-    CONF_LAST_LEG_TRAIN_SET_SENSOR,
-    CONF_LAST_LEG_TRANSPORT_NAME_FRIENDLY,
-    CONF_LAST_LEG_TRANSPORT_NAME_SENSOR,
-    CONF_LAST_LEG_TRANSPORT_TYPE_FRIENDLY,
-    CONF_LAST_LEG_TRANSPORT_TYPE_SENSOR,
-    CONF_ORIGIN_DETAIL_FRIENDLY,
-    CONF_ORIGIN_DETAIL_SENSOR,
+    DESTINATION_NAME_FRIENDLY,
+    DESTINATION_NAME_SENSOR,
+    DUE_FRIENDLY,
+    DUE_SENSOR,
+    DURATION_FRIENDLY,
+    DURATION_SENSOR,
+    FIRST_LEG_DEPARTURE_TIME_FRIENDLY,
+    FIRST_LEG_DEPARTURE_TIME_SENSOR,
+    FIRST_LEG_LINE_NAME_FRIENDLY,
+    FIRST_LEG_LINE_NAME_SENSOR,
+    FIRST_LEG_LINE_NAME_SHORT_FRIENDLY,
+    FIRST_LEG_LINE_NAME_SHORT_SENSOR,
+    FIRST_LEG_OCCUPANCY_DETAIL_FRIENDLY,
+    FIRST_LEG_OCCUPANCY_DETAIL_SENSOR,
+    FIRST_LEG_OCCUPANCY_FRIENDLY,
+    FIRST_LEG_OCCUPANCY_SENSOR,
+    FIRST_LEG_RUN_NAME_FRIENDLY,
+    FIRST_LEG_RUN_NAME_SENSOR,
+    FIRST_LEG_TRAIN_SET_FRIENDLY,
+    FIRST_LEG_TRAIN_SET_SENSOR,
+    FIRST_LEG_TRANSPORT_NAME_FRIENDLY,
+    FIRST_LEG_TRANSPORT_NAME_SENSOR,
+    FIRST_LEG_TRANSPORT_TYPE_FRIENDLY,
+    FIRST_LEG_TRANSPORT_TYPE_SENSOR,
+    LAST_LEG_ARRIVAL_TIME_FRIENDLY,
+    LAST_LEG_ARRIVAL_TIME_SENSOR,
+    LAST_LEG_LINE_NAME_FRIENDLY,
+    LAST_LEG_LINE_NAME_SENSOR,
+    LAST_LEG_LINE_NAME_SHORT_FRIENDLY,
+    LAST_LEG_LINE_NAME_SHORT_SENSOR,
+    LAST_LEG_OCCUPANCY_DETAIL_FRIENDLY,
+    LAST_LEG_OCCUPANCY_DETAIL_SENSOR,
+    LAST_LEG_OCCUPANCY_FRIENDLY,
+    LAST_LEG_OCCUPANCY_SENSOR,
+    LAST_LEG_RUN_NAME_FRIENDLY,
+    LAST_LEG_RUN_NAME_SENSOR,
+    LAST_LEG_TRAIN_SET_FRIENDLY,
+    LAST_LEG_TRAIN_SET_SENSOR,
+    LAST_LEG_TRANSPORT_NAME_FRIENDLY,
+    LAST_LEG_TRANSPORT_NAME_SENSOR,
+    LAST_LEG_TRANSPORT_TYPE_FRIENDLY,
+    LAST_LEG_TRANSPORT_TYPE_SENSOR,
+    ORIGIN_DETAIL_FRIENDLY,
+    ORIGIN_DETAIL_SENSOR,
     CONF_ORIGIN_ID,
     CONF_ORIGIN_NAME,
-    CONF_ORIGIN_NAME_FRIENDLY,
-    CONF_ORIGIN_NAME_SENSOR,
-    CONF_POLLING_FRIENDLY,
-    CONF_POLLING_SENSOR,
+    ORIGIN_NAME_FRIENDLY,
+    ORIGIN_NAME_SENSOR,
+    POLLING_FRIENDLY,
+    POLLING_SENSOR,
     CONF_TRIPS_TO_CREATE,
     DOMAIN,
     JOURNEY_ICONS,
@@ -202,29 +202,29 @@ ENTRY_SENSORS: tuple[TransportNSWSensorEntityDescription, ...] = (
 # Subentry-level sensor definitions
 SUBENTRY_SENSORS: tuple[TransportNSWSensorEntityDescription, ...] = (
     TransportNSWSensorEntityDescription(
-        key=CONF_DUE_SENSOR,
-        name=CONF_DUE_FRIENDLY,
+        key=DUE_SENSOR,
+        name=DUE_FRIENDLY,
         icon="mdi:clock-outline",
         native_unit_of_measurement=UnitOfTime.MINUTES,
         state_path="due",
     ),
     TransportNSWSensorEntityDescription(
-        key=CONF_POLLING_SENSOR,
-        name=CONF_POLLING_FRIENDLY,
+        key=POLLING_SENSOR,
+        name=POLLING_FRIENDLY,
         icon="mdi:clock-check-outline",
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     TransportNSWSensorEntityDescription(
-        key=CONF_DURATION_SENSOR,
-        name=CONF_DURATION_FRIENDLY,
+        key=DURATION_SENSOR,
+        name=DURATION_FRIENDLY,
         icon="mdi:clock-end",
         native_unit_of_measurement=UnitOfTime.MINUTES,
         device_class=SensorDeviceClass.DURATION,  # NEW
         state_path="duration",
     ),
     TransportNSWSensorEntityDescription(
-        key=CONF_FIRST_LEG_DEPARTURE_TIME_SENSOR,
-        name=CONF_FIRST_LEG_DEPARTURE_TIME_FRIENDLY,
+        key=FIRST_LEG_DEPARTURE_TIME_SENSOR,
+        name=FIRST_LEG_DEPARTURE_TIME_FRIENDLY,
         icon="mdi:clock-outline",
         device_class=SensorDeviceClass.TIMESTAMP,
         state_fn=convert_date,
@@ -232,8 +232,8 @@ SUBENTRY_SENSORS: tuple[TransportNSWSensorEntityDescription, ...] = (
         entity_registry_enabled_default=False,
     ),
     TransportNSWSensorEntityDescription(
-        key=CONF_LAST_LEG_ARRIVAL_TIME_SENSOR,
-        name=CONF_LAST_LEG_ARRIVAL_TIME_FRIENDLY,
+        key=LAST_LEG_ARRIVAL_TIME_SENSOR,
+        name=LAST_LEG_ARRIVAL_TIME_FRIENDLY,
         icon="mdi:clock-outline",
         device_class=SensorDeviceClass.TIMESTAMP,
         state_fn=convert_date,
@@ -241,16 +241,16 @@ SUBENTRY_SENSORS: tuple[TransportNSWSensorEntityDescription, ...] = (
         entity_registry_enabled_default=False,
     ),
     TransportNSWSensorEntityDescription(
-        key=CONF_DELAY_SENSOR,
-        name=CONF_DELAY_FRIENDLY,
+        key=DELAY_SENSOR,
+        name=DELAY_FRIENDLY,
         icon="mdi:clock-alert-outline",
         native_unit_of_measurement=UnitOfTime.MINUTES,
         state_path="delay",
         entity_registry_enabled_default=False,
     ),
     TransportNSWSensorEntityDescription(
-        key=CONF_CHANGES_SENSOR,
-        name=CONF_CHANGES_FRIENDLY,
+        key=CHANGES_SENSOR,
+        name=CHANGES_FRIENDLY,
         icon="mdi:map-marker-path",
         native_unit_of_measurement="changes",
         state_path="changes",
@@ -259,51 +259,51 @@ SUBENTRY_SENSORS: tuple[TransportNSWSensorEntityDescription, ...] = (
         entity_registry_enabled_default=False,
     ),
     TransportNSWSensorEntityDescription(
-        key=CONF_ORIGIN_NAME_SENSOR,
-        name=CONF_ORIGIN_NAME_FRIENDLY,
+        key=ORIGIN_NAME_SENSOR,
+        name=ORIGIN_NAME_FRIENDLY,
         state_path="origin_detail.name",
         entity_registry_enabled_default=False,
     ),
     TransportNSWSensorEntityDescription(
-        key=CONF_ORIGIN_DETAIL_SENSOR,
-        name=CONF_ORIGIN_DETAIL_FRIENDLY,
+        key=ORIGIN_DETAIL_SENSOR,
+        name=ORIGIN_DETAIL_FRIENDLY,
         state_path="origin_detail.detail",
         entity_registry_enabled_default=False,
     ),
     TransportNSWSensorEntityDescription(
-        key=CONF_FIRST_LEG_RUN_NAME_SENSOR,
-        name=CONF_FIRST_LEG_RUN_NAME_FRIENDLY,
+        key=FIRST_LEG_RUN_NAME_SENSOR,
+        name=FIRST_LEG_RUN_NAME_FRIENDLY,
         state_path="origin_transport_detail.run_name",
         entity_registry_enabled_default=False,
     ),
     TransportNSWSensorEntityDescription(
-        key=CONF_FIRST_LEG_LINE_NAME_SENSOR,
-        name=CONF_FIRST_LEG_LINE_NAME_FRIENDLY,
+        key=FIRST_LEG_LINE_NAME_SENSOR,
+        name=FIRST_LEG_LINE_NAME_FRIENDLY,
         state_path="origin_transport_detail.line_name",
         entity_registry_enabled_default=False,
     ),
     TransportNSWSensorEntityDescription(
-        key=CONF_FIRST_LEG_LINE_NAME_SHORT_SENSOR,
-        name=CONF_FIRST_LEG_LINE_NAME_SHORT_FRIENDLY,
+        key=FIRST_LEG_LINE_NAME_SHORT_SENSOR,
+        name=FIRST_LEG_LINE_NAME_SHORT_FRIENDLY,
         state_path="origin_transport_detail.line_name_short",
         entity_registry_enabled_default=False,
     ),
     TransportNSWSensorEntityDescription(
-        key=CONF_FIRST_LEG_TRANSPORT_TYPE_SENSOR,
-        name=CONF_FIRST_LEG_TRANSPORT_TYPE_FRIENDLY,
+        key=FIRST_LEG_TRANSPORT_TYPE_SENSOR,
+        name=FIRST_LEG_TRANSPORT_TYPE_FRIENDLY,
         state_path="origin_transport_detail.type",
         entity_registry_enabled_default=False,
     ),
     TransportNSWSensorEntityDescription(
-        key=CONF_FIRST_LEG_TRANSPORT_NAME_SENSOR,
-        name=CONF_FIRST_LEG_TRANSPORT_NAME_FRIENDLY,
+        key=FIRST_LEG_TRANSPORT_NAME_SENSOR,
+        name=FIRST_LEG_TRANSPORT_NAME_FRIENDLY,
         state_path="origin_transport_detail.provider_name",
         entity_registry_enabled_default=False,
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     TransportNSWSensorEntityDescription(
-        key=CONF_FIRST_LEG_OCCUPANCY_SENSOR,
-        name=CONF_FIRST_LEG_OCCUPANCY_FRIENDLY,
+        key=FIRST_LEG_OCCUPANCY_SENSOR,
+        name=FIRST_LEG_OCCUPANCY_FRIENDLY,
         state_fn=get_occupancy_friendly,
         state_path="origin_transport_detail.occupancy",
         attrs_path=["origin_transport_detail.carriage_detail"],
@@ -311,8 +311,8 @@ SUBENTRY_SENSORS: tuple[TransportNSWSensorEntityDescription, ...] = (
         entity_registry_enabled_default=False,
     ),
     TransportNSWSensorEntityDescription(
-        key=CONF_FIRST_LEG_OCCUPANCY_DETAIL_SENSOR,
-        name=CONF_FIRST_LEG_OCCUPANCY_DETAIL_FRIENDLY,
+        key=FIRST_LEG_OCCUPANCY_DETAIL_SENSOR,
+        name=FIRST_LEG_OCCUPANCY_DETAIL_FRIENDLY,
         state_fn=get_occupancy_detail,
         state_path="origin_transport_detail.carriage_detail",
         attrs_path=["origin_transport_detail.carriage_detail"],
@@ -320,58 +320,58 @@ SUBENTRY_SENSORS: tuple[TransportNSWSensorEntityDescription, ...] = (
         entity_registry_enabled_default=False,
     ),
     TransportNSWSensorEntityDescription(
-        key=CONF_FIRST_LEG_TRAIN_SET_SENSOR,
-        name=CONF_FIRST_LEG_TRAIN_SET_FRIENDLY,
+        key=FIRST_LEG_TRAIN_SET_SENSOR,
+        name=FIRST_LEG_TRAIN_SET_FRIENDLY,
         state_path="origin_transport_detail.vehicle_set",
         entity_registry_enabled_default=False,
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     TransportNSWSensorEntityDescription(
-        key=CONF_DESTINATION_NAME_SENSOR,
-        name=CONF_DESTINATION_NAME_FRIENDLY,
+        key=DESTINATION_NAME_SENSOR,
+        name=DESTINATION_NAME_FRIENDLY,
         state_path="destination_detail.name",
         entity_registry_enabled_default=False,
     ),
     TransportNSWSensorEntityDescription(
-        key=CONF_DESTINATION_DETAIL_SENSOR,
-        name=CONF_DESTINATION_DETAIL_FRIENDLY,
+        key=DESTINATION_DETAIL_SENSOR,
+        name=DESTINATION_DETAIL_FRIENDLY,
         state_path="destination_detail.detail",
         entity_registry_enabled_default=False,
     ),
     TransportNSWSensorEntityDescription(
-        key=CONF_LAST_LEG_RUN_NAME_SENSOR,
-        name=CONF_LAST_LEG_RUN_NAME_FRIENDLY,
+        key=LAST_LEG_RUN_NAME_SENSOR,
+        name=LAST_LEG_RUN_NAME_FRIENDLY,
         state_path="destination_transport_detail.run_name",
         entity_registry_enabled_default=False,
     ),
     TransportNSWSensorEntityDescription(
-        key=CONF_LAST_LEG_LINE_NAME_SENSOR,
-        name=CONF_LAST_LEG_LINE_NAME_FRIENDLY,
+        key=LAST_LEG_LINE_NAME_SENSOR,
+        name=LAST_LEG_LINE_NAME_FRIENDLY,
         state_path="destination_transport_detail.line_name",
         entity_registry_enabled_default=False,
     ),
     TransportNSWSensorEntityDescription(
-        key=CONF_LAST_LEG_LINE_NAME_SHORT_SENSOR,
-        name=CONF_LAST_LEG_LINE_NAME_SHORT_FRIENDLY,
+        key=LAST_LEG_LINE_NAME_SHORT_SENSOR,
+        name=LAST_LEG_LINE_NAME_SHORT_FRIENDLY,
         state_path="destination_transport_detail.line_name_short",
         entity_registry_enabled_default=False,
     ),
     TransportNSWSensorEntityDescription(
-        key=CONF_LAST_LEG_TRANSPORT_TYPE_SENSOR,
-        name=CONF_LAST_LEG_TRANSPORT_TYPE_FRIENDLY,
+        key=LAST_LEG_TRANSPORT_TYPE_SENSOR,
+        name=LAST_LEG_TRANSPORT_TYPE_FRIENDLY,
         state_path="destination_transport_detail.type",
         entity_registry_enabled_default=False,
     ),
     TransportNSWSensorEntityDescription(
-        key=CONF_LAST_LEG_TRANSPORT_NAME_SENSOR,
-        name=CONF_LAST_LEG_TRANSPORT_NAME_FRIENDLY,
+        key=LAST_LEG_TRANSPORT_NAME_SENSOR,
+        name=LAST_LEG_TRANSPORT_NAME_FRIENDLY,
         state_path="destination_transport_detail.provider_name",
         entity_registry_enabled_default=False,
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     TransportNSWSensorEntityDescription(
-        key=CONF_LAST_LEG_OCCUPANCY_SENSOR,
-        name=CONF_LAST_LEG_OCCUPANCY_FRIENDLY,
+        key=LAST_LEG_OCCUPANCY_SENSOR,
+        name=LAST_LEG_OCCUPANCY_FRIENDLY,
         state_fn=get_occupancy_friendly,
         state_path="destination_transport_detail.occupancy",
         attrs_path=["destination_transport_detail.carriage_detail"],
@@ -379,8 +379,8 @@ SUBENTRY_SENSORS: tuple[TransportNSWSensorEntityDescription, ...] = (
         entity_registry_enabled_default=False,
     ),
     TransportNSWSensorEntityDescription(
-        key=CONF_LAST_LEG_OCCUPANCY_DETAIL_SENSOR,
-        name=CONF_LAST_LEG_OCCUPANCY_DETAIL_FRIENDLY,
+        key=LAST_LEG_OCCUPANCY_DETAIL_SENSOR,
+        name=LAST_LEG_OCCUPANCY_DETAIL_FRIENDLY,
         state_fn=get_occupancy_detail,
         state_path="destination_transport_detail.carriage_detail",
         attrs_path=["destination_transport_detail.carriage_detail"],
@@ -388,15 +388,15 @@ SUBENTRY_SENSORS: tuple[TransportNSWSensorEntityDescription, ...] = (
         entity_registry_enabled_default=False,
     ),
     TransportNSWSensorEntityDescription(
-        key=CONF_LAST_LEG_TRAIN_SET_SENSOR,
-        name=CONF_LAST_LEG_TRAIN_SET_FRIENDLY,
+        key=LAST_LEG_TRAIN_SET_SENSOR,
+        name=LAST_LEG_TRAIN_SET_FRIENDLY,
         state_path="destination_transport_detail.vehicle_set",
         entity_registry_enabled_default=False,
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     TransportNSWSensorEntityDescription(
-        key=CONF_ALERTS_SENSOR,
-        name=CONF_ALERTS_FRIENDLY,
+        key=ALERTS_SENSOR,
+        name=ALERTS_FRIENDLY,
         icon="mdi:alert-outline",
         state_fn=get_highest_alert,
         state_path="alerts",
@@ -509,7 +509,7 @@ class TransportNSWSensor(CoordinatorEntity, SensorEntity):
         self._attr_name = f"{description.name} ({self.api_short})"
 
     @callback
-    def _handle_coordinator_update(self) -> None:
+    def _handle_coordinator_update(self) -> None:  #TODO - do we even need this if we're inheriting from DataUpdateCoordinatorEntity?
         """Update sensor with latest data from coordinator."""
         # This method is called by the DataUpdateCoordinator when a successful update runs.
         self.async_write_ha_state()
@@ -579,22 +579,10 @@ class TransportNSWSubentrySensor(CoordinatorEntity, SensorEntity):
         self.sensor_suffix = sensor_suffix
         self.device_identifier = device_identifier
 
-        # Cater for migrated entries with a different naming convention
-        if CONF_NAME not in subentry.data or subentry.data[CONF_NAME] == "":
-            # Use the new naming convention
-            self._attr_name = f"{subentry.data[CONF_ORIGIN_NAME]} to {subentry.data[CONF_DESTINATION_NAME]}{device_suffix} {description.name}"
-            self._attr_unique_id = f"{subentry.subentry_id}_{description.key}_{index}"
-        else:
-            # Use the migrated sensor naming convention
-            if description.key == CONF_DUE_SENSOR:
-                # A special case - don't append the description to the end
-                self._attr_name = f"{subentry.data[CONF_NAME]}{migration_suffix}"
-            else:
-                self._attr_name = (
-                    f"{subentry.data[CONF_NAME]}{migration_suffix} {description.name}"
-                )
-
-            self._attr_unique_id = self._attr_name
+        # Use the new naming convention
+        self._attr_name = f"{subentry.data[CONF_ORIGIN_NAME]} to {subentry.data[CONF_DESTINATION_NAME]}{device_suffix} {description.name}"
+        self._attr_unique_id = f"{subentry.subentry_id}_{description.key}_{index}"
+        self._attr_unique_id = self._attr_name
 
     @callback
     def _handle_coordinator_update(self) -> None:
@@ -623,7 +611,7 @@ class TransportNSWSubentrySensor(CoordinatorEntity, SensorEntity):
         """Return the state of the entity."""
 
         # The 'polling' sensor is a special case - it doesn't require access to journey_data
-        if self.entity_description.key == CONF_POLLING_SENSOR:
+        if self.entity_description.key == POLLING_SENSOR:
             is_polling, next_change = within_poll_time(self.subentry)
             if is_polling:
                 return (
@@ -661,7 +649,7 @@ class TransportNSWSubentrySensor(CoordinatorEntity, SensorEntity):
     @property
     def icon(self) -> str:
         # The 'polling' sensor is a special case - it doesn't require access to journey_data
-        if self.entity_description.key == CONF_POLLING_SENSOR:
+        if self.entity_description.key == POLLING_SENSOR:
             is_polling = within_poll_time(self.subentry)[0]
             return (
                 "mdi:clock-check-outline" if is_polling else "mdi:clock-remove-outline"
@@ -682,8 +670,8 @@ class TransportNSWSubentrySensor(CoordinatorEntity, SensorEntity):
                 )
 
             if self.entity_description.key in [
-                CONF_FIRST_LEG_OCCUPANCY_SENSOR,
-                CONF_FIRST_LEG_OCCUPANCY_DETAIL_SENSOR,
+                FIRST_LEG_OCCUPANCY_SENSOR,
+                FIRST_LEG_OCCUPANCY_DETAIL_SENSOR,
             ]:
                 occupancy = extract_from_hierarchy(
                     obj=journey_data, path="origin_transport_detail.occupancy"
@@ -693,8 +681,8 @@ class TransportNSWSubentrySensor(CoordinatorEntity, SensorEntity):
                 )[0]
 
             elif self.entity_description.key in [
-                CONF_LAST_LEG_OCCUPANCY_SENSOR,
-                CONF_LAST_LEG_OCCUPANCY_DETAIL_SENSOR,
+                LAST_LEG_OCCUPANCY_SENSOR,
+                LAST_LEG_OCCUPANCY_DETAIL_SENSOR,
             ]:
                 occupancy = extract_from_hierarchy(
                     obj=journey_data, path="destination_transport_detail.occupancy"
@@ -715,7 +703,7 @@ class TransportNSWSubentrySensor(CoordinatorEntity, SensorEntity):
     def available(self) -> bool:
         """Return if entity is available - basically check to see if there's data where it should be"""
         # The 'polling' sensor is a special case - it doesn't require access to journey_data
-        if self.entity_description.key == CONF_POLLING_SENSOR:
+        if self.entity_description.key == POLLING_SENSOR:
             return True
 
         journey_data = get_journey_data(
