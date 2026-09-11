@@ -16,7 +16,7 @@ from homeassistant.components.sensor import (
 from homeassistant.config_entries import ConfigSubentry
 from homeassistant.const import CONF_API_KEY, CONF_NAME, EntityCategory, UnitOfTime
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.helpers import device_registry as dr, entity_registry as er
+from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.typing import StateType
@@ -180,7 +180,7 @@ class TransportNSWSensorEntityDescription(SensorEntityDescription):
 
 
 # Config_entry-level sensor definitions
-DEFAULT_ENTRY_SENSORS: tuple[TransportNSWSensorEntityDescription, ...] = (
+ENTRY_SENSORS: tuple[TransportNSWSensorEntityDescription, ...] = (
     TransportNSWSensorEntityDescription(
         key=API_CALLS,
         name=API_CALLS_NAME,
@@ -199,8 +199,8 @@ DEFAULT_ENTRY_SENSORS: tuple[TransportNSWSensorEntityDescription, ...] = (
     ),
 )
 
-# Default subentry-level sensor definitions
-DEFAULT_SUBENTRY_SENSORS: tuple[TransportNSWSensorEntityDescription, ...] = (
+# Subentry-level sensor definitions
+SUBENTRY_SENSORS: tuple[TransportNSWSensorEntityDescription, ...] = (
     TransportNSWSensorEntityDescription(
         key=CONF_DUE_SENSOR,
         name=CONF_DUE_FRIENDLY,
@@ -214,33 +214,6 @@ DEFAULT_SUBENTRY_SENSORS: tuple[TransportNSWSensorEntityDescription, ...] = (
         icon="mdi:clock-check-outline",
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
-)
-
-# Optional sensor definitions
-TIME_AND_CHANGE_SENSORS: tuple[TransportNSWSensorEntityDescription, ...] = (
-    TransportNSWSensorEntityDescription(
-        key=CONF_FIRST_LEG_DEPARTURE_TIME_SENSOR,
-        name=CONF_FIRST_LEG_DEPARTURE_TIME_FRIENDLY,
-        icon="mdi:clock-outline",
-        device_class=SensorDeviceClass.TIMESTAMP,
-        state_fn=convert_date,
-        state_path="origin_detail.departure_time",
-    ),
-    TransportNSWSensorEntityDescription(
-        key=CONF_LAST_LEG_ARRIVAL_TIME_SENSOR,
-        name=CONF_LAST_LEG_ARRIVAL_TIME_FRIENDLY,
-        icon="mdi:clock-outline",
-        device_class=SensorDeviceClass.TIMESTAMP,
-        state_fn=convert_date,
-        state_path="destination_detail.arrival_time",
-    ),
-    TransportNSWSensorEntityDescription(
-        key=CONF_DELAY_SENSOR,
-        name=CONF_DELAY_FRIENDLY,
-        icon="mdi:clock-alert-outline",
-        native_unit_of_measurement=UnitOfTime.MINUTES,
-        state_path="delay",
-    ),
     TransportNSWSensorEntityDescription(
         key=CONF_DURATION_SENSOR,
         name=CONF_DURATION_FRIENDLY,
@@ -250,6 +223,32 @@ TIME_AND_CHANGE_SENSORS: tuple[TransportNSWSensorEntityDescription, ...] = (
         state_path="duration",
     ),
     TransportNSWSensorEntityDescription(
+        key=CONF_FIRST_LEG_DEPARTURE_TIME_SENSOR,
+        name=CONF_FIRST_LEG_DEPARTURE_TIME_FRIENDLY,
+        icon="mdi:clock-outline",
+        device_class=SensorDeviceClass.TIMESTAMP,
+        state_fn=convert_date,
+        state_path="origin_detail.departure_time",
+        entity_registry_enabled_default=False,
+    ),
+    TransportNSWSensorEntityDescription(
+        key=CONF_LAST_LEG_ARRIVAL_TIME_SENSOR,
+        name=CONF_LAST_LEG_ARRIVAL_TIME_FRIENDLY,
+        icon="mdi:clock-outline",
+        device_class=SensorDeviceClass.TIMESTAMP,
+        state_fn=convert_date,
+        state_path="destination_detail.arrival_time",
+        entity_registry_enabled_default=False,
+    ),
+    TransportNSWSensorEntityDescription(
+        key=CONF_DELAY_SENSOR,
+        name=CONF_DELAY_FRIENDLY,
+        icon="mdi:clock-alert-outline",
+        native_unit_of_measurement=UnitOfTime.MINUTES,
+        state_path="delay",
+        entity_registry_enabled_default=False,
+    ),
+    TransportNSWSensorEntityDescription(
         key=CONF_CHANGES_SENSOR,
         name=CONF_CHANGES_FRIENDLY,
         icon="mdi:map-marker-path",
@@ -257,44 +256,50 @@ TIME_AND_CHANGE_SENSORS: tuple[TransportNSWSensorEntityDescription, ...] = (
         state_path="changes",
         attrs_path=["changes_simple", "stop_list"],
         attrs_friendly=["stops", "detailed_stops"],
+        entity_registry_enabled_default=False,
     ),
-)
-
-ORIGIN_SENSORS: tuple[TransportNSWSensorEntityDescription, ...] = (
     TransportNSWSensorEntityDescription(
         key=CONF_ORIGIN_NAME_SENSOR,
         name=CONF_ORIGIN_NAME_FRIENDLY,
         state_path="origin_detail.name",
+        entity_registry_enabled_default=False,
     ),
     TransportNSWSensorEntityDescription(
         key=CONF_ORIGIN_DETAIL_SENSOR,
         name=CONF_ORIGIN_DETAIL_FRIENDLY,
         state_path="origin_detail.detail",
+        entity_registry_enabled_default=False,
     ),
     TransportNSWSensorEntityDescription(
         key=CONF_FIRST_LEG_RUN_NAME_SENSOR,
         name=CONF_FIRST_LEG_RUN_NAME_FRIENDLY,
         state_path="origin_transport_detail.run_name",
+        entity_registry_enabled_default=False,
     ),
     TransportNSWSensorEntityDescription(
         key=CONF_FIRST_LEG_LINE_NAME_SENSOR,
         name=CONF_FIRST_LEG_LINE_NAME_FRIENDLY,
         state_path="origin_transport_detail.line_name",
+        entity_registry_enabled_default=False,
     ),
     TransportNSWSensorEntityDescription(
         key=CONF_FIRST_LEG_LINE_NAME_SHORT_SENSOR,
         name=CONF_FIRST_LEG_LINE_NAME_SHORT_FRIENDLY,
         state_path="origin_transport_detail.line_name_short",
+        entity_registry_enabled_default=False,
     ),
     TransportNSWSensorEntityDescription(
         key=CONF_FIRST_LEG_TRANSPORT_TYPE_SENSOR,
         name=CONF_FIRST_LEG_TRANSPORT_TYPE_FRIENDLY,
         state_path="origin_transport_detail.type",
+        entity_registry_enabled_default=False,
     ),
     TransportNSWSensorEntityDescription(
         key=CONF_FIRST_LEG_TRANSPORT_NAME_SENSOR,
         name=CONF_FIRST_LEG_TRANSPORT_NAME_FRIENDLY,
         state_path="origin_transport_detail.provider_name",
+        entity_registry_enabled_default=False,
+        entity_category=EntityCategory.DIAGNOSTIC,
     ),
     TransportNSWSensorEntityDescription(
         key=CONF_FIRST_LEG_OCCUPANCY_SENSOR,
@@ -303,6 +308,7 @@ ORIGIN_SENSORS: tuple[TransportNSWSensorEntityDescription, ...] = (
         state_path="origin_transport_detail.occupancy",
         attrs_path=["origin_transport_detail.carriage_detail"],
         attrs_friendly=["occupancy_detail"],
+        entity_registry_enabled_default=False,
     ),
     TransportNSWSensorEntityDescription(
         key=CONF_FIRST_LEG_OCCUPANCY_DETAIL_SENSOR,
@@ -311,49 +317,57 @@ ORIGIN_SENSORS: tuple[TransportNSWSensorEntityDescription, ...] = (
         state_path="origin_transport_detail.carriage_detail",
         attrs_path=["origin_transport_detail.carriage_detail"],
         attrs_friendly=["occupancy_detail"],
+        entity_registry_enabled_default=False,
     ),
     TransportNSWSensorEntityDescription(
         key=CONF_FIRST_LEG_TRAIN_SET_SENSOR,
         name=CONF_FIRST_LEG_TRAIN_SET_FRIENDLY,
         state_path="origin_transport_detail.vehicle_set",
+        entity_registry_enabled_default=False,
+        entity_category=EntityCategory.DIAGNOSTIC,
     ),
-)
-
-DESTINATION_SENSORS: tuple[TransportNSWSensorEntityDescription, ...] = (
     TransportNSWSensorEntityDescription(
         key=CONF_DESTINATION_NAME_SENSOR,
         name=CONF_DESTINATION_NAME_FRIENDLY,
         state_path="destination_detail.name",
+        entity_registry_enabled_default=False,
     ),
     TransportNSWSensorEntityDescription(
         key=CONF_DESTINATION_DETAIL_SENSOR,
         name=CONF_DESTINATION_DETAIL_FRIENDLY,
         state_path="destination_detail.detail",
+        entity_registry_enabled_default=False,
     ),
     TransportNSWSensorEntityDescription(
         key=CONF_LAST_LEG_RUN_NAME_SENSOR,
         name=CONF_LAST_LEG_RUN_NAME_FRIENDLY,
         state_path="destination_transport_detail.run_name",
+        entity_registry_enabled_default=False,
     ),
     TransportNSWSensorEntityDescription(
         key=CONF_LAST_LEG_LINE_NAME_SENSOR,
         name=CONF_LAST_LEG_LINE_NAME_FRIENDLY,
         state_path="destination_transport_detail.line_name",
+        entity_registry_enabled_default=False,
     ),
     TransportNSWSensorEntityDescription(
         key=CONF_LAST_LEG_LINE_NAME_SHORT_SENSOR,
         name=CONF_LAST_LEG_LINE_NAME_SHORT_FRIENDLY,
         state_path="destination_transport_detail.line_name_short",
+        entity_registry_enabled_default=False,
     ),
     TransportNSWSensorEntityDescription(
         key=CONF_LAST_LEG_TRANSPORT_TYPE_SENSOR,
         name=CONF_LAST_LEG_TRANSPORT_TYPE_FRIENDLY,
         state_path="destination_transport_detail.type",
+        entity_registry_enabled_default=False,
     ),
     TransportNSWSensorEntityDescription(
         key=CONF_LAST_LEG_TRANSPORT_NAME_SENSOR,
         name=CONF_LAST_LEG_TRANSPORT_NAME_FRIENDLY,
         state_path="destination_transport_detail.provider_name",
+        entity_registry_enabled_default=False,
+        entity_category=EntityCategory.DIAGNOSTIC,
     ),
     TransportNSWSensorEntityDescription(
         key=CONF_LAST_LEG_OCCUPANCY_SENSOR,
@@ -362,6 +376,7 @@ DESTINATION_SENSORS: tuple[TransportNSWSensorEntityDescription, ...] = (
         state_path="destination_transport_detail.occupancy",
         attrs_path=["destination_transport_detail.carriage_detail"],
         attrs_friendly=["occupancy_detail"],
+        entity_registry_enabled_default=False,
     ),
     TransportNSWSensorEntityDescription(
         key=CONF_LAST_LEG_OCCUPANCY_DETAIL_SENSOR,
@@ -370,15 +385,15 @@ DESTINATION_SENSORS: tuple[TransportNSWSensorEntityDescription, ...] = (
         state_path="destination_transport_detail.carriage_detail",
         attrs_path=["destination_transport_detail.carriage_detail"],
         attrs_friendly=["occupancy_detail"],
+        entity_registry_enabled_default=False,
     ),
     TransportNSWSensorEntityDescription(
         key=CONF_LAST_LEG_TRAIN_SET_SENSOR,
         name=CONF_LAST_LEG_TRAIN_SET_FRIENDLY,
         state_path="destination_transport_detail.vehicle_set",
+        entity_registry_enabled_default=False,
+        entity_category=EntityCategory.DIAGNOSTIC,
     ),
-)
-
-ALERT_SENSORS: tuple[TransportNSWSensorEntityDescription, ...] = (
     TransportNSWSensorEntityDescription(
         key=CONF_ALERTS_SENSOR,
         name=CONF_ALERTS_FRIENDLY,
@@ -387,6 +402,7 @@ ALERT_SENSORS: tuple[TransportNSWSensorEntityDescription, ...] = (
         state_path="alerts",
         attrs_path="alerts",
         attrs_friendly="alerts",
+        entity_registry_enabled_default=False,
     ),
 )
 
@@ -400,10 +416,18 @@ async def async_setup_entry(
     # This gets the data update coordinator from the config entry runtime data as specified __init__.py
     coordinator: TransportNSWCoordinator = config_entry.runtime_data.coordinator
 
-    # Be ready to remove devices and sensors if required
+    # Be ready to remove devices if required - for example if this subentry used to have three trips but now it only has one
     device_reg = dr.async_get(hass)
-    entity_reg = er.async_get(hass)
 
+    # Create the config_entry sensors
+    configentry_sensors = [
+        TransportNSWSensor(coordinator, description, config_entry)
+        for description in ENTRY_SENSORS
+    ]
+
+    async_add_entities(configentry_sensors, update_before_add=False)
+
+    
     # Create the sub_entry sensors
     for subentry in config_entry.subentries.values():
         if subentry.subentry_type == SUBENTRY_TYPE_JOURNEY:
@@ -427,8 +451,9 @@ async def async_setup_entry(
                 if trip_index >= trips_to_create:
                     # We've finished creating sensors, now we need to start trying to delete sensors and devices
                     # that may have been created previously but that aren't needed any more
-
-                    # Removing the device will also remove the associated sensors!
+                    # I'd rather that we didn't just blindly try and remove devices without checking if they exist...
+                    # a future update will check first - more elegant?
+                    # Removing the device will also remove the associated sensors.
                     remove_device(
                         device_reg,
                         config_entry.entry_id,
@@ -438,8 +463,8 @@ async def async_setup_entry(
                         device_identifier,
                     )
                 else:
-                    # Define the default sensors for this trip
-                    sensors = [
+                    # These are the sensors for this subentry and specific journey index
+                    subentry_sensors = [
                         TransportNSWSubentrySensor(
                             coordinator,
                             description,
@@ -451,132 +476,14 @@ async def async_setup_entry(
                             migration_suffix,
                             device_identifier,
                         )
-                        for description in DEFAULT_SUBENTRY_SENSORS
+                        for description in SUBENTRY_SENSORS
                     ]
 
-                    # Now the optional sensors
-                    if "time_and_change_sensors" in subentry.data:
-                        for sensor in TIME_AND_CHANGE_SENSORS:
-                            if subentry.data["time_and_change_sensors"].get(
-                                sensor.key, False
-                            ):
-                                sensors.append(
-                                    TransportNSWSubentrySensor(
-                                        coordinator,
-                                        sensor,
-                                        subentry,
-                                        trip_index,
-                                        sensor_suffix,
-                                        name_suffix,
-                                        device_suffix,
-                                        migration_suffix,
-                                        device_identifier,
-                                    )
-                                )
-                            else:
-                                # Try and remove it - don't worry if it never existed
-                                remove_entity(
-                                    entity_reg,
-                                    config_entry.entry_id,
-                                    subentry.subentry_id,
-                                    trip_index,
-                                    sensor.key,
-                                )
-
-                    if "origin_sensors" in subentry.data:
-                        for sensor in ORIGIN_SENSORS:
-                            if subentry.data["origin_sensors"].get(sensor.key, False):
-                                sensors.append(
-                                    TransportNSWSubentrySensor(
-                                        coordinator,
-                                        sensor,
-                                        subentry,
-                                        trip_index,
-                                        sensor_suffix,
-                                        name_suffix,
-                                        device_suffix,
-                                        migration_suffix,
-                                        device_identifier,
-                                    )
-                                )
-                            else:
-                                # Try and remove it - don't worry if it never existed
-                                remove_entity(
-                                    entity_reg,
-                                    config_entry.entry_id,
-                                    subentry.subentry_id,
-                                    trip_index,
-                                    sensor.key,
-                                )
-
-                    if "destination_sensors" in subentry.data:
-                        for sensor in DESTINATION_SENSORS:
-                            if subentry.data["destination_sensors"].get(
-                                sensor.key, False
-                            ):
-                                sensors.append(
-                                    TransportNSWSubentrySensor(
-                                        coordinator,
-                                        sensor,
-                                        subentry,
-                                        trip_index,
-                                        sensor_suffix,
-                                        name_suffix,
-                                        device_suffix,
-                                        migration_suffix,
-                                        device_identifier,
-                                    )
-                                )
-                            else:
-                                # Try and remove it - don't worry if it never existed
-                                remove_entity(
-                                    entity_reg,
-                                    config_entry.entry_id,
-                                    subentry.subentry_id,
-                                    trip_index,
-                                    sensor.key,
-                                )
-
-                    for sensor in ALERT_SENSORS:
-                        if subentry.data.get(sensor.key, False):
-                            sensors.append(
-                                TransportNSWSubentrySensor(
-                                    coordinator,
-                                    sensor,
-                                    subentry,
-                                    trip_index,
-                                    sensor_suffix,
-                                    name_suffix,
-                                    device_suffix,
-                                    migration_suffix,
-                                    device_identifier,
-                                )
-                            )
-                        else:
-                            # Try and remove it - don't worry if it never existed
-                            remove_entity(
-                                entity_reg,
-                                config_entry.entry_id,
-                                subentry.subentry_id,
-                                trip_index,
-                                sensor.key,
-                            )
-
-                    # Create the subentry sensors, assuming there are any
-                    if len(sensors) > 0:
-                        async_add_entities(
-                            sensors,
-                            config_subentry_id=subentry.subentry_id,
-                            update_before_add=True,
-                        )
-
-    # Create the config_entry sensors
-    configentry_sensors = [
-        TransportNSWSensor(coordinator, description, config_entry)
-        for description in DEFAULT_ENTRY_SENSORS
-    ]
-
-    async_add_entities(configentry_sensors, update_before_add=True)
+                    async_add_entities(
+                        subentry_sensors,
+                        config_subentry_id=subentry.subentry_id,
+                        update_before_add=False,
+                    )
 
 
 class TransportNSWSensor(CoordinatorEntity, SensorEntity):
