@@ -508,12 +508,6 @@ class TransportNSWSensor(CoordinatorEntity, SensorEntity):
         self._attr_unique_id = f"{config_entry.entry_id}_{description.key}_0"
         self._attr_name = f"{description.name} ({self.api_short})"
 
-    @callback
-    def _handle_coordinator_update(self) -> None:  #TODO - do we even need this if we're inheriting from DataUpdateCoordinatorEntity?
-        """Update sensor with latest data from coordinator."""
-        # This method is called by the DataUpdateCoordinator when a successful update runs.
-        self.async_write_ha_state()
-
     @property
     def device_info(self) -> DeviceInfo:
         """Return device info for this sensor."""
@@ -584,11 +578,6 @@ class TransportNSWSubentrySensor(CoordinatorEntity, SensorEntity):
         self._attr_unique_id = f"{subentry.subentry_id}_{description.key}_{index}"
         self._attr_unique_id = self._attr_name
 
-    @callback
-    def _handle_coordinator_update(self) -> None:
-        """Update sensor with latest data from coordinator."""
-        # This method is called by the DataUpdateCoordinator when a successful update runs.
-        self.async_write_ha_state()
 
     @property
     def device_info(self) -> DeviceInfo:
