@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import copy
 import logging
-from datetime import time
 from typing import Any
 
 import voluptuous as vol
@@ -19,7 +18,6 @@ from homeassistant.config_entries import (
 )
 from homeassistant.const import CONF_API_KEY, CONF_NAME
 from homeassistant.core import HomeAssistant
-from homeassistant.data_entry_flow import section
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.selector import (
     SelectSelector,
@@ -28,117 +26,42 @@ from homeassistant.helpers.selector import (
     TextSelector,
     TextSelectorConfig,
     TextSelectorType,
-    TimeSelector,
     selector,
 )
 
 from .const import (
     ALERT_PRIORITIES,
-    ALL_TRANSPORT_TYPE_STRING,
+    ALL_TRANSPORT_TYPES,
     CONF_ALERT_SEVERITY,
     CONF_ALERT_TYPES,
     CONF_ALERTS_SENSOR,
-    CONF_CHANGES_SENSOR,
     CONF_CREATE_REVERSE_TRIP,
-    CONF_DELAY_SENSOR,
-    CONF_DESTINATION_DETAIL_SENSOR,
-    CONF_DESTINATION_DEVICE_TRACKER,
     CONF_DESTINATION_ID,
     CONF_DESTINATION_NAME,
-    CONF_DESTINATION_NAME_SENSOR,
     CONF_DESTINATION_TRANSPORT_TYPE,
-    CONF_DURATION_SENSOR,
-    CONF_END_TIME,
-    CONF_FIRST_LEG_DEPARTURE_TIME_SENSOR,
-    CONF_FIRST_LEG_DEVICE_TRACKER,
-    CONF_FIRST_LEG_LINE_NAME_SENSOR,
-    CONF_FIRST_LEG_LINE_NAME_SHORT_SENSOR,
-    CONF_FIRST_LEG_OCCUPANCY_DETAIL_SENSOR,
-    CONF_FIRST_LEG_OCCUPANCY_SENSOR,
-    CONF_FIRST_LEG_RUN_NAME_SENSOR,
-    CONF_FIRST_LEG_TRAIN_SET_SENSOR,
-    CONF_INCLUDE_REALTIME_LOCATION,
-    CONF_LAST_LEG_ARRIVAL_TIME_SENSOR,
-    CONF_LAST_LEG_DEVICE_TRACKER,
-    CONF_LAST_LEG_LINE_NAME_SENSOR,
-    CONF_LAST_LEG_LINE_NAME_SHORT_SENSOR,
-    CONF_LAST_LEG_OCCUPANCY_DETAIL_SENSOR,
-    CONF_LAST_LEG_OCCUPANCY_SENSOR,
-    CONF_LAST_LEG_RUN_NAME_SENSOR,
-    CONF_LAST_LEG_TRAIN_SET_SENSOR,
     CONF_MAX_CHANGES,
-    CONF_ORIGIN_DETAIL_SENSOR,
-    CONF_ORIGIN_DEVICE_TRACKER,
     CONF_ORIGIN_ID,
     CONF_ORIGIN_NAME,
-    CONF_ORIGIN_NAME_SENSOR,
     CONF_ORIGIN_TRANSPORT_TYPE,
     CONF_ORIGIN_TYPE,
     CONF_ROUTE_FILTER,
     CONF_RUN_FILTER,
-    CONF_SENSOR_CREATION,
-    CONF_START_TIME,
     CONF_TRIP_WAIT_TIME,
-    CONF_TRIPS_TO_CREATE,
     DEFAULT_ALERT_SEVERITY,
     DEFAULT_ALERT_TYPES,
     DEFAULT_ALERTS_SENSOR,
-    DEFAULT_CHANGES_SENSOR,
     DEFAULT_CREATE_REVERSE_TRIP,
-    DEFAULT_DELAY_SENSOR,
-    DEFAULT_DESTINATION_DETAIL_SENSOR,
-    DEFAULT_DESTINATION_DEVICE_TRACKER,
-    DEFAULT_DESTINATION_NAME_SENSOR,
-    DEFAULT_DURATION_SENSOR,
-    DEFAULT_END_TIME,
-    DEFAULT_FIRST_LEG_DEPARTURE_TIME_SENSOR,
-    DEFAULT_FIRST_LEG_DEVICE_TRACKER,
-    DEFAULT_FIRST_LEG_LINE_NAME_SENSOR,
-    DEFAULT_FIRST_LEG_LINE_NAME_SHORT_SENSOR,
-    DEFAULT_FIRST_LEG_OCCUPANCY_DETAIL_SENSOR,
-    DEFAULT_FIRST_LEG_OCCUPANCY_SENSOR,
-    DEFAULT_FIRST_LEG_RUN_NAME_SENSOR,
-    DEFAULT_FIRST_LEG_TRAIN_SET_SENSOR,
-    DEFAULT_LAST_LEG_ARRIVAL_TIME_SENSOR,
-    DEFAULT_LAST_LEG_DEVICE_TRACKER,
-    DEFAULT_LAST_LEG_LINE_NAME_SENSOR,
-    DEFAULT_LAST_LEG_LINE_NAME_SHORT_SENSOR,
-    DEFAULT_LAST_LEG_OCCUPANCY_DETAIL_SENSOR,
-    DEFAULT_LAST_LEG_OCCUPANCY_SENSOR,
-    DEFAULT_LAST_LEG_RUN_NAME_SENSOR,
-    DEFAULT_LAST_LEG_TRAIN_SET_SENSOR,
     DEFAULT_MAX_CHANGES,
-    DEFAULT_ORIGIN_DETAIL_SENSOR,
-    DEFAULT_ORIGIN_DEVICE_TRACKER,
-    DEFAULT_ORIGIN_NAME_SENSOR,
-    DEFAULT_SENSOR_CREATION,
-    DEFAULT_START_TIME,
     DEFAULT_TRANSPORT_TYPE,
     DEFAULT_TRIP_WAIT_TIME,
-    DEFAULT_TRIPS_TO_CREATE,
     MAX_MAX_CHANGES,
     MAX_TRIP_WAIT_TIME,
     SUBENTRY_TYPE_JOURNEY,
     TFNSW_STOPFINDER,
 )
-from .helpers import check_stops, get_device_trackers, set_optional_sensors
+from .helpers import check_stops, get_device_trackers
 
 _LOGGER = logging.getLogger(__name__)
-
-# def convert_transport_types_friendly_to_numeric(transport_type_list: dict[str]) -> dict[str]:
-#     # Convert the text-based transport types to their numeric equivalents
-#     # If empty, just use 0 'all transport types'
-#     if not transport_type_list:
-#         return DEFAULT_TRANSPORT_TYPE_NUMERIC
-
-#     temp_list = []
-#     for transport_type in transport_type_list:
-#         # Find the key that suits this value
-#         keys = [key for key, value in TRANSPORT_TYPE.items() if value == transport_type]
-#         temp_list.append(keys[0])
-
-#     return temp_list
-
 
 def create_subentries(self, config_entry, input_data):
 
@@ -521,7 +444,7 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
             # but it would get complicated to see what's happening
             origin_transport_selector = SelectSelector(
                 SelectSelectorConfig(
-                    options=ALL_TRANSPORT_TYPE_STRING,
+                    options=ALL_TRANSPORT_TYPES,
                     multiple=True,  # This activates the multi-select behavior
                     mode=SelectSelectorMode.DROPDOWN,  # Forces dropdown mode
                     translation_key="transport_type_selector",
@@ -530,7 +453,7 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
 
             destination_transport_selector = SelectSelector(
                 SelectSelectorConfig(
-                    options=ALL_TRANSPORT_TYPE_STRING,
+                    options=ALL_TRANSPORT_TYPES,
                     multiple=True,  # This activates the multi-select behavior
                     mode=SelectSelectorMode.DROPDOWN,  # Forces dropdown mode
                     translation_key="transport_type_selector",
@@ -576,23 +499,7 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
         if user_input is not None:
             self._input_data.update(user_input)
 
-            if self._input_data[CONF_SENSOR_CREATION] != "custom":
-                user_input[CONF_INCLUDE_REALTIME_LOCATION] = True
-                self._input_data.update(user_input)
-
-                sensor_options = set_optional_sensors(
-                    self._input_data[CONF_SENSOR_CREATION]
-                )
-
-                # Add to the options
-                self._input_data.update(sensor_options)
-
             # Check for errors
-            start_time = time.fromisoformat(user_input[CONF_START_TIME])
-            end_time = time.fromisoformat(user_input[CONF_END_TIME])
-            if start_time >= end_time:
-                errors["base"] = "end_time_before_start_time"
-
             if "base" not in errors:
                 # We may need to go to the alerts selection page, the custom sensors selection page, or both
                 if self._input_data[CONF_ALERTS_SENSOR]:
@@ -650,20 +557,6 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
                     CONF_ALERTS_SENSOR,
                     default=user_input.get(CONF_ALERTS_SENSOR, DEFAULT_ALERTS_SENSOR),
                 ): bool,
-                vol.Required(
-                    CONF_TRIPS_TO_CREATE,
-                    default=user_input.get(
-                        CONF_TRIPS_TO_CREATE, DEFAULT_TRIPS_TO_CREATE
-                    ),
-                ): vol.All(vol.Coerce(int), vol.Range(min=1, max=3)),
-                vol.Required(
-                    CONF_START_TIME,
-                    default=user_input.get(CONF_START_TIME, DEFAULT_START_TIME),
-                ): TimeSelector(),
-                vol.Required(
-                    CONF_END_TIME,
-                    default=user_input.get(CONF_END_TIME, DEFAULT_END_TIME),
-                ): TimeSelector(),
             }
         )
 
@@ -699,9 +592,7 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
             # No more flows to process so we can create/update
             # the subentries as required
             if self.source == SOURCE_RECONFIGURE:
-                unique_id_destination = "_".join(
-                    self._input_data[CONF_DESTINATION_ID]
-                )
+                unique_id_destination = "_".join(self._input_data[CONF_DESTINATION_ID])
 
                 # Continue to use the existing title, in case the
                 # user has renamed it
@@ -715,9 +606,7 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
                 description_placeholders = create_subentries(
                     self, self._get_entry(), self._input_data
                 )
-                await self.hass.config_entries.async_reload(
-                    self._get_entry().entry_id
-                )
+                await self.hass.config_entries.async_reload(self._get_entry().entry_id)
 
                 return self.async_abort(
                     reason="subentries_created",
@@ -738,9 +627,7 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
             {
                 vol.Required(
                     CONF_ALERT_SEVERITY,
-                    default=user_input.get(
-                        CONF_ALERT_SEVERITY, DEFAULT_ALERT_SEVERITY
-                    ),
+                    default=user_input.get(CONF_ALERT_SEVERITY, DEFAULT_ALERT_SEVERITY),
                 ): selector(
                     {
                         "select": {
@@ -767,16 +654,11 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
             }
         )
 
-        if self._input_data[CONF_SENSOR_CREATION] == "custom":
-            last_step = False
-        else:
-            last_step = True
-
         return self.async_show_form(
             step_id="alerts",
             data_schema=alerts_schema,
             errors=errors,
-            last_step=last_step,
+            last_step=True,
             description_placeholders={
                 "journey_name": f"{self._input_data[CONF_ORIGIN_NAME]} to {self._input_data[CONF_DESTINATION_NAME]}"
             },
@@ -786,8 +668,8 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
         self, user_input: dict[str, Any] | None = None
     ) -> SubentryFlowResult:
         """User flow to modify an existing location.
-           I've left reconfigure in for this initial submission as for subentries
-           it's effectively their version of OptionsFlow, which IS permitted in the PR guidelines."""
+        I've left reconfigure in for this initial submission as for subentries
+        it's effectively their version of OptionsFlow, which IS permitted in the PR guidelines."""
 
         return await self.async_step_settings()
 

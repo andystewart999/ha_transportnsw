@@ -14,9 +14,8 @@ from homeassistant.components.sensor import (
     SensorEntityDescription,
 )
 from homeassistant.config_entries import ConfigSubentry
-from homeassistant.const import CONF_API_KEY, CONF_NAME, EntityCategory, UnitOfTime
-from homeassistant.core import HomeAssistant, callback
-from homeassistant.helpers import device_registry as dr
+from homeassistant.const import CONF_API_KEY, EntityCategory, UnitOfTime
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.typing import StateType
@@ -26,22 +25,23 @@ from homeassistant.util import dt as dt_util
 from . import TransportNSWConfigEntry
 from .const import (
     ALERT_PRIORITIES,
-    API_CALLS_SENSOR,
-    API_CALLS_FRIENDLY,
-    AVERAGE_API_CALLS_SENSOR,
-    AVERAGE_API_CALLS_FRIENDLY,
     ALERTS_FRIENDLY,
     ALERTS_SENSOR,
+    API_CALLS_FRIENDLY,
+    API_CALLS_SENSOR,
     CHANGES_FRIENDLY,
     CHANGES_SENSOR,
+    CONF_DESTINATION_ID,
+    CONF_DESTINATION_NAME,
+    CONF_ORIGIN_ID,
+    CONF_ORIGIN_NAME,
     DELAY_FRIENDLY,
     DELAY_SENSOR,
     DESTINATION_DETAIL_FRIENDLY,
     DESTINATION_DETAIL_SENSOR,
-    CONF_DESTINATION_ID,
-    CONF_DESTINATION_NAME,
     DESTINATION_NAME_FRIENDLY,
     DESTINATION_NAME_SENSOR,
+    DOMAIN,
     DUE_FRIENDLY,
     DUE_SENSOR,
     DURATION_FRIENDLY,
@@ -64,6 +64,7 @@ from .const import (
     FIRST_LEG_TRANSPORT_NAME_SENSOR,
     FIRST_LEG_TRANSPORT_TYPE_FRIENDLY,
     FIRST_LEG_TRANSPORT_TYPE_SENSOR,
+    JOURNEY_ICONS,
     LAST_LEG_ARRIVAL_TIME_FRIENDLY,
     LAST_LEG_ARRIVAL_TIME_SENSOR,
     LAST_LEG_LINE_NAME_FRIENDLY,
@@ -82,30 +83,17 @@ from .const import (
     LAST_LEG_TRANSPORT_NAME_SENSOR,
     LAST_LEG_TRANSPORT_TYPE_FRIENDLY,
     LAST_LEG_TRANSPORT_TYPE_SENSOR,
-    ORIGIN_DETAIL_FRIENDLY,
-    ORIGIN_DETAIL_SENSOR,
-    CONF_ORIGIN_ID,
-    CONF_ORIGIN_NAME,
-    ORIGIN_NAME_FRIENDLY,
-    ORIGIN_NAME_SENSOR,
-    POLLING_FRIENDLY,
-    POLLING_SENSOR,
-    CONF_TRIPS_TO_CREATE,
-    DOMAIN,
-    JOURNEY_ICONS,
     OCCUPANCY_DETAIL_GLYPHS,
     OCCUPANCY_ICONS,
+    ORIGIN_DETAIL_FRIENDLY,
+    ORIGIN_DETAIL_SENSOR,
+    ORIGIN_NAME_FRIENDLY,
+    ORIGIN_NAME_SENSOR,
     SUBENTRY_TYPE_JOURNEY,
     TFNSW_ATTRIBUTION,
 )
 from .coordinator import TransportNSWCoordinator
-from .helpers import (
-    extract_from_hierarchy,
-    get_journey_data,
-    remove_device,
-    remove_entity,
-    within_poll_time,
-)
+from .helpers import extract_from_hierarchy, get_journey_data
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -113,11 +101,6 @@ _LOGGER = logging.getLogger(__name__)
 def get_daily_api_calls(coordinator: TransportNSWCoordinator) -> int:
     """Return the current daily API calls total."""
     return coordinator.daily_api_calls
-
-
-def get_average_api_calls(coordinator: TransportNSWCoordinator) -> int:
-    """Return the current API rolling average ."""
-    return coordinator.rolling_average_api_calls
 
 
 def get_highest_alert(alerts) -> str:
@@ -182,20 +165,12 @@ class TransportNSWSensorEntityDescription(SensorEntityDescription):
 # Config_entry-level sensor definitions
 ENTRY_SENSORS: tuple[TransportNSWSensorEntityDescription, ...] = (
     TransportNSWSensorEntityDescription(
-        key=API_CALLS,
-        name=API_CALLS_NAME,
+        key=API_CALLS_SENSOR,
+        name=API_CALLS_FRIENDLY,
         native_unit_of_measurement="calls",
         icon="mdi:counter",
         entity_category=EntityCategory.DIAGNOSTIC,
         state_fn=get_daily_api_calls,
-    ),
-    TransportNSWSensorEntityDescription(
-        key=AVERAGE_API_CALLS,
-        name=AVERAGE_API_CALLS_NAME,
-        native_unit_of_measurement="calls",
-        icon="mdi:counter",
-        entity_category=EntityCategory.DIAGNOSTIC,
-        state_fn=get_average_api_calls,
     ),
 )
 
@@ -207,12 +182,6 @@ SUBENTRY_SENSORS: tuple[TransportNSWSensorEntityDescription, ...] = (
         icon="mdi:clock-outline",
         native_unit_of_measurement=UnitOfTime.MINUTES,
         state_path="due",
-    ),
-    TransportNSWSensorEntityDescription(
-        key=POLLING_SENSOR,
-        name=POLLING_FRIENDLY,
-        icon="mdi:clock-check-outline",
-        entity_category=EntityCategory.DIAGNOSTIC,
     ),
     TransportNSWSensorEntityDescription(
         key=DURATION_SENSOR,
@@ -299,7 +268,6 @@ SUBENTRY_SENSORS: tuple[TransportNSWSensorEntityDescription, ...] = (
         name=FIRST_LEG_TRANSPORT_NAME_FRIENDLY,
         state_path="origin_transport_detail.provider_name",
         entity_registry_enabled_default=False,
-        entity_category=EntityCategory.DIAGNOSTIC,
     ),
     TransportNSWSensorEntityDescription(
         key=FIRST_LEG_OCCUPANCY_SENSOR,
@@ -324,7 +292,6 @@ SUBENTRY_SENSORS: tuple[TransportNSWSensorEntityDescription, ...] = (
         name=FIRST_LEG_TRAIN_SET_FRIENDLY,
         state_path="origin_transport_detail.vehicle_set",
         entity_registry_enabled_default=False,
-        entity_category=EntityCategory.DIAGNOSTIC,
     ),
     TransportNSWSensorEntityDescription(
         key=DESTINATION_NAME_SENSOR,
@@ -367,7 +334,6 @@ SUBENTRY_SENSORS: tuple[TransportNSWSensorEntityDescription, ...] = (
         name=LAST_LEG_TRANSPORT_NAME_FRIENDLY,
         state_path="destination_transport_detail.provider_name",
         entity_registry_enabled_default=False,
-        entity_category=EntityCategory.DIAGNOSTIC,
     ),
     TransportNSWSensorEntityDescription(
         key=LAST_LEG_OCCUPANCY_SENSOR,
@@ -392,7 +358,6 @@ SUBENTRY_SENSORS: tuple[TransportNSWSensorEntityDescription, ...] = (
         name=LAST_LEG_TRAIN_SET_FRIENDLY,
         state_path="destination_transport_detail.vehicle_set",
         entity_registry_enabled_default=False,
-        entity_category=EntityCategory.DIAGNOSTIC,
     ),
     TransportNSWSensorEntityDescription(
         key=ALERTS_SENSOR,
@@ -416,9 +381,6 @@ async def async_setup_entry(
     # This gets the data update coordinator from the config entry runtime data as specified __init__.py
     coordinator: TransportNSWCoordinator = config_entry.runtime_data.coordinator
 
-    # Be ready to remove devices if required - for example if this subentry used to have three trips but now it only has one
-    device_reg = dr.async_get(hass)
-
     # Create the config_entry sensors
     configentry_sensors = [
         TransportNSWSensor(coordinator, description, config_entry)
@@ -427,63 +389,37 @@ async def async_setup_entry(
 
     async_add_entities(configentry_sensors, update_before_add=False)
 
-    
     # Create the sub_entry sensors
     for subentry in config_entry.subentries.values():
         if subentry.subentry_type == SUBENTRY_TYPE_JOURNEY:
-            trips_to_create = subentry.data[CONF_TRIPS_TO_CREATE]
+            # This will make more sense when the option for multiple trips per journey is back
+            sensor_suffix = ""
+            name_suffix = ""
+            device_suffix = ""
+            migration_suffix = ""
+            device_identifier = f"trip_{0 + 1!s}"
 
-            for trip_index in range(0, 3, 1):
-                if trips_to_create == 1:
-                    sensor_suffix = ""
-                    name_suffix = ""
-                    device_suffix = ""
-                    migration_suffix = ""
-                    device_identifier = f"trip_{trip_index + 1!s}"
-                else:
-                    sensor_suffix = f"trip_{trip_index + 1!s}"
-                    name_suffix = f" ({trip_index + 1!s})"
-                    device_suffix = f" trip {trip_index + 1!s}"
-                    migration_suffix = f"_trip_{trip_index + 1!s}"
-                    device_identifier = f"trip_{trip_index + 1!s}"
+            # These are the sensors for this subentry and specific journey index
+            subentry_sensors = [
+                TransportNSWSubentrySensor(
+                    coordinator,
+                    description,
+                    subentry,
+                    0,
+                    sensor_suffix,
+                    name_suffix,
+                    device_suffix,
+                    migration_suffix,
+                    device_identifier,
+                )
+                for description in SUBENTRY_SENSORS
+            ]
 
-                sensors = []
-                if trip_index >= trips_to_create:
-                    # We've finished creating sensors, now we need to start trying to delete sensors and devices
-                    # that may have been created previously but that aren't needed any more
-                    # I'd rather that we didn't just blindly try and remove devices without checking if they exist...
-                    # a future update will check first - more elegant?
-                    # Removing the device will also remove the associated sensors.
-                    remove_device(
-                        device_reg,
-                        config_entry.entry_id,
-                        subentry.subentry_id,
-                        subentry.data[CONF_ORIGIN_ID],
-                        subentry.data[CONF_DESTINATION_ID],
-                        device_identifier,
-                    )
-                else:
-                    # These are the sensors for this subentry and specific journey index
-                    subentry_sensors = [
-                        TransportNSWSubentrySensor(
-                            coordinator,
-                            description,
-                            subentry,
-                            trip_index,
-                            sensor_suffix,
-                            name_suffix,
-                            device_suffix,
-                            migration_suffix,
-                            device_identifier,
-                        )
-                        for description in SUBENTRY_SENSORS
-                    ]
-
-                    async_add_entities(
-                        subentry_sensors,
-                        config_subentry_id=subentry.subentry_id,
-                        update_before_add=False,
-                    )
+            async_add_entities(
+                subentry_sensors,
+                config_subentry_id=subentry.subentry_id,
+                update_before_add=False,
+            )
 
 
 class TransportNSWSensor(CoordinatorEntity, SensorEntity):
@@ -530,16 +466,8 @@ class TransportNSWSensor(CoordinatorEntity, SensorEntity):
 
         attrs = {}
 
-        try:
-            # Key-specific attributes
-            if self.entity_description.key == AVERAGE_API_CALLS:
-                attrs["update_interval_secs"] = (
-                    self.coordinator.update_interval.total_seconds()
-                )
-
-        finally:
-            # Always make sure there's the appropriate attribution
-            attrs["attribution"] = TFNSW_ATTRIBUTION
+        # Always make sure there's the appropriate attribution
+        attrs["attribution"] = TFNSW_ATTRIBUTION
 
         return attrs
 
@@ -578,7 +506,6 @@ class TransportNSWSubentrySensor(CoordinatorEntity, SensorEntity):
         self._attr_unique_id = f"{subentry.subentry_id}_{description.key}_{index}"
         self._attr_unique_id = self._attr_name
 
-
     @property
     def device_info(self) -> DeviceInfo:
         """Return device info for this sensor."""
@@ -598,22 +525,6 @@ class TransportNSWSubentrySensor(CoordinatorEntity, SensorEntity):
     @property
     def native_value(self) -> int | float | str | datetime:
         """Return the state of the entity."""
-
-        # The 'polling' sensor is a special case - it doesn't require access to journey_data
-        if self.entity_description.key == POLLING_SENSOR:
-            is_polling, next_change = within_poll_time(self.subentry)
-            if is_polling:
-                return (
-                    f"Active until {next_change}"
-                    if next_change is not None
-                    else "Active"
-                )
-            else:
-                return (
-                    f"Inactive until {next_change}"
-                    if next_change is not None
-                    else "Inactive"
-                )
 
         # Use the extended entity_description attributes to work out where and how to return the sensor state
         journey_data = get_journey_data(
@@ -637,12 +548,6 @@ class TransportNSWSubentrySensor(CoordinatorEntity, SensorEntity):
 
     @property
     def icon(self) -> str:
-        # The 'polling' sensor is a special case - it doesn't require access to journey_data
-        if self.entity_description.key == POLLING_SENSOR:
-            is_polling = within_poll_time(self.subentry)[0]
-            return (
-                "mdi:clock-check-outline" if is_polling else "mdi:clock-remove-outline"
-            )
 
         journey_data = get_journey_data(
             self.coordinator.data, self.subentry.subentry_id, self.journey_index
@@ -691,9 +596,6 @@ class TransportNSWSubentrySensor(CoordinatorEntity, SensorEntity):
     @property
     def available(self) -> bool:
         """Return if entity is available - basically check to see if there's data where it should be"""
-        # The 'polling' sensor is a special case - it doesn't require access to journey_data
-        if self.entity_description.key == POLLING_SENSOR:
-            return True
 
         journey_data = get_journey_data(
             self.coordinator.data, self.subentry.subentry_id, self.journey_index

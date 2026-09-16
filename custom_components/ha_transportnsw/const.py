@@ -1,16 +1,17 @@
 """Constants for the Transport NSW Mk II integration"""
 
-import json
-from pathlib import Path
+# import json
+# from pathlib import Path
 
 DOMAIN = "ha_transportnsw"
 DEFAULT_SCAN_INTERVAL = 60
 MIN_SCAN_INTERVAL = 30
-MIN_AUTO_SCAN_INTERVAL = 5
 
 # API-related constants
+API_CALLS = "api_calls"
 API_DAILY_LIMIT = 60000
 AVERAGE_CALLS_PER_JOURNEY = 3
+AVERAGE_API_CALLS = "average_api_calls"
 AVERAGE_API_CALLS_WINDOW = 5
 STORAGE_VERSION = 1
 
@@ -19,12 +20,6 @@ API_CALLS_SENSOR = "api_calls"
 API_CALLS_FRIENDLY = "API calls"
 AVERAGE_API_CALLS_SENSOR = "average_api_calls"
 AVERAGE_API_CALLS_FRIENDLY = "Average API calls per poll"
-
-# Config entry settings
-CONF_API_PERCENT = "auto_interval_api_percent"
-DEFAULT_API_PERCENT = 95
-CONF_REQUEST_LOCATION_UPDATE = "request_location_update"
-DEFAULT_REQUEST_LOCATION_UPDATE = False
 
 # Subentry settings
 CONF_ORIGIN_TYPE = "origin_type"
@@ -42,13 +37,9 @@ CONF_DESTINATION_TRANSPORT_TYPE = "destination_transport_type"
 CONF_RUN_FILTER = "run_filter"
 CONF_ROUTE_FILTER = "route_filter"
 CONF_MAX_CHANGES = "max_changes"
+CONF_ALERTS_SENSOR = "alerts"
 CONF_ALERT_SEVERITY = "alert_severity"
 CONF_ALERT_TYPES = "alert_types"
-CONF_TRIPS_TO_CREATE = "trips_to_create"
-CONF_START_TIME = "start_time"
-DEFAULT_START_TIME = "00:00:00"
-CONF_END_TIME = "end_time"
-DEFAULT_END_TIME = "23:59:59"
 
 # Subentry sensor names
 DUE_SENSOR = "due"
@@ -112,27 +103,7 @@ SENSOR_CREATION = "sensor_creation"
 ORIGIN_END_OF_LINE = "origin_end_of_line"
 DESTINATION_END_OF_LINE = "destination_end_of_line"
 
-ORIGIN_TRANSPORT_TYPE_LIST = [
-    "Train",
-    "Metro",
-    "Light rail",
-    "Bus",
-    "Coach",
-    "Ferry",
-    "School bus",
-    "Walk",
-]
-DESTINATION_TRANSPORT_TYPE_LIST = [
-    "Train",
-    "Metro",
-    "Light rail",
-    "Bus",
-    "Coach",
-    "Ferry",
-    "School bus",
-    "Walk",
-]
-ALL_TRANSPORT_TYPE_STRING = [
+ALL_TRANSPORT_TYPES = [
     "1",
     "2",
     "4",
@@ -142,18 +113,13 @@ ALL_TRANSPORT_TYPE_STRING = [
     "11",
     "99",
 ]
+DEFAULT_TRANSPORT_TYPE = ["1", "2", "4", "5", "9"]
 
 # Changes info
 ATTR_CHANGES_LIST = "changes_list"
 ATTR_LOCATIONS_LIST = "locations_list"
 
 # Sensor defaults
-DEFAULT_FIRST_LEG_DEVICE_TRACKER = "never"
-DEFAULT_LAST_LEG_DEVICE_TRACKER = "never"
-DEFAULT_ORIGIN_DEVICE_TRACKER = "if_device_tracker_journey"
-DEFAULT_DESTINATION_DEVICE_TRACKER = "never"
-DEFAULT_TRANSPORT_TYPE_SELECTOR = ["Train", "Metro", "Light rail", "Bus", "Ferry"]
-DEFAULT_TRANSPORT_TYPE = ["1", "2", "4", "5", "9"]
 DEFAULT_RUN_FILTER = ""
 DEFAULT_ROUTE_FILTER = ""
 DEFAULT_MAX_CHANGES = 2
@@ -165,58 +131,12 @@ DEFAULT_ALERT_TYPES = [
     "bannerinfo",
 ]
 DEFAULT_ALERT_SEVERITY = "high"
-DEFAULT_TRIPS_TO_CREATE = 1
 DEFAULT_SENSOR_CREATION = "none"
-DEFAULT_CHANGES_SENSOR = False
-DEFAULT_DELAY_SENSOR = False
-DEFAULT_DURATION_SENSOR = False
 DEFAULT_ALERTS_SENSOR = False
-DEFAULT_FIRST_LEG_DEPARTURE_TIME_SENSOR = False
-DEFAULT_LAST_LEG_ARRIVAL_TIME_SENSOR = False
-DEFAULT_ORIGIN_NAME_SENSOR = False
-DEFAULT_ORIGIN_DETAIL_SENSOR = False
-DEFAULT_FIRST_LEG_LINE_NAME_SENSOR = False
-DEFAULT_FIRST_LEG_LINE_NAME_SHORT_SENSOR = False
-DEFAULT_FIRST_LEG_RUN_NAME_SENSOR = False
-DEFAULT_FIRST_LEG_OCCUPANCY_SENSOR = False
-DEFAULT_FIRST_LEG_OCCUPANCY_DETAIL_SENSOR = False
-DEFAULT_FIRST_LEG_TRAIN_SET_SENSOR = False
-DEFAULT_DESTINATION_NAME_SENSOR = False
-DEFAULT_DESTINATION_DETAIL_SENSOR = False
-DEFAULT_LAST_LEG_LINE_NAME_SENSOR = False
-DEFAULT_LAST_LEG_LINE_NAME_SHORT_SENSOR = False
-DEFAULT_LAST_LEG_RUN_NAME_SENSOR = False
-DEFAULT_LAST_LEG_OCCUPANCY_SENSOR = False
-DEFAULT_LAST_LEG_OCCUPANCY_DETAIL_SENSOR = False
-DEFAULT_LAST_LEG_TRAIN_SET_SENSOR = False
 
 # SubentryFlow defaults
 MAX_TRIP_WAIT_TIME = 60
 MAX_MAX_CHANGES = 5
-
-# Misc
-ORIGIN_LATITUDE = "origin_latitude"
-ORIGIN_LONGITUDE = "origin_longitude"
-DESTINATION_LATITUDE = "destination_latitude"
-DESTINATION_LONGITUDE = "destination_longitude"
-
-# Lovelace card stuff
-## Read version from manifest.json
-MANIFEST_PATH = Path(__file__).parent / "manifest.json"
-with open(MANIFEST_PATH, encoding="utf-8") as f:
-    INTEGRATION_VERSION = json.load(f).get("version", "0.0.0")
-
-## Base URL for frontend resources
-URL_BASE = f"/{DOMAIN}"
-
-## List of JavaScript modules to register
-JSMODULES = [
-    {
-        "name": "Transport NSW vehicle occupancy card",
-        "filename": "vehicle-occupancy-card.js",
-        "version": INTEGRATION_VERSION,
-    }
-]
 
 # Transport for NSW constants
 TFNSW_ATTRIBUTION = "Data provided by Transport NSW"
@@ -287,21 +207,5 @@ ALERT_PRIORITIES = {
     "high": 4,
     "veryhigh": 5,
 }
-
-# TRAIN_SETS = {
-#     "A": "Waratah",
-#     "B": "Waratah Series 2",
-#     "C": "C-set",
-#     "D": "Mariyung",
-#     "H": "Oscar",
-#     "J": "Hunter",
-#     "K": "K-set",
-#     "M": "Millennium",
-#     "N": "Endeavour",
-#     "P": "Xplorer",
-#     "T": "Tangara",
-#     "V": "V-set",
-#     "X": "XPT",
-# }
 
 __all__ = [name for name in globals() if name.isupper()]
