@@ -28,15 +28,22 @@
         }
     },
     "options": {
+        "error": {
+            "bad_update_interval": "The update interval must either be 0 (for automatic) or above {min_scan_interval}."
+        },
         "step": {
             "init": {
                 "title": "Options",
                 "description": "These optional settings impact all of your journeys.",
                 "data": {
-                    "scan_interval": "Sensor update interval (s)"
+                    "scan_interval": "Sensor update interval (s)",
+                    "auto_interval_api_percent": "Available daily API allocation (%)",
+                    "request_location_update": "Device tracker location update at each poll"
                 },
                 "data_description": {
-                    "scan_interval": "The sensor update interval in seconds."
+                    "scan_interval": "The sensor update interval in seconds.  0 means the update interval will be calculated based on the API calls used per update and how many API calls remain from the daily limit.",
+                    "auto_interval_api_percent": "If the update interval is being calculated automatically, what percentage of the total daily allowance (currently {api_daily_limit}) is available to this Integration.  Useful if you have multiple Integrations sharing the same API key.",
+                    "request_location_update": "If the journey origin is a device tracker (e.g. a mobile phone), attempt to request a location update at each poll.  Note that this could impact the battery life of the device being polled."
                 }
             }
         }
@@ -107,7 +114,8 @@
                         "route_filter": "Route name filter",
                         "run_filter": "Run name filter",
                         "max_changes": "Max changes",
-                        "trip_wait_time": "Trip wait time"
+                        "trip_wait_time": "Trip wait time",
+                        "trips_to_create": "Trips to create"
                     },
                     "data_description": {
                         "origin_transport_type": "Select one or more transport types to include for the start of the journey",
@@ -122,15 +130,20 @@
                 },
                 "sensors": {
                     "data": {
-                        "alerts": "Include alerts?"
+                        "alerts": "Include alerts?",
+                        "trips_to_create": "Trips to create",
+                        "sensor_creation": "Optional sensors",
+                        "start_time": "Poll start time",
+                        "end_time": "Poll end time"
                     },
                     "data_description": {
                         "alerts": "Include alerts related to each journey",
+                        "trips_to_create": "How many trips should be shown (1 to 3)",
                         "sensor_creation": "Which optional sensors to create",
-                        "start_time": "The time of day that polling for this journey should start",
-                        "end_time": "The time of day that polling for this journey should stop"
+                        "start_time": "The time of day that journey polling should start",
+                        "end_time": "The time of day that journey polling should stop"
                     },
-                    "description": "Here you can choose if an alerts sensor should be created.{multi_destination_suggestion}",
+                    "description": "Here you can choose if an alerts sensor should be created, when journey polling should be active, how many consecutive journeys should be created and what types of sensors each journey should include - by default only the 'due' sensor and origin/destination device trackers will be created.{multi_destination_suggestion}",
                     "title": "{journey_name}"
                 },
                 "alerts": {
