@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import copy
 import logging
-from datetime import time
 from typing import Any
 
 import voluptuous as vol
@@ -19,7 +18,6 @@ from homeassistant.config_entries import (
 )
 from homeassistant.const import CONF_API_KEY, CONF_NAME
 from homeassistant.core import HomeAssistant
-from homeassistant.data_entry_flow import section
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.selector import (
     SelectSelector,
@@ -28,117 +26,42 @@ from homeassistant.helpers.selector import (
     TextSelector,
     TextSelectorConfig,
     TextSelectorType,
-    TimeSelector,
     selector,
 )
 
 from .const import (
     ALERT_PRIORITIES,
-    ALL_TRANSPORT_TYPE_STRING,
+    ALL_TRANSPORT_TYPES,
     CONF_ALERT_SEVERITY,
     CONF_ALERT_TYPES,
     CONF_ALERTS_SENSOR,
-    CONF_CHANGES_SENSOR,
     CONF_CREATE_REVERSE_TRIP,
-    CONF_DELAY_SENSOR,
-    CONF_DESTINATION_DETAIL_SENSOR,
-    CONF_DESTINATION_DEVICE_TRACKER,
     CONF_DESTINATION_ID,
     CONF_DESTINATION_NAME,
-    CONF_DESTINATION_NAME_SENSOR,
     CONF_DESTINATION_TRANSPORT_TYPE,
-    CONF_DURATION_SENSOR,
-    CONF_END_TIME,
-    CONF_FIRST_LEG_DEPARTURE_TIME_SENSOR,
-    CONF_FIRST_LEG_DEVICE_TRACKER,
-    CONF_FIRST_LEG_LINE_NAME_SENSOR,
-    CONF_FIRST_LEG_LINE_NAME_SHORT_SENSOR,
-    CONF_FIRST_LEG_OCCUPANCY_DETAIL_SENSOR,
-    CONF_FIRST_LEG_OCCUPANCY_SENSOR,
-    CONF_FIRST_LEG_RUN_NAME_SENSOR,
-    CONF_FIRST_LEG_TRAIN_SET_SENSOR,
-    CONF_INCLUDE_REALTIME_LOCATION,
-    CONF_LAST_LEG_ARRIVAL_TIME_SENSOR,
-    CONF_LAST_LEG_DEVICE_TRACKER,
-    CONF_LAST_LEG_LINE_NAME_SENSOR,
-    CONF_LAST_LEG_LINE_NAME_SHORT_SENSOR,
-    CONF_LAST_LEG_OCCUPANCY_DETAIL_SENSOR,
-    CONF_LAST_LEG_OCCUPANCY_SENSOR,
-    CONF_LAST_LEG_RUN_NAME_SENSOR,
-    CONF_LAST_LEG_TRAIN_SET_SENSOR,
     CONF_MAX_CHANGES,
-    CONF_ORIGIN_DETAIL_SENSOR,
-    CONF_ORIGIN_DEVICE_TRACKER,
     CONF_ORIGIN_ID,
     CONF_ORIGIN_NAME,
-    CONF_ORIGIN_NAME_SENSOR,
     CONF_ORIGIN_TRANSPORT_TYPE,
     CONF_ORIGIN_TYPE,
     CONF_ROUTE_FILTER,
     CONF_RUN_FILTER,
-    CONF_SENSOR_CREATION,
-    CONF_START_TIME,
     CONF_TRIP_WAIT_TIME,
-    CONF_TRIPS_TO_CREATE,
     DEFAULT_ALERT_SEVERITY,
     DEFAULT_ALERT_TYPES,
     DEFAULT_ALERTS_SENSOR,
-    DEFAULT_CHANGES_SENSOR,
     DEFAULT_CREATE_REVERSE_TRIP,
-    DEFAULT_DELAY_SENSOR,
-    DEFAULT_DESTINATION_DETAIL_SENSOR,
-    DEFAULT_DESTINATION_DEVICE_TRACKER,
-    DEFAULT_DESTINATION_NAME_SENSOR,
-    DEFAULT_DURATION_SENSOR,
-    DEFAULT_END_TIME,
-    DEFAULT_FIRST_LEG_DEPARTURE_TIME_SENSOR,
-    DEFAULT_FIRST_LEG_DEVICE_TRACKER,
-    DEFAULT_FIRST_LEG_LINE_NAME_SENSOR,
-    DEFAULT_FIRST_LEG_LINE_NAME_SHORT_SENSOR,
-    DEFAULT_FIRST_LEG_OCCUPANCY_DETAIL_SENSOR,
-    DEFAULT_FIRST_LEG_OCCUPANCY_SENSOR,
-    DEFAULT_FIRST_LEG_RUN_NAME_SENSOR,
-    DEFAULT_FIRST_LEG_TRAIN_SET_SENSOR,
-    DEFAULT_LAST_LEG_ARRIVAL_TIME_SENSOR,
-    DEFAULT_LAST_LEG_DEVICE_TRACKER,
-    DEFAULT_LAST_LEG_LINE_NAME_SENSOR,
-    DEFAULT_LAST_LEG_LINE_NAME_SHORT_SENSOR,
-    DEFAULT_LAST_LEG_OCCUPANCY_DETAIL_SENSOR,
-    DEFAULT_LAST_LEG_OCCUPANCY_SENSOR,
-    DEFAULT_LAST_LEG_RUN_NAME_SENSOR,
-    DEFAULT_LAST_LEG_TRAIN_SET_SENSOR,
     DEFAULT_MAX_CHANGES,
-    DEFAULT_ORIGIN_DETAIL_SENSOR,
-    DEFAULT_ORIGIN_DEVICE_TRACKER,
-    DEFAULT_ORIGIN_NAME_SENSOR,
-    DEFAULT_SENSOR_CREATION,
-    DEFAULT_START_TIME,
     DEFAULT_TRANSPORT_TYPE,
     DEFAULT_TRIP_WAIT_TIME,
-    DEFAULT_TRIPS_TO_CREATE,
     MAX_MAX_CHANGES,
     MAX_TRIP_WAIT_TIME,
     SUBENTRY_TYPE_JOURNEY,
     TFNSW_STOPFINDER,
 )
-from .helpers import check_stops, get_device_trackers, set_optional_sensors
+from .helpers import check_stops, get_device_trackers
 
 _LOGGER = logging.getLogger(__name__)
-
-# def convert_transport_types_friendly_to_numeric(transport_type_list: dict[str]) -> dict[str]:
-#     # Convert the text-based transport types to their numeric equivalents
-#     # If empty, just use 0 'all transport types'
-#     if not transport_type_list:
-#         return DEFAULT_TRANSPORT_TYPE_NUMERIC
-
-#     temp_list = []
-#     for transport_type in transport_type_list:
-#         # Find the key that suits this value
-#         keys = [key for key, value in TRANSPORT_TYPE.items() if value == transport_type]
-#         temp_list.append(keys[0])
-
-#     return temp_list
-
 
 def create_subentries(self, config_entry, input_data):
 
@@ -521,7 +444,7 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
             # but it would get complicated to see what's happening
             origin_transport_selector = SelectSelector(
                 SelectSelectorConfig(
-                    options=ALL_TRANSPORT_TYPE_STRING,
+                    options=ALL_TRANSPORT_TYPES,
                     multiple=True,  # This activates the multi-select behavior
                     mode=SelectSelectorMode.DROPDOWN,  # Forces dropdown mode
                     translation_key="transport_type_selector",
@@ -530,7 +453,7 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
 
             destination_transport_selector = SelectSelector(
                 SelectSelectorConfig(
-                    options=ALL_TRANSPORT_TYPE_STRING,
+                    options=ALL_TRANSPORT_TYPES,
                     multiple=True,  # This activates the multi-select behavior
                     mode=SelectSelectorMode.DROPDOWN,  # Forces dropdown mode
                     translation_key="transport_type_selector",
@@ -576,23 +499,7 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
         if user_input is not None:
             self._input_data.update(user_input)
 
-            if self._input_data[CONF_SENSOR_CREATION] != "custom":
-                user_input[CONF_INCLUDE_REALTIME_LOCATION] = True
-                self._input_data.update(user_input)
-
-                sensor_options = set_optional_sensors(
-                    self._input_data[CONF_SENSOR_CREATION]
-                )
-
-                # Add to the options
-                self._input_data.update(sensor_options)
-
             # Check for errors
-            start_time = time.fromisoformat(user_input[CONF_START_TIME])
-            end_time = time.fromisoformat(user_input[CONF_END_TIME])
-            if start_time >= end_time:
-                errors["base"] = "end_time_before_start_time"
-
             if "base" not in errors:
                 # We may need to go to the alerts selection page, the custom sensors selection page, or both
                 if self._input_data[CONF_ALERTS_SENSOR]:
@@ -602,10 +509,6 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
                     self._input_data.update(
                         {CONF_ALERT_SEVERITY: "none", CONF_ALERT_TYPES: []}
                     )
-
-                if self._input_data[CONF_SENSOR_CREATION] == "custom":
-                    # Show the next form so the user can select which sensors to create
-                    return await self.async_step_custom_sensors()
 
                 # No more flows to process so we can create/update the subentries as required
                 if self.source == SOURCE_RECONFIGURE:
@@ -638,15 +541,15 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
                         description_placeholders=description_placeholders,
                     )
 
-        if user_input is None:
-            if self.source == SOURCE_RECONFIGURE:
-                config_subentry = self._get_reconfigure_subentry()
-                user_input = dict(config_subentry.data)
+        # We get here if there was no user input
+        if self.source == SOURCE_RECONFIGURE:
+            config_subentry = self._get_reconfigure_subentry()
+            user_input = dict(config_subentry.data)
 
-                # Capture the subentry title in case the user has renamed it
-                user_input.update({"user_title": config_subentry.title})
-            else:
-                user_input = {}
+            # Capture the subentry title in case the user has renamed it
+            user_input.update({"user_title": config_subentry.title})
+        else:
+            user_input = {}
 
         STEP_SENSORS_SCHEMA = vol.Schema(
             {
@@ -654,39 +557,6 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
                     CONF_ALERTS_SENSOR,
                     default=user_input.get(CONF_ALERTS_SENSOR, DEFAULT_ALERTS_SENSOR),
                 ): bool,
-                vol.Required(
-                    CONF_TRIPS_TO_CREATE,
-                    default=user_input.get(
-                        CONF_TRIPS_TO_CREATE, DEFAULT_TRIPS_TO_CREATE
-                    ),
-                ): vol.All(vol.Coerce(int), vol.Range(min=1, max=3)),
-                vol.Required(
-                    CONF_START_TIME,
-                    default=user_input.get(CONF_START_TIME, DEFAULT_START_TIME),
-                ): TimeSelector(),
-                vol.Required(
-                    CONF_END_TIME,
-                    default=user_input.get(CONF_END_TIME, DEFAULT_END_TIME),
-                ): TimeSelector(),
-                vol.Required(
-                    CONF_SENSOR_CREATION,
-                    default=user_input.get(
-                        CONF_SENSOR_CREATION, DEFAULT_SENSOR_CREATION
-                    ),
-                ): selector(
-                    {
-                        "select": {
-                            "options": [
-                                "none",
-                                "changes_and_times",
-                                "verbose",
-                                "custom",
-                            ],
-                            "mode": "dropdown",
-                            "translation_key": "sensor_creation_selector",
-                        }
-                    }
-                ),
             }
         )
 
@@ -719,127 +589,23 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
         if user_input is not None:
             self._input_data.update(user_input)
 
-            if self._input_data[CONF_SENSOR_CREATION] == "custom":
-                # Show the 'custom sensors' options page, it will be responsible
-                # for updating the entry at the end
-                return await self.async_step_custom_sensors()
-            else:
-                # No more flows to process so we can create/update
-                # the subentries as required
-                if self.source == SOURCE_RECONFIGURE:
-                    unique_id_destination = "_".join(
-                        self._input_data[CONF_DESTINATION_ID]
-                    )
-
-                    # Continue to use the existing title, in case the
-                    # user has renamed it
-                    return self.async_update_reload_and_abort(
-                        self._get_entry(),
-                        self._get_reconfigure_subentry(),
-                        unique_id=f"{self._input_data[CONF_ORIGIN_ID]}_{unique_id_destination}",
-                        data=self._input_data,
-                    )
-                else:
-                    description_placeholders = create_subentries(
-                        self, self._get_entry(), self._input_data
-                    )
-                    await self.hass.config_entries.async_reload(
-                        self._get_entry().entry_id
-                    )
-
-                    return self.async_abort(
-                        reason="subentries_created",
-                        description_placeholders=description_placeholders,
-                    )
-
-        if user_input is None:
+            # No more flows to process so we can create/update
+            # the subentries as required
             if self.source == SOURCE_RECONFIGURE:
-                config_subentry = self._get_reconfigure_subentry()
-                user_input = dict(config_subentry.data)
+                unique_id_destination = "_".join(self._input_data[CONF_DESTINATION_ID])
 
-                # Capture the subentry title in case the user has renamed it
-                user_input.update({"user_title": config_subentry.title})
-            else:
-                user_input = {}
-
-            alerts_schema = vol.Schema(
-                {
-                    vol.Required(
-                        CONF_ALERT_SEVERITY,
-                        default=user_input.get(
-                            CONF_ALERT_SEVERITY, DEFAULT_ALERT_SEVERITY
-                        ),
-                    ): selector(
-                        {
-                            "select": {
-                                "options": list(ALERT_PRIORITIES),
-                                "mode": "dropdown",
-                                "multiple": False,
-                                "translation_key": "alert_priority_selector",
-                            }
-                        }
-                    ),
-                    vol.Required(
-                        CONF_ALERT_TYPES,
-                        default=user_input.get(CONF_ALERT_TYPES, DEFAULT_ALERT_TYPES),
-                    ): selector(
-                        {
-                            "select": {
-                                "options": DEFAULT_ALERT_TYPES,
-                                "mode": "list",
-                                "multiple": True,
-                                "translation_key": "alert_type_selector",
-                            }
-                        }
-                    ),
-                }
-            )
-
-            if self._input_data[CONF_SENSOR_CREATION] == "custom":
-                last_step = False
-            else:
-                last_step = True
-
-            return self.async_show_form(
-                step_id="alerts",
-                data_schema=alerts_schema,
-                errors=errors,
-                last_step=last_step,
-                description_placeholders={
-                    "journey_name": f"{self._input_data[CONF_ORIGIN_NAME]} to {self._input_data[CONF_DESTINATION_NAME]}"
-                },
-            )
-
-    async def async_step_custom_sensors(self, user_input=None):
-        # Handle custom sensors if requested
-
-        if user_input is not None:
-            if (user_input["device_trackers"][CONF_FIRST_LEG_DEVICE_TRACKER]) or (
-                user_input["device_trackers"][CONF_LAST_LEG_DEVICE_TRACKER]
-                in ["if_not_duplicated", "always"]
-            ):
-                user_input[CONF_INCLUDE_REALTIME_LOCATION] = True
-            else:
-                user_input[CONF_INCLUDE_REALTIME_LOCATION] = False
-
-            self._input_data.update(user_input)
-
-            # This is the last step so create the subentries, unless we're
-            # reconfiguring in which case just update, reload and abort
-            if self.source == SOURCE_RECONFIGURE:
-                # Continue to use the existing title, in case the user has renamed it
+                # Continue to use the existing title, in case the
+                # user has renamed it
                 return self.async_update_reload_and_abort(
                     self._get_entry(),
                     self._get_reconfigure_subentry(),
-                    unique_id=f"{self._input_data[CONF_ORIGIN_ID]}_{self._input_data[CONF_DESTINATION_ID]}",
+                    unique_id=f"{self._input_data[CONF_ORIGIN_ID]}_{unique_id_destination}",
                     data=self._input_data,
-                    title=self._input_data["user_title"],
                 )
             else:
                 description_placeholders = create_subentries(
                     self, self._get_entry(), self._input_data
                 )
-
                 await self.hass.config_entries.async_reload(self._get_entry().entry_id)
 
                 return self.async_abort(
@@ -847,278 +613,63 @@ class JourneySubEntryFlowHandler(ConfigSubentryFlow):
                     description_placeholders=description_placeholders,
                 )
 
-        if user_input is None:
-            if self.source == SOURCE_RECONFIGURE:
-                config_subentry = self._get_reconfigure_subentry()
-                user_input = dict(config_subentry.data)
-            else:
-                user_input = {}
-                user_input["time_and_change_sensors"] = {}
-                user_input["origin_sensors"] = {}
-                user_input["destination_sensors"] = {}
-                user_input["device_trackers"] = {}
+        # We get here if there was no user input
+        if self.source == SOURCE_RECONFIGURE:
+            config_subentry = self._get_reconfigure_subentry()
+            user_input = dict(config_subentry.data)
 
-            ADDITIONAL_SENSORS_SCHEMA = vol.Schema(
-                {
-                    vol.Required(
-                        CONF_CHANGES_SENSOR,
-                        default=user_input["time_and_change_sensors"].get(
-                            CONF_CHANGES_SENSOR, DEFAULT_CHANGES_SENSOR
-                        ),
-                    ): bool,
-                    vol.Required(
-                        CONF_DELAY_SENSOR,
-                        default=user_input["time_and_change_sensors"].get(
-                            CONF_DELAY_SENSOR, DEFAULT_DELAY_SENSOR
-                        ),
-                    ): bool,
-                    vol.Required(
-                        CONF_FIRST_LEG_DEPARTURE_TIME_SENSOR,
-                        default=user_input["time_and_change_sensors"].get(
-                            CONF_FIRST_LEG_DEPARTURE_TIME_SENSOR,
-                            DEFAULT_FIRST_LEG_DEPARTURE_TIME_SENSOR,
-                        ),
-                    ): bool,
-                    vol.Required(
-                        CONF_LAST_LEG_ARRIVAL_TIME_SENSOR,
-                        default=user_input["time_and_change_sensors"].get(
-                            CONF_LAST_LEG_ARRIVAL_TIME_SENSOR,
-                            DEFAULT_LAST_LEG_ARRIVAL_TIME_SENSOR,
-                        ),
-                    ): bool,
-                    vol.Required(
-                        CONF_DURATION_SENSOR,
-                        default=user_input["time_and_change_sensors"].get(
-                            CONF_DURATION_SENSOR, DEFAULT_DURATION_SENSOR
-                        ),
-                    ): bool,
-                }
-            )
+            # Capture the subentry title in case the user has renamed it
+            user_input.update({"user_title": config_subentry.title})
+        else:
+            user_input = {}
 
-            ORIGIN_SENSORS_SCHEMA = vol.Schema(
-                {
-                    vol.Required(
-                        CONF_ORIGIN_NAME_SENSOR,
-                        default=user_input["origin_sensors"].get(
-                            CONF_ORIGIN_NAME_SENSOR, DEFAULT_ORIGIN_NAME_SENSOR
-                        ),
-                    ): bool,
-                    vol.Required(
-                        CONF_ORIGIN_DETAIL_SENSOR,
-                        default=user_input["origin_sensors"].get(
-                            CONF_ORIGIN_DETAIL_SENSOR, DEFAULT_ORIGIN_DETAIL_SENSOR
-                        ),
-                    ): bool,
-                    vol.Required(
-                        CONF_FIRST_LEG_LINE_NAME_SENSOR,
-                        default=user_input["origin_sensors"].get(
-                            CONF_FIRST_LEG_LINE_NAME_SENSOR,
-                            DEFAULT_FIRST_LEG_LINE_NAME_SENSOR,
-                        ),
-                    ): bool,
-                    vol.Required(
-                        CONF_FIRST_LEG_LINE_NAME_SHORT_SENSOR,
-                        default=user_input["origin_sensors"].get(
-                            CONF_FIRST_LEG_LINE_NAME_SHORT_SENSOR,
-                            DEFAULT_FIRST_LEG_LINE_NAME_SHORT_SENSOR,
-                        ),
-                    ): bool,
-                    vol.Required(
-                        CONF_FIRST_LEG_OCCUPANCY_SENSOR,
-                        default=user_input["origin_sensors"].get(
-                            CONF_FIRST_LEG_OCCUPANCY_SENSOR,
-                            DEFAULT_FIRST_LEG_OCCUPANCY_SENSOR,
-                        ),
-                    ): bool,
-                    vol.Required(
-                        CONF_FIRST_LEG_OCCUPANCY_DETAIL_SENSOR,
-                        default=user_input["origin_sensors"].get(
-                            CONF_FIRST_LEG_OCCUPANCY_DETAIL_SENSOR,
-                            DEFAULT_FIRST_LEG_OCCUPANCY_DETAIL_SENSOR,
-                        ),
-                    ): bool,
-                    vol.Required(
-                        CONF_FIRST_LEG_RUN_NAME_SENSOR,
-                        default=user_input["origin_sensors"].get(
-                            CONF_FIRST_LEG_RUN_NAME_SENSOR,
-                            DEFAULT_FIRST_LEG_RUN_NAME_SENSOR,
-                        ),
-                    ): bool,
-                    vol.Required(
-                        CONF_FIRST_LEG_TRAIN_SET_SENSOR,
-                        default=user_input["origin_sensors"].get(
-                            CONF_FIRST_LEG_TRAIN_SET_SENSOR,
-                            DEFAULT_FIRST_LEG_TRAIN_SET_SENSOR,
-                        ),
-                    ): bool,
-                }
-            )
-
-            DESTINATION_SENSORS_SCHEMA = vol.Schema(
-                {
-                    vol.Required(
-                        CONF_DESTINATION_NAME_SENSOR,
-                        default=user_input["destination_sensors"].get(
-                            CONF_DESTINATION_NAME_SENSOR,
-                            DEFAULT_DESTINATION_NAME_SENSOR,
-                        ),
-                    ): bool,
-                    vol.Required(
-                        CONF_DESTINATION_DETAIL_SENSOR,
-                        default=user_input["destination_sensors"].get(
-                            CONF_DESTINATION_DETAIL_SENSOR,
-                            DEFAULT_DESTINATION_DETAIL_SENSOR,
-                        ),
-                    ): bool,
-                    vol.Required(
-                        CONF_LAST_LEG_LINE_NAME_SENSOR,
-                        default=user_input["destination_sensors"].get(
-                            CONF_LAST_LEG_LINE_NAME_SENSOR,
-                            DEFAULT_LAST_LEG_LINE_NAME_SENSOR,
-                        ),
-                    ): bool,
-                    vol.Required(
-                        CONF_LAST_LEG_LINE_NAME_SHORT_SENSOR,
-                        default=user_input["destination_sensors"].get(
-                            CONF_LAST_LEG_LINE_NAME_SHORT_SENSOR,
-                            DEFAULT_LAST_LEG_LINE_NAME_SHORT_SENSOR,
-                        ),
-                    ): bool,
-                    vol.Required(
-                        CONF_LAST_LEG_OCCUPANCY_SENSOR,
-                        default=user_input["destination_sensors"].get(
-                            CONF_LAST_LEG_OCCUPANCY_SENSOR,
-                            DEFAULT_LAST_LEG_OCCUPANCY_SENSOR,
-                        ),
-                    ): bool,
-                    vol.Required(
-                        CONF_LAST_LEG_OCCUPANCY_DETAIL_SENSOR,
-                        default=user_input["destination_sensors"].get(
-                            CONF_LAST_LEG_OCCUPANCY_DETAIL_SENSOR,
-                            DEFAULT_LAST_LEG_OCCUPANCY_DETAIL_SENSOR,
-                        ),
-                    ): bool,
-                    vol.Required(
-                        CONF_LAST_LEG_RUN_NAME_SENSOR,
-                        default=user_input["destination_sensors"].get(
-                            CONF_LAST_LEG_RUN_NAME_SENSOR,
-                            DEFAULT_LAST_LEG_RUN_NAME_SENSOR,
-                        ),
-                    ): bool,
-                    vol.Required(
-                        CONF_LAST_LEG_TRAIN_SET_SENSOR,
-                        default=user_input["destination_sensors"].get(
-                            CONF_LAST_LEG_TRAIN_SET_SENSOR,
-                            DEFAULT_LAST_LEG_TRAIN_SET_SENSOR,
-                        ),
-                    ): bool,
-                }
-            )
-
-            DEVICE_TRACKER_SENSORS_SCHEMA = vol.Schema(
-                {
-                    vol.Required(
-                        CONF_FIRST_LEG_DEVICE_TRACKER,
-                        default=user_input["device_trackers"].get(
-                            CONF_FIRST_LEG_DEVICE_TRACKER,
-                            DEFAULT_FIRST_LEG_DEVICE_TRACKER,
-                        ),
-                    ): selector(
-                        {
-                            "select": {
-                                "options": ["never", "always"],
-                                "mode": "dropdown",
-                                "translation_key": "transport_device_tracker_selector",
-                            }
+        alerts_schema = vol.Schema(
+            {
+                vol.Required(
+                    CONF_ALERT_SEVERITY,
+                    default=user_input.get(CONF_ALERT_SEVERITY, DEFAULT_ALERT_SEVERITY),
+                ): selector(
+                    {
+                        "select": {
+                            "options": list(ALERT_PRIORITIES),
+                            "mode": "dropdown",
+                            "multiple": False,
+                            "translation_key": "alert_priority_selector",
                         }
-                    ),
-                    vol.Required(
-                        CONF_LAST_LEG_DEVICE_TRACKER,
-                        default=user_input["device_trackers"].get(
-                            CONF_LAST_LEG_DEVICE_TRACKER,
-                            DEFAULT_LAST_LEG_DEVICE_TRACKER,
-                        ),
-                    ): selector(
-                        {
-                            "select": {
-                                "options": ["never", "if_not_duplicated", "always"],
-                                "mode": "dropdown",
-                                "translation_key": "transport_device_tracker_selector",
-                            }
-                        }
-                    ),
-                    vol.Required(
-                        CONF_ORIGIN_DEVICE_TRACKER,
-                        default=user_input["device_trackers"].get(
-                            CONF_ORIGIN_DEVICE_TRACKER, DEFAULT_ORIGIN_DEVICE_TRACKER
-                        ),
-                    ): selector(
-                        {
-                            "select": {
-                                "options": [
-                                    "never",
-                                    "if_device_tracker_journey",
-                                    "always",
-                                ],
-                                "mode": "dropdown",
-                                "translation_key": "stops_device_tracker_selector",
-                            }
-                        }
-                    ),
-                    vol.Required(
-                        CONF_DESTINATION_DEVICE_TRACKER,
-                        default=user_input["device_trackers"].get(
-                            CONF_DESTINATION_DEVICE_TRACKER,
-                            DEFAULT_DESTINATION_DEVICE_TRACKER,
-                        ),
-                    ): selector(
-                        {
-                            "select": {
-                                "options": [
-                                    "never",
-                                    "if_device_tracker_journey",
-                                    "always",
-                                ],
-                                "mode": "dropdown",
-                                "translation_key": "stops_device_tracker_selector",
-                            }
-                        }
-                    ),
-                }
-            )
-
-            custom_schema = {
-                vol.Required("time_and_change_sensors"): section(
-                    ADDITIONAL_SENSORS_SCHEMA,
-                    {"collapsed": True},
+                    }
                 ),
-                vol.Required("origin_sensors"): section(
-                    ORIGIN_SENSORS_SCHEMA,
-                    {"collapsed": True},
-                ),
-                vol.Required("destination_sensors"): section(
-                    DESTINATION_SENSORS_SCHEMA,
-                    {"collapsed": True},
-                ),
-                vol.Required("device_trackers"): section(
-                    DEVICE_TRACKER_SENSORS_SCHEMA,
-                    {"collapsed": True},
+                vol.Required(
+                    CONF_ALERT_TYPES,
+                    default=user_input.get(CONF_ALERT_TYPES, DEFAULT_ALERT_TYPES),
+                ): selector(
+                    {
+                        "select": {
+                            "options": DEFAULT_ALERT_TYPES,
+                            "mode": "list",
+                            "multiple": True,
+                            "translation_key": "alert_type_selector",
+                        }
+                    }
                 ),
             }
-            description_placeholders = {
+        )
+
+        return self.async_show_form(
+            step_id="alerts",
+            data_schema=alerts_schema,
+            errors=errors,
+            last_step=True,
+            description_placeholders={
                 "journey_name": f"{self._input_data[CONF_ORIGIN_NAME]} to {self._input_data[CONF_DESTINATION_NAME]}"
-            }
-            return self.async_show_form(
-                step_id="custom_sensors",
-                data_schema=vol.Schema(custom_schema),
-                description_placeholders=description_placeholders,
-                last_step=True,
-            )
+            },
+        )
 
     async def async_step_reconfigure(
         self, user_input: dict[str, Any] | None = None
     ) -> SubentryFlowResult:
-        """User flow to modify an existing location."""
+        """User flow to modify an existing location.
+        I've left reconfigure in for this initial submission as for subentries
+        it's effectively their version of OptionsFlow, which IS permitted in the PR guidelines."""
 
         return await self.async_step_settings()
 
