@@ -86,7 +86,7 @@
                 "triperror": "No valid journeys were returned.  Check your filters and retry.",
                 "already_configured": "You have already added that journey.",
                 "outbound_already_configured": "You have already added the outbound journey.",
-                "return_already_configured": "You have alreadty added the return part of that journey",
+                "return_already_configured": "You have already added the return part of that journey",
                 "end_time_before_start_time": "Polling end time must be after start time",
                 "unknown": "Unexpected error."
             },
@@ -185,7 +185,7 @@
                             "name": "Destination sensors",
                             "description": "Select which destination/last leg-related sensors to create",
                             "data": {
-                                "destination_run_name": "Run name (North Short to Hornsby via City)",
+                                "destination_run_name": "Run name (North Shore to Hornsby via City)",
                                 "destination_line_name": "Line name (eg T9 Northern Line)",
                                 "destination_line_name_short": "Short version of line name (eg T9)",
                                 "destination_name": "Full stop name (eg Gadigal Station, Platform 1, Sydney)",
